@@ -12,9 +12,9 @@ distclean: latex-distclean
 
 .PHONY: rec
 rec:
-	@if darcs w -ls ; then \
+	@if darcs w | tee changes ; then \
 		echo "recording this patch? Ctrl+D to skip" ; \
-		read && darcs rec -a -m "$(shell date '+%F %T')" ; \
+		read && darcs rec -a --edit-long-comment -m "$(shell date '+%F %T')" ; \
 	fi
 
 include latex.mk
