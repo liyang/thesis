@@ -1,6 +1,10 @@
 %include polycode.fmt
 %include local.fmt
 
+%format n_A
+%format n_B
+%format increment_lock
+
 \chapter{Introduction}
 
 \section{Preface}%{{{%
@@ -152,7 +156,7 @@ correctly achieve that goal.
 
 %}}}%
 
-Parallelism
+% Parallelism?
 
 \section{Approaches to Concurrent Software}%{{{%
 
@@ -169,9 +173,23 @@ concurrency.
 % main interest: tapping in to the power of concurrency for personal
 % computing
 
-\subsection{An Example: Easy as 0, 1, 2, 3\ldots}%{{{%
+\subsection{Concurrency versus Parallelism}%{{{%
 
-Consider the basic example of incrementing a counter variable. The
+The meaning of the terms \emph{concurrency} and \emph{parallelism} are not
+very well defined, and vary widely from one writer to another. To make clear
+the focus of this thesis, I shall clarify their intended meanings in the
+context of this monograph.
+
+\TODO{Write this when you're more awake. Vaguely remember an elegant
+phrasing of this distinction, from ICFP perhaps?}
+
+The focus of this thesis is on explicit concurrency.
+
+%}}}%
+
+\subsection{Example: Easy as 0, 1, 2, 3\ldots}%{{{%
+
+Consider the simple example of incrementing a counter variable. The
 algorithm---to somewhat overstate its complexity---might read like the
 following:
 \begin{spec}
@@ -184,8 +202,6 @@ behaves as expected. Suppose however, that two instances of |increment| were
 executing at the same time. This results in four possible interleavings of
 the two |read| and |write| operations, not all of which would have the
 intended effect of incrementing the counter twice, for example:
-%format n_A = "n_A"
-%format n_B = "n_B"
 \begin{longtable}{l||l||c}%{{{%
 Thread A & Thread B & |counter| \\
 \hline
@@ -223,11 +239,10 @@ Without discussing implementation details, let us assume the existence of
 two indivisible primitives---|lock| and |release|---with the following
 behaviour: |lock| attempts to acquire exclusive access to a given mutable
 variable; if the variable is already locked, wait until it becomes available
-again before proceeding. Its counterpart |release| relinquishes the
-exclusivity previously obtained.
+before proceeding. Its counterpart |release| relinquishes the exclusivity
+previously obtained.
 
 We can now eliminate the earlier race condition as follows:
-%format increment_lock = increment "_" lock
 \begin{spec}
 increment_lock counter = do
 	lock counter
@@ -236,7 +251,8 @@ increment_lock counter = do
 	release counter
 \end{spec}
 Even if Thread A were interleaved mid-way, Thread B cannot proceed past the
-|lock| primitive until Thread A releases |counter|:
+|lock| primitive until Thread A releases |counter|, ruling out the earlier
+race condition:
 \begin{longtable}{l||l||c}%{{{%
 Thread A & Thread B & |counter| \\
 \hline
@@ -248,10 +264,12 @@ Thread A & Thread B & |counter| \\
 		& 0 \\
 	& |lock counter|
 		& 0 \\
-	& \emph{\ldots blocked \ldots}
-		& 0 \\
 |write counter (n_A + 1)|
-	&
+	& \multirow{2}{*}{\parbox[c]{7ex}{\emph{%
+		\vdots\\[-1.5ex]
+		blocked\\[-1.5ex]
+		\vdots%
+	}}}
         & 1 \\
 |release counter|
 	&
@@ -263,19 +281,58 @@ Thread A & Thread B & |counter| \\
 	& |release counter|
 		& 2
 \end{longtable}%}}}%
-This rules out the earlier race condition.
 
-Such binary lock can be generalised to n states with \emph{counting
-semaphores} where some limited concurrent sharing may take place, or to
-two-stage read/write locks in the case where we wish to allow concurrent
-reading (but not modification) of the shared variable.
+\noindent Such two-state locks can be generalised to n states with
+\emph{counting semaphores} where some limited concurrent sharing may take
+place, or to two-stage read/write locks in the case where we wish to allow
+concurrent reading---but not modification---of the shared variable.
 
-\TODO{deadlock}
+%}}}%
+
+\subsection{Example: Deadlock}%{{{%
+
+Let us consider a slightly more interesting example: we are required to
+implement a procedure to increment two given counters in lock-step. The
+following is a non-solution,
+%format increment_pair
+%format c_0
+%format c_1
+%format n_0
+%format n_1
+\begin{spec}
+increment_pair c_0 c_1 = do
+	increment_lock c_0
+	increment_lock c_1
+\end{spec}
+as there is an intermediate state between the two calls to |increment_lock|
+when neither |c_0| nor |c_1| is locked. A better implementation might lock
+both counters before incrementing:
+\begin{spec}
+increment_pair c_0 c_1 = do
+	lock c_0
+	lock c_1
+	n_0 <- read c_0
+	n_1 <- read c_1
+	write c_0 (n_0 + 1)
+	write c_1 (n_1 + 1)
+	release c_0
+	release c_1
+\end{spec}
+While this version ensures that the two counters are updated together, it
+however suffers from a more subtle problem. If two threads A and B both
+attempt to increment the same pair of counters, but passed to
+|increment_pair| in the opposite order, a potential deadlock situation
+occurs.
+
+\TODO{picture}
+
+Correctness considerations aside, there is the further issue of code
+reusability.
+
 
 %}}}%
 
 \subsection{Message Passing}%{{{%
-
 
 %}}}%
 
