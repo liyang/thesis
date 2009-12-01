@@ -246,8 +246,7 @@ We can now eliminate the earlier race condition as follows:
 \begin{spec}
 increment_lock counter = do
 	lock counter
-	n <- read counter
-	write counter (n + 1)
+	increment counter
 	release counter
 \end{spec}
 Even if Thread A were interleaved mid-way, Thread B cannot proceed past the
@@ -265,9 +264,9 @@ Thread A & Thread B & |counter| \\
 	& |lock counter|
 		& 0 \\
 |write counter (n_A + 1)|
-	& \multirow{2}{*}{\parbox[c]{7ex}{\emph{%
+	& \multirow{2}{*}{\parbox[c]{19ex}{\emph{%
 		\vdots\\[-1.5ex]
-		blocked\\[-1.5ex]
+		blocked on |counter|\\[-1.5ex]
 		\vdots%
 	}}}
         & 1 \\
@@ -311,24 +310,49 @@ both counters before incrementing:
 increment_pair c_0 c_1 = do
 	lock c_0
 	lock c_1
-	n_0 <- read c_0
-	n_1 <- read c_1
-	write c_0 (n_0 + 1)
-	write c_1 (n_1 + 1)
+	increment c_0
+	increment c_1
 	release c_0
 	release c_1
 \end{spec}
 While this version ensures that the two counters are updated together, it
 however suffers from a more subtle problem. If two threads A and B both
-attempt to increment the same pair of counters, but passed to
-|increment_pair| in the opposite order, a potential deadlock situation
-occurs.
+attempt to increment the same pair of counters passed to |increment_pair| in
+a different order, a potential deadlock situation can occur:
+\begin{longtable}{l||l}%{{{%
+A: |increment_pair c_0 c_1| & B: |increment_pair c_1 c_0| \\
+\hline
+|lock c_0| & |lock c_1| \\
+|lock c_1| & |lock c_0| \\
+\multirow{2}{*}{\parbox[c]{14ex}{%
+	\emph{\vdots\\[-1.5ex]blocked on |c_1|\\[-1.5ex]\vdots}}}
+	& \multirow{2}{*}{\parbox[c]{14ex}{%
+		\emph{\vdots\\[-1.5ex]blocked on |c_0|\\[-1.5ex]\vdots}}}
+\end{longtable}%}}}%
+\noindent Neither thread can make progress, as they attempt to acquire
+a lock on the counter which is being held by the other. This could be solved
+by always acquiring locks in a specific order, but enforcing this is not
+always straightforward.
 
-\TODO{picture}
+Correctness considerations aside, there are the two issues of code reuse and
+scalability to consider. In terms of the former, ideally we would not want
+to expose |increment|, as only |increment_lock| is safe for concurrent use.
+On the other hand, to build more complex operations on top of the basic
+`increment' operation, chances are that we would need access to the unsafe
+|increment| implementation. Unfortunately exposing this breaks the
+abstraction barrier, with nothing to enforce the safe use of |increment|
+other than trust and diligence on the part of the programmer.
 
-Correctness considerations aside, there is the further issue of code
-reusability.
-
+On the issue of scalability, there is also some tension regarding lock
+granularity, inherent to mutual-exclusion. Supposing we have a large shared
+data structure, and our program makes use of as many threads as there are
+processors. In order to allow concurrent access to independent parts of the
+data structure, we would need to associate a lock with each constituent
+part. However acquiring a large number of locks has unacceptable overheads;
+particularly noticeable when there are only a small number of threads
+contending for access to the shared data. On the other hand, increasing lock
+granularity would reduced the overheads associated with taking the locks,
+but also rule out some potential for concurrency.
 
 %}}}%
 
