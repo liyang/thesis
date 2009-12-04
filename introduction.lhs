@@ -175,13 +175,14 @@ concurrency.
 
 \subsection{Concurrency versus Parallelism}%{{{%
 
-The meaning of the terms \emph{concurrency} and \emph{parallelism} are not
-very well defined, and vary widely from one writer to another. To make clear
-the focus of this thesis, I shall clarify their intended meanings in the
-context of this monograph.
+In general computing literature, the terms `concurrency' and `parallelism'
+are often taken as synonyms and used interchangeably by many, while others
+make a clear distinction between the two. I will afford a few sentences to
+clarify what I mean by each, in the context of this monograph.
 
-\TODO{Write this when you're more awake. Vaguely remember an elegant
-phrasing of this distinction, from ICFP perhaps?}
+By \emph{parallelism}, I mean  \TODO{Write this when you're more awake.
+Vaguely remember an elegant phrasing of this distinction, from ICFP
+perhaps?}
 
 The focus of this thesis is on explicit concurrency.
 
@@ -227,7 +228,7 @@ resource.
 
 %}}}%
 
-\subsection{Mutual Exclusion}%{{{%
+\subsection{Shared Memory and Mutual Exclusion}%{{{%
 
 The current market leader in terms of preventing the kind of race conditions
 as we have seen in the previous section is to simply prevent concurrent
@@ -351,20 +352,93 @@ data structure, we would need to associate a lock with each constituent
 part. However acquiring a large number of locks has unacceptable overheads;
 particularly noticeable when there are only a small number of threads
 contending for access to the shared data. On the other hand, increasing lock
-granularity would reduced the overheads associated with taking the locks,
-but also rule out some potential for concurrency.
+granularity would reduced the number of locks required, and in turn the
+overheads associated with taking the locks, but this would also rule out
+some potential for concurrency.
 
 %}}}%
 
-\subsection{Message Passing}%{{{%
+\subsection{Message Passing and Implicit Synchronisation}%{{{%
 
+The message passing paradigm focuses on the sending of messages between
+threads in the computation as a primitive, shunning the explicit use of
+shared memory and mutual exclusion as a medium and protocol respectively for
+communication. Conceptually, this is a higher level notion which abstracts
+the act of sending a message from the how, leaving it to the run-time system
+to choose the appropriate means. As a result, programs written using this
+approach can scale naturally from single processors to distributed networks
+of multiprocessor computers.
+
+Established languages and frameworks supporting message passing concurrency
+include Erlang, the Parallel Virtual Machine (PVM), or the Message Passing
+Interface (MPI). In Haskell, we can implement our previous counter example
+using channels:
+\begin{comment}%{{{%
+\begin{code}
+module Main where
+
+import Prelude
+import Control.Concurrent
+import Control.Concurrent.Chan
+import Control.Monad
+import Data.IORef
+\end{code}
+\end{comment}
 %}}}%
+%format increment_chan
+\begin{code}
+data Action = Increment | Get (Chan Integer)
+type Counter = Chan Action
+\end{code}
+Here we have defined a new datatype |Action| enumerating the operations the
+counter supports. A counter is then represented by a channel accepting such
+|Action|s, to which we can either send an |Increment| command, or another
+channel on which to return the current count via the |Get| command.
 
-\subsection{Process Calculus}%{{{%
+The |makeCounter| function returns a channel, to which other threads may
+send |Action|s to increment or query the counter. Even though we do make use
+of an |IORef| to store the current count, we have implicitly avoided the
+mutual exclusion problem by only allowing the forked thread access,
+essentially serialising access to the mutable variable.
+\begin{code}
+makeCounter :: IO Counter
+makeCounter = do
+	counter <- newChan
+	value <- newIORef 0
+	forkIO $ forever $ do
+		action <- readChan counter
+		n <- readIORef value
+		case action of
+			Increment -> writeIORef value (n + 1)
+			Get result -> writeChan result n
+	return counter
+
+increment_chan :: Counter -> IO ()
+increment_chan counter = writeChan counter Increment
+\end{code}
+When concurrent threads invoke |increment_chan| on the same counter, the
+atomicity of the |writeChan| primitive rules out any unwanted interleavings
+as we had with the original implementation of |increment|.
+
+Unfortunately, just like the previous mutual exclusion-based solution, it is
+non-trivial to build upon and not possible to reuse |increment_chan|, say,
+to implement a function to increment two counters in lock-step.
 
 %}}}%
 
 \subsection{Software Transactional Memory}%{{{%
+
+The popularity of mutual exclusion could be partially attributed to the fact
+that its implementation is relatively easy to comprehend. On the other hand,
+managing and composing lock-based code is extremely error-prone in practice.
+
+Automatic garbage collection\source{Dan Grossman} frees the programmer from
+having to manually manage memory allocation. Laziness in functional
+programming allows us to write higher-level programs without having to
+manually schedule the order of computation. In a similar vein, software
+transactional memory (STM) gives us a way to mark any composite operation as
+being atomic, without requiring us to manually manage undesired
+interleavings of operations in a shared memory environment.
 
 %}}}%
 
