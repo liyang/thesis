@@ -1,9 +1,21 @@
 %include polycode.fmt
 %include local.fmt
 
-%format n_A
-%format n_B
-%format increment_lock
+%let showMiscCode = False
+
+%if False -- %{{{%
+\begin{code}
+module Main where
+
+import Prelude
+import Control.Concurrent
+import Control.Concurrent.Chan
+import Control.Monad
+import Data.IORef
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
+\end{code}
+%endif -- %}}}%
 
 \chapter{Introduction}
 
@@ -190,30 +202,40 @@ The focus of this thesis is on explicit concurrency.
 
 \subsection{Example: Easy as 0, 1, 2, 3\ldots}%{{{%
 
-Consider the simple example of incrementing a counter variable. The
-algorithm---to somewhat overstate its complexity---might read like the
+Consider the example of incrementing a counter, here represented as a simple
+mutable variable:
+\begin{code}
+type Counter = IORef Integer
+
+makeCounter :: IO Counter
+makeCounter = newIORef 0
+\end{code}
+The algorithm---to somewhat overstate its complexity---might read like the
 following:
-\begin{spec}
+\begin{code}
+increment :: Counter -> IO ()
 increment counter = do
-	n <- read counter
-	write counter (n + 1)
-\end{spec}
+	n <- readIORef counter
+	writeIORef counter (n + 1)
+\end{code}
 When only a single instance of |increment| is executing, the above code
 behaves as expected. Suppose however, that two instances of |increment| were
 executing at the same time. This results in four possible interleavings of
-the two |read| and |write| operations, not all of which would have the
-intended effect of incrementing the counter twice, for example:
+the two |readIORef| and |writeIORef| operations, not all of which would have
+the intended effect of incrementing the counter twice, for example:
+%format n_A
+%format n_B
 \begin{longtable}{l||l||c}%{{{%
 Thread A & Thread B & |counter| \\
 \hline
-|n_A <- read counter|
+|n_A <- readIORef counter|
 	&
 		& 0 \\
-	& |n_B <- read counter|
+	& |n_B <- readIORef counter|
 		& 0 \\
-	& |write counter (n_B + 1)|
+	& |writeIORef counter (n_B + 1)|
 		& 1 \\
-|write counter (n_A + 1)|
+|writeIORef counter (n_A + 1)|
 	&
         & 1
 \end{longtable}%}}}%
@@ -243,13 +265,49 @@ variable; if the variable is already locked, wait until it becomes available
 before proceeding. Its counterpart |release| relinquishes the exclusivity
 previously obtained.
 
+%format Counter_lock = Counter
+%format increment_lock' = increment
+%if showMiscCode -- %{{{%
+\begin{code}
+type Counter_lock = (Counter, MVar ())
+
+makeCounter_lock :: IO Counter_lock
+makeCounter_lock = do
+	value <- makeCounter
+	lock <- newMVar ()
+	return (value, lock)
+
+lock :: Counter_lock -> IO ()
+lock (value, lock) = takeMVar lock
+
+release :: Counter_lock -> IO ()
+release (value, lock) = putMVar lock ()
+
+increment_lock' :: Counter_lock -> IO ()
+increment_lock' (value, lock) = do
+	n <- readIORef value
+	yield
+	yield
+	writeIORef value (n + 1)
+
+query_lock :: Counter_lock -> IO Integer
+query_lock counter = do
+	lock counter
+	n <- readIORef (fst counter)
+	release counter
+	return n
+\end{code}
+%endif -- %}}}%
+
 We can now eliminate the earlier race condition as follows:
-\begin{spec}
+%format increment_lock
+\begin{code}
+increment_lock :: Counter_lock -> IO ()
 increment_lock counter = do
 	lock counter
-	increment counter
+	increment_lock' counter
 	release counter
-\end{spec}
+\end{code}
 Even if Thread A were interleaved mid-way, Thread B cannot proceed past the
 |lock| primitive until Thread A releases |counter|, ruling out the earlier
 race condition:
@@ -259,12 +317,12 @@ Thread A & Thread B & |counter| \\
 |lock counter|
 	&
 		& 0 \\
-|n_A <- read counter|
+|n_A <- readIORef counter|
 	&
 		& 0 \\
 	& |lock counter|
 		& 0 \\
-|write counter (n_A + 1)|
+|writeIORef counter (n_A + 1)|
 	& \multirow{2}{*}{\parbox[c]{19ex}{\emph{%
 		\vdots\\[-1.5ex]
 		blocked on |counter|\\[-1.5ex]
@@ -274,13 +332,29 @@ Thread A & Thread B & |counter| \\
 |release counter|
 	&
         & 1 \\
-	& |n_B <- read counter|
+	& |n_B <- readIORef counter|
 		& 1 \\
-	& |write counter (n_B + 1)|
+	& |writeIORef counter (n_B + 1)|
 		& 2 \\
 	& |release counter|
 		& 2
 \end{longtable}%}}}%
+
+%if showMiscCode -- %{{{%
+\begin{code}
+check_lock = do
+	counter <- makeCounter_lock
+	s <- newQSemN 0
+	forkIO $ do increment_lock counter; signalQSemN s 1
+	forkIO $ do increment_lock counter; signalQSemN s 1
+	waitQSemN s 2
+	n <- query_lock counter
+	return (n == 2)
+	
+check = do
+	(quickCheck . monadicIO . run) check_lock
+\end{code}
+%endif -- %}}}%
 
 \noindent Such two-state locks can be generalised to n states with
 \emph{counting semaphores} where some limited concurrent sharing may take
@@ -295,27 +369,28 @@ Let us consider a slightly more interesting example: we are required to
 implement a procedure to increment two given counters in lock-step. The
 following is a non-solution,
 %format increment_pair
+%format increment_pair'
 %format c_0
 %format c_1
-%format n_0
-%format n_1
-\begin{spec}
-increment_pair c_0 c_1 = do
+\begin{code}
+increment_pair' :: Counter_lock -> Counter_lock -> IO ()
+increment_pair' c_0 c_1 = do
 	increment_lock c_0
 	increment_lock c_1
-\end{spec}
+\end{code}
 as there is an intermediate state between the two calls to |increment_lock|
-when neither |c_0| nor |c_1| is locked. A better implementation might lock
-both counters before incrementing:
-\begin{spec}
+when |c_0| has been incremented but |c_1| has not, yet neither is locked.
+A better implementation might lock both counters before incrementing:
+\begin{code}
+increment_pair :: Counter_lock -> Counter_lock -> IO ()
 increment_pair c_0 c_1 = do
 	lock c_0
 	lock c_1
-	increment c_0
-	increment c_1
+	increment_lock' c_0
+	increment_lock' c_1
 	release c_0
 	release c_1
-\end{spec}
+\end{code}
 While this version ensures that the two counters are updated together, it
 however suffers from a more subtle problem. If two threads A and B both
 attempt to increment the same pair of counters passed to |increment_pair| in
@@ -328,7 +403,9 @@ A: |increment_pair c_0 c_1| & B: |increment_pair c_1 c_0| \\
 \multirow{2}{*}{\parbox[c]{14ex}{%
 	\emph{\vdots\\[-1.5ex]blocked on |c_1|\\[-1.5ex]\vdots}}}
 	& \multirow{2}{*}{\parbox[c]{14ex}{%
-		\emph{\vdots\\[-1.5ex]blocked on |c_0|\\[-1.5ex]\vdots}}}
+		\emph{\vdots\\[-1.5ex]blocked on |c_0|\\[-1.5ex]\vdots}}} \\
+	& \\
+	&
 \end{longtable}%}}}%
 \noindent Neither thread can make progress, as they attempt to acquire
 a lock on the counter which is being held by the other. This could be solved
@@ -373,36 +450,28 @@ Established languages and frameworks supporting message passing concurrency
 include Erlang, the Parallel Virtual Machine (PVM), or the Message Passing
 Interface (MPI). In Haskell, we can implement our previous counter example
 using channels:
-\begin{comment}%{{{%
-\begin{code}
-module Main where
-
-import Prelude
-import Control.Concurrent
-import Control.Concurrent.Chan
-import Control.Monad
-import Data.IORef
-\end{code}
-\end{comment}
-%}}}%
-%format increment_chan
+%format Counter_chan
 \begin{code}
 data Action = Increment | Get (Chan Integer)
-type Counter = Chan Action
+type Counter_chan = Chan Action
 \end{code}
 Here we have defined a new datatype |Action| enumerating the operations the
 counter supports. A counter is then represented by a channel accepting such
 |Action|s, to which we can either send an |Increment| command, or another
 channel on which to return the current count via the |Get| command.
 
+% \url{http://www.kirit.com/Blog:/2007-08-09/Erlang%20as%20an%20OO%20language}
+
 The |makeCounter| function returns a channel, to which other threads may
 send |Action|s to increment or query the counter. Even though we do make use
 of an |IORef| to store the current count, we have implicitly avoided the
 mutual exclusion problem by only allowing the forked thread access,
 essentially serialising access to the mutable variable.
+%format makeCounter_chan
+%format increment_chan
 \begin{code}
-makeCounter :: IO Counter
-makeCounter = do
+makeCounter_chan :: IO Counter_chan
+makeCounter_chan = do
 	counter <- newChan
 	value <- newIORef 0
 	forkIO $ forever $ do
@@ -413,7 +482,7 @@ makeCounter = do
 			Get result -> writeChan result n
 	return counter
 
-increment_chan :: Counter -> IO ()
+increment_chan :: Counter_chan -> IO ()
 increment_chan counter = writeChan counter Increment
 \end{code}
 When concurrent threads invoke |increment_chan| on the same counter, the
@@ -421,8 +490,8 @@ atomicity of the |writeChan| primitive rules out any unwanted interleavings
 as we had with the original implementation of |increment|.
 
 Unfortunately, just like the previous mutual exclusion-based solution, it is
-non-trivial to build upon and not possible to reuse |increment_chan|, say,
-to implement a function to increment two counters in lock-step.
+non-trivial to build upon or to reuse |increment_chan|, say, to implement
+a function to increment two counters in lock-step.
 
 %}}}%
 
@@ -434,11 +503,59 @@ managing and composing lock-based code is extremely error-prone in practice.
 
 Automatic garbage collection\source{Dan Grossman} frees the programmer from
 having to manually manage memory allocation. Laziness in functional
-programming allows us to write higher-level programs without having to
-manually schedule the order of computation. In a similar vein, software
-transactional memory (STM) gives us a way to mark any composite operation as
-being atomic, without requiring us to manually manage undesired
-interleavings of operations in a shared memory environment.
+programming allows us to write efficient higher-level programs without
+having to manually schedule the order of computation. In a similar vein,
+software transactional memory (STM) allows us to write programs in
+a compositional style in the presence of concurrency without requiring us to
+manually manage undesired interleavings of operations in a shared memory
+environment.
+
+The idea of using \emph{transactions} to tackle concurrency originated in
+the context of distributed databases\source{Date?}, which faces similar
+issues of undesirable interleavings of basic operations when different
+clients attempt to access the same database at the same time. Rather than
+explicitly locking any requisite resources before proceeding with some
+sequence of operations on shared data, the client simply informs the
+database server that the operations are to be treated as a single
+transaction. From the perspective of other database clients, none of the
+intermediate states of the transaction is visible, as if the entire
+transaction took place as a single indivisible operation. Should it fail for
+whatever reason, the outside perspective would be as if the transaction
+hadn't taken place at all.
+
+STM implements the same concept, but with shared memory being the `database'
+and individual program threads taking the ro\"le of the `clients'. In the
+Haskell implementation of STM, mutable shared variables are of type |TVar
+alpha|.
+
+%format Counter_STM
+%format increment_STM
+\begin{code}
+type Counter_STM = TVar Integer
+increment_STM :: Counter_STM -> STM ()
+increment_STM counter = do
+	n <- readTVar counter
+	writeTVar counter (n + 1)
+\end{code}
+
+\begin{code}
+incrementBoth :: Counter_STM -> Counter_STM -> STM ()
+incrementBoth c0 c1 = do
+	increment_STM c0
+	increment_STM c1
+\end{code}
+
+\begin{code}
+incrementEither :: Counter_STM -> Counter_STM -> STM ()
+incrementEither c0 c1 = increment_STM c0 `orElse` increment_STM c1
+\end{code}
+
+% With mutual-exclusion, the possibility of catastrophic client failure only
+% exacerbates the problem, as they may still be holding locks on some
+% resources, preventing other clients from making progress even though no
+% possible interference can occur. 
+
+We will examine STM in detail in Chapter \ref{?}.
 
 %}}}%
 

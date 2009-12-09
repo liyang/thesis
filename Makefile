@@ -4,23 +4,34 @@ LTXDEP_thesis := thesis.bbl thesis.bib polycode.lhs.tex \
 	introduction.lhs.tex
 	# agda-intro.lagda ...
 LTXCLEAN := # ...
-all: latex-all
+all: latex-all now.wc
 again: latex-again
 clean: latex-clean
 distclean: latex-distclean
 .PHONY: all again clean distclean
 
+TEXT := thesis.tex introduction.lhs
+
 RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
+DATETIME := $(shell date '+%F %T')
+
+now.wc: $(TEXT)
+	[ wordcount.wc -nt $@ ] && cp wordcount.wc $@ || true
+	echo "$(DATETIME) $$(texcount.pl -1 -sum $(TEXT))" >> $@
 
 .PHONY: rec upload
-upload: all
-	@chmod 644 thesis.pdf
-	$(RSYNC) --rsync-path=local/bin/rsync thesis.pdf marian.cs.nott.ac.uk:public_html/
-rec: upload
+wordcount.wc: $(TEXT)
+	echo "$(DATETIME) $$(texcount.pl -1 -sum $(TEXT))" >> $@
+%.png: %.wc
+	thesisometer $^ 2>/dev/null
+upload: thesis.pdf wordcount.png wordcount-recent.png
+	@chmod 644 $^
+	$(RSYNC) --rsync-path=local/bin/rsync $^ marian.cs.nott.ac.uk:public_html/
+rec: wordcount.wc upload
 	@if darcs w | tee changes ; then \
 		echo "recording this patch? Ctrl+D to skip" ; \
-		read && darcs rec -a --edit-long-comment -m "$(shell date '+%F %T')" ; \
+		read && darcs rec -a --edit-long-comment -m "$(DATETIME)" ; \
 	fi
 
 include latex.mk
