@@ -192,11 +192,13 @@ are often taken as synonyms and used interchangeably by many, while others
 make a clear distinction between the two. I will afford a few sentences to
 clarify what I mean by each, in the context of this monograph.
 
-By \emph{parallelism}, I mean  \TODO{Write this when you're more awake.
-Vaguely remember an elegant phrasing of this distinction, from ICFP
-perhaps?}
-
-The focus of this thesis is on explicit concurrency.
+When we say \emph{parallelism}, we mean the extraction of better performance
+from a program by inferring computations that do not interact with each
+other then simultaneously carrying them out, and the writing of programs in
+such a way as to make the aforementioned easy or possible for the compiler.
+\emph{Concurrency} on the other hand means the use of interdependent threads
+of execution as a means of structuring the control flow programs. The focus
+of this thesis is on explicit concurrency.
 
 %}}}%
 
