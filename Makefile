@@ -1,16 +1,17 @@
+TEXT := thesis.tex introduction.lhs stm.lhs semantics.tex \
+	testing.lhs model.lhs agda.lagda nondet.lagda concurrency.lagda \
+	verified.lagda conclusion.tex
+
 LTXALL := thesis # ...
 LTXDEP := # article.sty # ...
 LTXDEP_thesis := thesis.bbl thesis.bib polycode.lhs.tex \
-	introduction.lhs.tex
-	# agda-intro.lagda ...
+	$(filter-out thesis.tex,$(patsubst %.tex.tex,%.tex,$(TEXT:=.tex)))
 LTXCLEAN := # ...
 all: latex-all now.wc
 again: latex-again
 clean: latex-clean
 distclean: latex-distclean
 .PHONY: all again clean distclean
-
-TEXT := thesis.tex introduction.lhs
 
 RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
