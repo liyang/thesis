@@ -356,7 +356,7 @@ check = do
 \end{code}
 %endif -- %}}}%
 
-\noindent Such two-state locks can be generalised to n states with
+\noindent Such two-state locks can be generalised to $n$ states with
 \emph{counting semaphores} where some limited concurrent sharing may take
 place, or to two-stage read/write locks in the case where we wish to allow
 concurrent reading---but not modification---of the shared variable.
@@ -478,8 +478,8 @@ makeCounter_chan = do
 		action <- readChan counter
 		n <- readIORef value
 		case action of
-			Increment -> writeIORef value (n + 1)
-			Get result -> writeChan result n
+			Increment <- writeIORef value (n + 1)
+			Get result <- writeChan result n
 	return counter
 
 increment_chan :: Counter_chan -> IO ()
@@ -524,12 +524,19 @@ whatever reason, the outside perspective would be as if the transaction
 hadn't taken place at all.
 
 STM implements the same concept, but with shared memory being the `database'
-and individual program threads taking the ro\"le of the `clients'. In the
-Haskell implementation of STM, mutable shared variables are of type |TVar
-alpha|.
+and individual program threads taking the r\^ole of the `clients'. STM takes
+an optimistic approach to concurrency: transactions are allowed to overlap
+each other, making the most of the available hardware. Conflicts between
+transactions arise only when an earlier transaction commits a change to
+a shared variable which a later transaction depended on. Should this happen,
+the later one is aborted and retried. In particular, a transaction is only
+aborted when another one has successfully committed, thereby guaranteeing
+overall progress and the absence of deadlocks.
 
 %format Counter_STM
 %format increment_STM
+Using the Haskell implementation of STM, we can implement an |increment_STM|
+function as follows, where transactions are of type |STM alpha|:
 \begin{code}
 type Counter_STM = TVar Integer
 increment_STM :: Counter_STM -> STM ()
@@ -537,25 +544,38 @@ increment_STM counter = do
 	n <- readTVar counter
 	writeTVar counter (n + 1)
 \end{code}
+To effect a transaction, we have at our disposal an |atomically| primitive,
+which takes an |STM alpha| and returns a runnable |IO alpha| action. The
+following program fragment increments the given counter twice.
+\begin{spec}
+do
+	counter <- atomically (newTVar 0)
+	forkIO (atomically (increment_STM counter))
+	forkIO (atomically (increment_STM counter))
+\end{spec}
+In particular, the |atomically| primitive guarantees that the two instances
+of |increment_STM| do not interleave each other in any way of consequence.
 
+\noindent STM makes it trivial to reuse existing code: simply sequencing two
+transactions one after another creates a larger combined transaction:
 \begin{code}
 incrementBoth :: Counter_STM -> Counter_STM -> STM ()
 incrementBoth c0 c1 = do
 	increment_STM c0
 	increment_STM c1
 \end{code}
-
+Furthermore, STM Haskell provides an innovative |`orElse`| primitive which
+provides a form of left-biased choice:
 \begin{code}
 incrementEither :: Counter_STM -> Counter_STM -> STM ()
 incrementEither c0 c1 = increment_STM c0 `orElse` increment_STM c1
 \end{code}
+Should |increment_STM c0| abort, |incrementEither| would attempt to
+increment the second counter instead of immediately retrying, doing so only
+if the alternative also failed.
 
-% With mutual-exclusion, the possibility of catastrophic client failure only
-% exacerbates the problem, as they may still be holding locks on some
-% resources, preventing other clients from making progress even though no
-% possible interference can occur. 
-
-We will examine STM in detail in Chapter \ref{?}.
+This section is but a brief overview of STM. We will examine and discuss its
+implementation in detail in Chapter \ref{?}.
 
 %}}}%
 

@@ -1,3 +1,4 @@
+%include greek.fmt
 %subst varid a = "\mathsf{" a "}"
 %subst conid a = "\mathsf{" a "}"
 % subst keyword a = "\mathsf{" a "}"
