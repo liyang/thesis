@@ -7,7 +7,7 @@ LTXDEP := # article.sty # ...
 LTXDEP_thesis := thesis.bbl thesis.bib polycode.lhs.tex \
 	$(filter-out thesis.tex,$(patsubst %.tex.tex,%.tex,$(TEXT:=.tex)))
 LTXCLEAN := # ...
-all: latex-all now.wc
+all: now latex-all now.png
 again: latex-again
 clean: latex-clean
 distclean: latex-distclean
@@ -16,6 +16,13 @@ distclean: latex-distclean
 RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
 DATETIME := $(shell date '+%F %T')
+
+# thesis.bib: $(patsubst %.tex.aux,%.aux,$(TEXT:=.aux))
+# 	cat $^ | bibtool -s -x > $@
+
+.PHONY: now
+now:
+	echo "$(DATETIME)" > $@
 
 now.wc: $(TEXT)
 	[ wordcount.wc -nt $@ ] && cp wordcount.wc $@ || true

@@ -7,5 +7,9 @@
 \item also contrast with Wouter's stop-the-world approach in his thesis
 \end{itemize}
 
+% provide a consistent snapshot of the current state of the shared heap
+
+% wager
+
 % vim: ft=tex:
 

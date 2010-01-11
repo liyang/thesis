@@ -17,41 +17,36 @@ import Test.QuickCheck.Monadic
 \end{code}
 %endif -- %}}}%
 
-\chapter{Introduction}
+\chapter{Introduction}\label{chapter:introduction}
 
-%\section{Preface}%{{{%
+% \TODO{Race conditions break sequential assumptions about program behaviour}
 
-%\TODO{What's supposed to go here anyway? Extended abstract?}
-
-%%}}}%
+\TODO{\ldots}
 
 \section{Background}%{{{%
 
-\subsection{A Brief Note on `Moore's Law'}%{{{%
+\subsection{A Brief Note on Moore's Law}%{{{%
 
 Since the invention of the integrated circuit over 50 years ago and the
 subsequent development of the microprocessor, the number of transistors that
 engineers can manufacture on a single silicon chip per unit cost has been
 increasing at an exponential pace, roughly doubling every two years. This
 growth has been remained consistent, so much so that it has been informally
-codified as `\emph{Moore's
-Law}'\source{http://www.intel.com/technology/mooreslaw/}. The related but
-misattributed\source{actually by David House} statement that
-``microprocessors \emph{performance} roughly doubles every 18 months'' has
-also held true, once we factor in the improved performance of individual
-transistors.
+codified as `Moore's Law'~\cite{http://www.intel.com/technology/mooreslaw/}.
+The related statement~\cite{actually-by-David-House} that ``microprocessors
+\emph{performance} roughly doubles every 18 months'' has also held true,
+once we factor in the improved performance of individual transistors.
 
-On the other hand, the popular understanding of `Moore's Law' tend to be
-simplified to ``computer speed roughly doubles every 18 months.'' Until half
-a decade ago, this alternative but technically incorrect interpretation has
-sufficed, since in order to pack more transistors next to each other, each
-one had to be made smaller. This in turn meant faster signal propagation
-between components, and so faster switching (or clock speeds), increasing
-performance. The implication of this (mis-)interpretation is that one could
-expect the same piece of software to run twice as fast on the available
-hardware, 18 months down the line.
+The popular understanding of Moore's Law tends to be simplified to
+``computer speed roughly doubles every 18 months.'' Until half a decade ago,
+this interpretation has sufficed, since in order to pack more transistors
+next to each other, each one had to be made smaller. This in turn meant
+faster signal propagation between components, and so faster switching (or
+clock speeds), increasing performance. The implication of this is that one
+could expect the same piece of software to run twice as fast on the
+available hardware, 18 months down the line.
 
-%TODO: yeah sure, but what about asynchronous processors?
+% TODO: yeah sure, but what about asynchronous processors?
 % There's too much legacy investment in traditional processor designs\ldots
 
 
@@ -60,8 +55,9 @@ hardware, 18 months down the line.
 \subsection{The End of the Free Lunch}%{{{%
 
 %While the individual processor speeds eventually plateaued at $3$--$4$ GHz
-%over the last decade, the transistor count per chip carried on doubling with
-%barely a blip, with the trend set to continue for the foreseeable future.
+%over the last decade, the transistor count per chip carried on doubling
+%with barely a blip, with the trend set to continue for the foreseeable
+%future.
 
 Moore's Law had become self-perpetuating as the industry assumed its truth
 to make projections for their technology roadmaps. By shrinking the size of
@@ -76,19 +72,19 @@ across the on-chip insulation is very much detrimental to signal
 integrity~\cite{?}: the smaller the features, the more power the integrated
 circuit requires to counteract these side-effects. This additional power
 must be dissipated in the form of waste heat, limiting the extent to which
-we can simply crank up the clock speed. Indeed, some \emph{desktop}
-processors expended up to
-a third\source{http://www.anandtech.com/printarticle.aspx?i=3276} of their
-entire power budget solely to ensure accurate clock signal distribution to
-outlying areas of the same silicon die, and gave out as much as
-$150\text{W}$ of heat in an area less than $15\text{mm}^2$.~\cite{?}
+we can simply push the clock speed. Indeed, some recent desktop processors
+expend up to
+a third~\cite{http://www.anandtech.com/printarticle.aspx?i=3276} of their
+power budget solely to ensure accurate clock signal distribution to outlying
+areas of the silicon die, and produced as much as $150\text{W}$ of heat in
+an area less than $15\text{mm}^2$.~\cite{?}
 
 Given the restriction that we cannot reasonably clock individual processors
 at increasingly higher speeds, how could we pack more compute power onto
-each silicon die? The most obvious and easiest solution is to resort to
-symmetric multiprocessing (SMP) and fabricate multiple processors on the
-same die using the extra transistors afforded to us by Moore's Law, but
-sharing the same memory space.
+each silicon die? With the extra transistors afforded to us by Moore's Law,
+the most obvious and easiest solution is to resort to symmetric
+multiprocessing (SMP), by fabricating multiple independent processors on the
+same die that share access to the same memory.
 
 %}}}%
 
@@ -100,10 +96,10 @@ mainframe~\cite{?}\source{https://wiki.cc.gatech.edu/folklore/index.php/Burrough
 In the decades that followed, the entire computing industry resorted one by
 one to some form of parallelism---typically at a architecturally fundamental
 level---in order to achieve the stated performance. First steps in this
-regard included the development of vector processors, where each
-\emph{s}ingle \emph{i}nstruction can operate on \emph{m}ultiple pieces of
-\emph{d}ata (SIMD in today's parlance), often in the tens or perhaps
-hundreds.
+dirction included the development of vector processors, where each
+instruction simultaneously operate on tens or sometimes hundreds of words of
+data. In today's parlance, we refer to such architectures as single
+instruction multiple data, or SIMD.
 
 In contrast, a multiple-instruction-multiple-data (\TODO{acronym!}MIMD)
 architecture comprise a number of independent processing units, each
@@ -120,43 +116,42 @@ Such systems with multiple, independent processors are therefore suited to
 domains involving extremely large datasets and have intrinsically
 parallelisable solutions that do not require much synchronisation or
 communication between individual processors. This correlates closely with
-a sizeable majority of scientific computation problems, and the insatiable
-demand for computational power drove the development of massively parallel
-computers in the decades that followed. Even Cray eventually conceded to the
-fact that multiprocessing was inevitable, as the costs and resources
-required to breed and feed the two hypothetical oxen became prohibitive
-compared to breeding, feeding and herding 1024 chickens, to continue the
-earlier analogy.
+many scientific computation and simulation problems, and the insatiable
+demand for computational power in these domains drove the development of
+massively parallel computers in the decades that followed. Even Cray
+eventually conceded to the fact that multiprocessing was inevitable, as the
+costs and resources required to breed and feed the two hypothetical oxen
+became prohibitive compared to breeding, feeding and herding 1024 chickens.
 
 Meanwhile, as multiprocessor computers grew increasingly larger, it became
 difficult to maintain fast access to the same shared memory for all
 processor nodes. Cutting-edge systems therefore moved towards a more
 non-uniform memory architecture (NUMA), where each node had fast access to
-some local pool of memory, but slow access to globally shared data. The
-lessons learnt from evolution has strongly influenced the design today's
-high-performance hardware, even in the context of personal computing, as
-seen with the recent development of general-purpose graphical processing
-units (GPGPUs). On a more distributed and larger scale, Beowulf clusters of
-networked computers may be seen as a looser interpretation of the NUMA
-paradigm. Such systems typically form the workhorse behind many of today's
-large-scale scientific simulations, at least in part due to the fact that
-they can be and often are built from cheap and readily available commodity
-hardware.
+some local memory, but slow access to globally shared data.~\cite{?} The
+lessons learnt have strongly influenced the design today's high-performance
+hardware, even in the context of personal computing, as seen with the recent
+development of general-purpose graphical processing units
+(GPGPUs)~\cite{nvidia-tesla-architecture}. On a more distributed and larger
+scale, Beowulf clusters of networked computers may be seen as a looser
+interpretation of the NUMA paradigm. Such systems typically form the
+workhorse behind many of today's large-scale scientific simulations, at
+least in part due to the fact that they can be and often are built from
+cheap and readily available commodity hardware.
 
 %}}}%
 
 \subsection{A Supercomputer on Every Desk}%{{{%
 
-Moving back to the sphere of everyday IT and personal computing, it was not
-until the last decade that shared memory SMP computers managed to establish
-a presence. The explanation for its relative obscurity is twofold, yet
-complementary: on the one hand, the cost of motherboards that can
-accommodate multiple processor packages were significantly more expensive,
-and so were only sought after by users with specialist needs. On the other,
-the inability for predominantly single-threaded software---such as a game or
-a word-processor---to take advantage of multiple processors meant that the
-proletarian user had no interest in resorting to SMP; simply waiting another
-18 months had been sufficient.
+Moving back to the sphere of personal computing, it was not until the last
+decade that shared memory SMP computers managed to establish a presence. The
+explanation for its relative obscurity is twofold, yet complementary: on the
+one hand, the cost of motherboards that can accommodate multiple processor
+packages were significantly more expensive, and so were only sought after by
+users with specialist needs. On the other, the inability for predominantly
+single-threaded software---such as a game or a word-processor---to take
+advantage of multiple processors meant that the proletarian user had no
+interest in resorting to SMP; simply waiting another 18 months had been
+sufficient.
 
 However as raw processor speeds have plateaued in recent years, we can no
 longer afford to dismiss multiprocessor systems as being too difficult to
@@ -164,9 +159,10 @@ program for. Traditionally supercomputing problems---large-scale,
 loosely-coupled computations such as physical simulations or graphical
 rendering---have been well-catered for, but they encompass only a small
 fraction of our day-to-day software usage. We need to figure out how to make
-concurrency accessible and manageable for everyday software, and I hope this
-monograph makes a small contribution towards how we might safely and
-correctly achieve that goal.
+concurrency accessible and manageable for everyday software.
+
+%and I hope this monograph makes a small contribution towards how we might
+%safely and correctly achieve that goal.
 
 %}}}%
 
@@ -179,14 +175,14 @@ at our disposal, the faster our programs will run. How successfully this is
 in practice depends on how much concurrency we can exploit in our programs.
 How we model concurrency has a large influence on how we---as software
 engineers---think and reason about our concurrent programs, which in turn
-influences the ease with which we can exploit concurrency. I will begin this
-chapter by giving some intuition of why concurrent programming has such
+influences the ease with which we can exploit concurrency. This
+chapter demonstrates using a few examples why concurrent programming has such
 a notorious reputation, then review some of the basic models of concurrency.
 
 % main interest: tapping in to the power of concurrency for personal
 % computing
 
-\subsection{Concurrency versus Parallelism}%{{{%
+\subsection{Concurrency versus Parallelism}\label{sec:parallelism}%{{{%
 
 In general computing literature, the terms `concurrency' and `parallelism'
 are often taken as synonyms and used interchangeably by many, while others
@@ -203,9 +199,9 @@ of this thesis is on explicit concurrency.
 
 %}}}%
 
-\subsection{Example: Easy as 0, 1, 2, 3\ldots}%{{{%
+\subsection{Counting: Easy as 0, 1, 2\ldots}\label{sec:counter-interleaved}%{{{%
 
-Consider the example of incrementing a counter, here represented as a simple
+Consider the problem of incrementing a counter, here represented as a simple
 mutable variable:
 \begin{code}
 type Counter = IORef Integer
@@ -213,8 +209,7 @@ type Counter = IORef Integer
 makeCounter :: IO Counter
 makeCounter = newIORef 0
 \end{code}
-The algorithm---to somewhat overstate its complexity---might read like the
-following:
+The program could be implemented as follows:
 \begin{code}
 increment :: Counter -> IO ()
 increment counter = do
@@ -244,12 +239,12 @@ Thread A & Thread B & |counter| \\
 \end{longtable}%}}}%
 
 \noindent Typically, reading from and writing to a mutable variable are
-relatively fast primitive operations, so when they take place in immediate
-succession, the chances of Thread A being interleaved by Thread B in the
-above manner is very small, and can easily slip through seemingly thorough
-empirical testing. Such errors are termed \emph{race conditions}, and can
-occur whenever there is the possibility of concurrent access to any shared
-resource.
+relatively fast primitive operations. When they occur in immediate
+succession, the probability of Thread A being interleaved by Thread B in the
+above manner is miniscule, and can easily slip through seemingly thorough
+empirical testing. Such errors are termed \emph{race conditions}~\cite{?},
+and can occur whenever there is the possibility of concurrent access to any
+shared resource.
 
 %}}}%
 
@@ -508,14 +503,14 @@ managing and composing lock-based code is extremely error-prone in practice.
 Automatic garbage collection\source{Dan Grossman} frees the programmer from
 having to manually manage memory allocation. Laziness in functional
 programming allows us to write efficient higher-level programs without
-having to manually schedule the order of computation. In a similar vein,
-software transactional memory (STM) allows us to write programs in
-a compositional style in the presence of concurrency without requiring us to
-manually manage undesired interleavings of operations in a shared memory
-environment.
+having to manually schedule the order of computation. In a similar
+vein~\cite{grossman07-analogy}, software transactional memory (STM) allows
+us to write programs in a compositional style in the presence of concurrency
+without requiring us to manually manage undesired interleavings of
+operations in a shared memory environment.
 
 The idea of using \emph{transactions} to tackle concurrency originated in
-the context of distributed databases\source{Date?}, which faces similar
+the context of concurrent databases\source{Date?}, which faces similar
 issues of undesirable interleavings of basic operations when different
 clients attempt to access the same database at the same time. Rather than
 explicitly locking any requisite resources before proceeding with some
@@ -587,13 +582,122 @@ implementation in detail in Chapter \ref{?}.
 
 \section{Approaches to Program Correctness}%{{{%
 
+Software ought to behave how we intend it to. To this end, we would like to
+establish that a given program satisfies various high-level properties.
+Clearly it ought to terminate with the expected result, but there are also
+other important considerations such as its time or space complexity, or that
+some algorithmic invariant is alway satisfied. With the introduction of
+concurrency, we have further properties such as freedom from deadlock and
+interference to consider, and demonstrating all of these can be particularly
+difficult due to the non-determinism arising from multiple threads of
+control. In this section, we briefly describe a number of approaches to
+program correctness that are relevant to this thesis, ranging from empirical
+testing to formal verification techniques.
 
+\subsection{Correctness Properties}%{{{%
+
+In the realm of program semantics, we can differentiate between extensional
+and intensional properties. While the distinction is not necessarily
+immediately clear in all cases, in general, the former is concerned with the
+end result of a program, while the latter deals with its execution
+behaviour.
+
+Two programs $p$ and $q$ that sorts lists of numbers are extensionally
+equivalent, in the sense that they would produce the same output given the
+same input. Intensional equality on the other hand reduces to the question
+of whether $p$ and $q$ perform the same sequence of operations to obtain
+their respective sorted output, i.e~if they implement the same sorting
+algorithm. Other instances of extensional properties might be concerned with
+program termination or complexity, while intensional properties would deal
+with properties such as progress or type preservation under reduction. We
+often make use of intensional reasoning to prove extensional properties of
+programs: going back to the earlier question of equality, $p$ and $q$ being
+intensionally equal trivially implies their extensional equality, although
+the converse does not hold.
+
+
+%A more pertinent example of the distinction between intensional and
+%extensional is perhaps the \TODO{want to mention explicit lock-taking
+%(intensional) versus lock-inference, or even transactional memory}
+
+\TODO{Also mention operational versus denotational}
+
+\TODO{The following makes no sense:}
+
+Define intensional (operational) / extensional (denotational); examples:
+\begin{itemize}
+\item ``if program terminates, output is sorted''
+\item ``program will eventually terminate''
+\item ``program only uses linear time/space''
+\item ``lock acquisition eventually succeeds''
+\end{itemize}
+
+%}}}%
+
+\subsection{Calculi / logics}%{{{%
+
+Abstract descriptions of programs\ldots
+
+imperative programs --- Hoare logic
+
+State transition systems --- various logics for above, e.g. CTL, LTL,
+variations of modal logic
+
+\begin{itemize}
+\item Hoare -- standard for imperative programs (NB: Morrisett / Hoare State
+monad)
+\item modal / temporal
+\item CCS / various process calculi
+\end{itemize}
+
+%}}}%
+
+\subsection{Equational Reasoning}%{{{%
+
+\begin{itemize}
+\item FP \& purity
+\item e.g. fold/unfold transformation (Burstall and Darlington)
+\item e.g. Squiggol (combinator and properties) library
+\item derivation vs proof
+\end{itemize}
+
+%}}}%
+
+\subsection{Formal Proof Assistants}%{{{%
+
+\begin{itemize}
+\item Coq and Agda \&c.
+\end{itemize}
+
+%}}}%
+
+\subsection{Empirical Testing}%{{{%
+
+\begin{itemize}
+\item unit testing / HUnit -- example based; I/O pairs
+\item QC -- property-based
+\item HPC
+\end{itemize}
+
+%}}}%
+
+\begin{itemize}
+\item not necessarily concurrent
+\item approaches: process calculi, modal/temporal logics
+\item equational reasoning \& functional programming
+\item tools (Quickcheck, HPC, Agda)
+\end{itemize}
 
 %}}}%
 
 \section{Approaches to Compiler Correctness}%{{{%
 
 % a compiler is a program too!
+\begin{itemize}
+\item that triangular diagram thing
+\item semantics -- denotational for sequential, operational for concurrent?
+\item calculation from specification
+\end{itemize}
 
 %}}}%
 
