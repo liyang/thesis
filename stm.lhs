@@ -11,6 +11,7 @@ import Prelude
 	, IO, getChar, putChar, putStrLn )
 import Control.Monad
 import Control.Concurrent
+import Control.Concurrent.STM
 import Data.IORef
 \end{code}
 
@@ -27,14 +28,14 @@ be implemented. We then give a brief history of the development of STM up to
 the present day, followed by a detailed look at the implementation of STM
 found in the Glasgow Haskell Compiler.
 
-\begin{itemize}
+%\begin{itemize}
 %\item what are transactions?
-\item what is TM?
-\item pros and cons of TM
-\item what is (development of) STM (Shavit \& al. '93)
-\item implementation sketch (different approaches?)
-\item STM Haskell \& examples
-\end{itemize}
+%\item what is TM?
+%\item pros and cons of TM
+%\item what is (development of) STM (Shavit \& al. '93)
+%\item implementation sketch (different approaches?)
+%\item STM Haskell \& examples
+%\end{itemize}
 
 \section{Database Transactions}%{{{%
 
@@ -248,7 +249,7 @@ mutual-exclusion lock. While this approach would be trivial to implement, it
 prevents transactions from proceeding concurrently, and would not be make
 efficient use of multi-core hardware.
 
-\subsection{Log-Based Transactions}%{{{%
+\subsection{Log-Based Transactions}\label{sec:log-based}%{{{%
 
 A concurrent implementation of transactions might make use of the notion of
 a \emph{transaction log}. During the execution of a transaction, its
@@ -261,8 +262,8 @@ commits.
 In the case of shared mutable variables, the log essentially acts as
 a transaction-local buffer for read and write operations: for each variable,
 only the first read would come from, and only the last value written goes to
-the shared varible; all intermediate reads and writes operate solely on the
-log. At commit time, if any undesired inteference occurs due to another
+the shared variable; all intermediate reads and writes operate solely on the
+log. At commit time, if any undesired interference occurs due to another
 transaction having completed in the meantime, the run-time need only discard
 the log and re-run the transaction, since no globally-visible changes have
 been made. Therefore it would be only be appropriate to allow operations
@@ -273,15 +274,15 @@ If the transaction log corresponds to a consistent state of the current
 shared heap on the other hand, the new values recorded in the log can then
 be applied to the global heap in an atomic manner.
 
-A simplistic implementation of transaction commits might ensure that
+A simplistic implementation of transaction commits need only ensure that
 globally, only one commit is taking place at any time, say using a global
 lock. Even then, we can still make gains on multicore systems, as the bodies
-of transactions still run concurrently. A sophisticated implementation might
-allow transactions to commit concurrently, for example by making use of
-specialised lock-free data structures. While concurrent commits would be
-trickier to implement, this only need to be done once in the run-time
-system, without requiring the proletarian programmer to understand any of
-the under-the-hood details.
+of transactions still run concurrently. A more sophisticated implementation
+could even allow transactions to commit concurrently, for example by making
+use of specialised lock-free data structures. While concurrent commits would
+be trickier to implement, any additional complexities are restricted to the
+run-time system, and the proletarian programmer is not required to
+understand any of the under-the-hood details.
 
 %}}}%
 
@@ -305,7 +306,7 @@ does not give optimal concurrency.}
 
 %}}}%
 
-\section{Haskell and STM}%{{{%
+\section{Haskell}%{{{%
 
 In this section we will revisit some Haskell basics required for the
 understanding of the implementation of STM given by Harris et
@@ -316,32 +317,35 @@ knowledge of Haskell in particular is required.
 \subsection{Yet Another Monad Tutorial}%{{{%
 
 The Haskell programming language~\cite{haskell98-report}---eponymously named
-after the logician H.~B.~Curry---can be characterised by its three key
+after the logician H.\ B.\ Curry---can be characterised by its three key
 attributes: functional, pure, and lazy. Functional programming languages are
-rooted in Church's $\lambda$-calculus, and emphasise the evaluation of
-mathematical functions and compositions thereof, over the manipulation of
-state. The core $\lambda$-calculus ideas of abstraction and application are
-typically given prominent status in such languages. By pure, we mean that
-functions depend only on their arguments, eschewing state or mutable
-variables, which coincides with the mathematical notion of functions. The
-same program expression will always evaluate to the same result regardless
-of its context, and replacing an expression with its value leaves the
-meaning of the program unchanged. In other words, the language is
+rooted in Alonzo Church's $\lambda$-calculus~\cite{church}, and emphasise
+the evaluation of mathematical functions and compositions thereof, over the
+manipulation of state. The core $\lambda$-calculus ideas of abstraction and
+application are typically given prominent status in such languages. By pure,
+we mean that functions depend only on their arguments, eschewing state or
+mutable variables, which coincides with the mathematical notion of
+functions. The same program expression will always evaluate to the same
+result regardless of its context, and replacing an expression with its value
+leaves the meaning of the program unchanged. In other words, the language is
 \emph{referentially transparent}. The laziness aspect of Haskell means that
 expressions are only evaluated when their values are required, thus the
-evaluation order is not immediately apparent from the program text.
-Together, these properties meant that for some time, it was not clear how to
-write programs that are more naturally expressed in an imperative,
-sequential style, or to deal with input and output.
+evaluation order---or even whether something was evaluated at all---is not
+immediately apparent from the program text. Together, these properties meant
+that for some time, it was not clear how to write programs that are more
+naturally expressed in an imperative, sequential style, or to deal with
+input and output.
 
 A solution was found in the form of \emph{monads}, which Wadler~\cite{?} and
 Moggi~\cite{?} borrowed from category theory~\cite{pierce?,maclane?}. In the
 context of computer science, a monad could be viewed as a `container' for
 some general notion of computation, together with an operation for combining
 such computations. As it turns out, sequential computation is just one
-instance of a monad, as we shall see below.
+instance of a monad, as we shall see in the following section.
 
-\subsubsection{The |State sigma| Monad}
+%}}}%
+
+\subsection{Modelling Mutable State}%{{{%
 
 Since Haskell is referentially transparent, we cannot directly work with
 mutable variables, but we can certainly model them. Without loss of
@@ -351,36 +355,29 @@ variable---say, of type |sigma|---around as an extra argument. Thus, rather
 than implementing a function of type |alpha -> beta|, we write instead one
 of type |alpha -> sigma -> (sigma, beta)|, which gives back a potentially
 mutated value paired with the original return value. As we will frequently
-make use of similarly shaped types, it would be convenient to define the
-following |State| synonym:
+make use of similar types that mutate some given state, it is convenient to
+define the following |State| synonym:
 \begin{spec}
 type State sigma alpha = sigma -> (sigma, alpha)
 \end{spec}
 %if False
 \begin{code}
-newtype State sigma alpha = State { runState :: sigma -> (sigma, alpha) }
+newtype State sigma alpha = St { runSt :: sigma -> (sigma, alpha) }
 \end{code}
 %endif
+%format St (a) = a
+%format runSt (a) = a
 A value of type |State sigma alpha| can be regarded as a computation
 involving some mutable |sigma| state that delivers an |alpha| result. Thus
 we can write the following definitions of |read| and |write|, corresponding
 to our intuition of a mutable variable:
-\begin{spec}
-read :: State sigma sigma
-read = \ s -> (s, s)
-
-write :: sigma -> State sigma ()
-write s' = \ s -> (s', ())
-\end{spec}
-%if False
 \begin{code}
 read :: State sigma sigma
-read = State (\ s -> (s, s))
+read = St (\ s -> (s, s))
 
 write :: sigma -> State sigma ()
-write s' = State (\ s -> (s', ()))
+write s' = St (\ s -> (s', ()))
 \end{code}
-%endif
 The |read| computation results in a value that happens to be the current
 state, without changing it in any way. On the other hand, the |write|
 computation replaces the current state |s| with the supplied |s'|, giving
@@ -388,20 +385,12 @@ a meaningless result of the singleton-valued |()| type.
 
 With these two primitives, we can implement a stateful |increment|
 procedure as follows:
-\begin{spec}
-increment :: State Integer ()
-increment = \ s ->
-	let (s', n) = read s
-	in write (n + 1) s'
-\end{spec}
-%if False
 \begin{code}
 increment :: State Integer ()
-increment = State (\ s ->
-	let (s', n) = runState read s
-	in runState (write (n + 1)) s')
+increment = St (\ s ->
+	let (s', n) = runSt read s
+	in runSt (write (n + 1)) s')
 \end{code}
-%endif
 \noindent The result of |read| is bound to the name |n|, then the state is
 updated with |n + 1| by the subsequent |write|. The initial state |s| we
 have been given is passed to |read|---potentially resulting in a different
@@ -412,20 +401,12 @@ general any |State sigma alpha| computation could, therefore we must
 carefully thread it through each computation in order to maintain the
 illusion of mutable state. The following definition increments the counter
 twice:
-\begin{spec}
-twice :: State Integer ()
-twice = \ s ->
-	let (s', _) = increment s
-	in increment s'
-\end{spec}
-%if False
 \begin{code}
 twice :: State Integer ()
-twice = State (\ s ->
-	let (s', _) = runState increment s
-	in runState increment s')
+twice = St (\ s ->
+	let (s', _) = runSt increment s
+	in runSt increment s')
 \end{code}
-%endif
 \noindent Were we to inadvertently pass the initial |s| to the second
 invocation of |increment| as well, we would have made a copy of the initial
 state, having discarded the updated |s'|. The resulting |twice| would only
@@ -436,10 +417,11 @@ small errors can silently lead to very unexpected results.
 Fortunately, the act of threading state around is sufficiently regular that
 we can implement a general purpose operator that hides away the details of
 the plumbing:
-\begin{spec}
-(>>=) :: State sigma alpha -> (alpha -> State sigma beta) -> State sigma beta
-ma >>= fmb = \ s -> let (s', a) = ma s in fmb a s'
-\end{spec}
+%format >>== = >>=
+\begin{code}
+(>>==) :: State sigma alpha -> (alpha -> State sigma beta) -> State sigma beta
+ma >>== fmb = St (\ s -> let (s', a) = runSt ma s in runSt (fmb a) s')
+\end{code}
 \noindent The |>>=| operator---pronounced `bind'---takes on its left
 a computation delivering an |alpha|; its right argument is a function from
 |alpha| to a second computation delivering a |beta|. Bind then passes the
@@ -485,25 +467,31 @@ accessing the state.
 %if False
 \begin{code}
 instance Monad (State sigma) where
-	ma >>= fmb = State (\ s -> let (s', a) = runState ma s in runState (fmb a) s')
-	return a = State (\ s -> (s, a))
+	(>>=) = (>>==)
+	return = return_State
 \end{code}
 %endif
 
 %http://research.microsoft.com/en-us/um/people/simonpj/papers/haskell-retrospective/index.htm
+
+%}}}%
+
+\subsection{Monad Properties}%{{{%
+
 So far in this subsection I have deliberately avoided using the word
 `monad'. In fact, some members of the Haskell community would rather have
 used the phrase `warm fuzzy thing'~\cite{spj} instead. The |>>=| operator
 above already constitutes the interesting part of the definition of the
 |State sigma| monad, and we need only one further function to complete it.
-\begin{spec}
-return :: alpha -> State sigma alpha
-return a = \ s -> (s, a)
-\end{spec}
-Here, the |return| function produces a trivial computation that results in
-the value of its given argument. Being an abstract mathematical structure,
-our definitions of bind and |return| for the |State sigma| monad must
-satisfy certain laws, which are as follows:
+%format return_State = return
+\begin{code}
+return_State :: alpha -> State sigma alpha
+return_State a = St (\ s -> (s, a))
+\end{code}
+\noindent Here, the |return| function produces a trivial computation that
+results in the value of its given argument. Being an abstract mathematical
+structure, our definitions of bind and |return| for the |State sigma| monad
+must satisfy certain laws, which are as follows:
 \begin{gather*}
 	\begin{align*}
 		|return a >>= fmb| &\equiv |fmb a| \tag{ident-left} \\
@@ -518,17 +506,22 @@ pure functional setting, we can show that our definition of |>>=| and
 |return| for the |State sigma| monad satisfies the above laws by simply
 expanding the relevant definitions.~\cite{?}
 
+\TODO{Show proof? Shouldn't be too long; might serve as a gentle intro to
+equational reasoning.}
+
+\TODO{Where can I cram monoids in?}
+
 %}}}%
 
 \subsection{Input, Output and Control Structures}%{{{%
 
 Now that I have shown how we can sequence operations on mutable state, what
-about input and output? In a sense, we can imagine I/O as making changes to
-the real world, and indeed this is the approach used in Haskell. By
+about input and output? In a sense, we can conceptually think of I/O as
+mutating the real world, and indeed this is the approach used in Haskell. By
 threading a token representation of the state of the real world through
 a program via the |State sigma| monad, we ensure that real-world
-side-effects occur in a predictable order. For example, Haskell's |IO| monad
-could be defined as follows,
+side-effects occur in a deterministic order. For example, Haskell's |IO|
+monad could be defined as follows,
 \begin{spec}
 type IO alpha = State RealWorld alpha
 \end{spec}
@@ -582,13 +575,15 @@ square n = do
 
 \noindent Using Haskell's typeclasses---a form of ad-hoc polymorphism---we
 can in fact give type-specific instances of |>>=| and |return|, so the above
-definition of |for| works in any monad we care to define, with only minor
-tweaks to its type signature. However a discussion of typeclasses is beyond
-the scope of this thesis.~\cite{typeclasses?}
+definition of |for| in fact works in any monad we care to define. However
+a discussion of typeclasses is beyond the scope of this
+thesis.~\cite{typeclasses?}
 
 %}}}%
 
-\subsection{The |IO| Sin Bin}%{{{%
+%}}}%
+
+\section{Haskell and I/O}%{{{%
 
 While the Haskell language is pure and lazy, occasionally we still need to
 make use of certain imperative features~\cite{awkward-squad}. By keeping
@@ -622,9 +617,9 @@ perfectly sound for an implementation of |par| to simply ignore its first
 argument.
 
 However, explicit concurrency is a necessity as well as a convenience when
-used as a mechanism for structuring many real-world programs, and Concurrent
+used as a mechanism for structuring many real-world programs. Concurrent
 Haskell~\cite{pj96-concurrent} introduced the |forkIO :: IO () -> IO ()|
-primitive. This provides a mechanism analogous to the Unix \texttt{fork()}
+primitive, which provides a mechanism analogous to the Unix \texttt{fork()}
 system call, sparking a separate thread to run its argument |IO ()| action.
 Forking is considered impure as threads can interact with each other via
 a variety of mechanisms, and this fact is correspondingly reflected in the
@@ -643,32 +638,34 @@ main_Char = do
 The user would observe an unending stream of `\texttt{y}'s and
 `\texttt{n}'s, interleaved in an unspecified manner.
 
-The following program launches two threads, both incrementing a shared
-counter, as well as an individual one. (Suppose it were counting votes, and
-the individual counts were required for auditing purposes\ldots) The
-|main_Counter| function meanwhile repeatedly asserts that the shared counter
-is indeed the sum of the two thread-local counters.
 %format forkOS = forkIO
 %format n_a
 %format n_b
-%format n_shared
+%format n_c
+%format n_sum
 %format Counter_IORef
 %format increment_IORef
-%format thread_IORef
+%format incBoth_IORef
 %format main_IORef
 %format Counter_IORef
+
+The following program launches two threads, both forever incrementing
+a shared counter, as well as an individual one. (Suppose it were counting
+votes, and the individual counts were required for auditing purposes\ldots)
+The |main_IORef| function meanwhile repeatedly asserts that the shared
+counter indeed equals the sum of the two thread-local counters.
 \begin{code}
-type Counter_IORef = IORef Int
+type Counter_IORef = IORef Integer
 
 increment_IORef :: Counter_IORef -> IO ()
 increment_IORef c = do
 	n <- readIORef c
 	writeIORef c (n + 1)
 
-thread_IORef :: Counter_IORef -> Counter_IORef -> IO ()
-thread_IORef sum local = forever (do
+incBoth_IORef :: Counter_IORef -> Counter_IORef -> IO ()
+incBoth_IORef sum local = do
 	increment_IORef sum
-	increment_IORef local)
+	increment_IORef local
 
 main_IORef :: IO ()
 main_IORef = do
@@ -676,22 +673,22 @@ main_IORef = do
 	a <- newIORef 0
 	b <- newIORef 0
 
-	forkOS (thread_IORef sum a)
-	forkOS (thread_IORef sum b)
+	forkOS (forever (incBoth_IORef sum a))
+	forkOS (forever (incBoth_IORef sum b))
 
 	forever (do
 		n_sum <- readIORef sum
 		n_a <- readIORef a
 		n_b <- readIORef b
 		when (n_sum /= n_a + n_b) (do
-			putStrLn "oh dear.\n"))
+			putStrLn "oh dear."))
 \end{code}
 Such a program, while seemingly straightforward in intent, can leave the
-programmer with exponential number of possibilities to consider; it would
-simply be impractical to apply sequential reasoning to each potential
-interleaving. Worse still is the fact that the unwanted interleavings are
-often the least likely to occur, and can easily slip through otherwise
-thorough empirical testing.
+programmer with exponential number of possibilities to consider as it
+scales; it would simply be impractical to apply sequential reasoning to each
+potential interleaving. Worse still is the fact that the unwanted
+interleavings are often the least likely to occur, and can easily slip
+through otherwise thorough empirical testing.
 
 The above program has a number of potentially rare and unexpected
 behaviours. (A discourse on how these bugs could be exploited for election
@@ -701,34 +698,221 @@ thread's execution of |increment_IORef| to interleave the |readIORef| and
 |writeIORef| of the other thread---as we have witnessed in section
 \ref{sec:counter-interleaved}---losing counts in the process. Requiring our
 implementation of |increment| to follow a locking discipline for each
-counter in question would eliminate this particular race condition. Secondly
-each thread first increments |sum|, followed by its thread-local counter;
-meanwhile, the main thread may interleave either child in-between the two
-aforementioned steps, and observe a state in which the value of |sum|
-disagrees with the sum of the values of |a| and |b|.
+counter in question would eliminate this particular race condition. Even
+with this fix in place, another issue remains: each thread first increments
+|sum|, followed by its own specific counter; meanwhile, the main thread may
+interleave either child in-between the two aforementioned steps, and observe
+a state in which the value of |sum| disagrees with the sum of the values of
+|a| and |b|.
 
 As a concurrent program grows further in size, race condition- and
 deadlock-related issues becomes much more subtle. Transactional
-memory---amongst other high-level approaches---aims to avoiding such bugs,
+memory---amongst other high-level approaches---aims to avoid such bugs,
 while retaining the speed benefits of a concurrent implementation.
 
 %}}}%
 
-\subsection{STM Haskell}%{{{%
+\section{STM Haskell}%{{{%
 
-STM Haskell provides the same explicit concurrency provided by the |forkIO|
+The previous section outlined the standard approach to concurrency in
+Haskell, which makes use of explicit threading and mutable variables via
+|forkIO| and |IORef|s within the |IO| monad. In an analogous fashion, STM
+Haskell provides mutable \emph{transactional variables} with the following
+interface:
+%format new_TVar
+%format read_TVar
+%format write_TVar
+%format newTVar = new_TVar
+%format readTVar = read_TVar
+%format writeTVar = write_TVar
+\begin{spec}
+newTVar    :: alpha -> STM (TVar alpha)
+readTVar   :: TVar alpha -> STM alpha
+writeTVar  :: TVar alpha -> alpha -> STM ()
+\end{spec}
+\noindent The |newTVar| function creates a transactional variable
+initialised to some given value, while |readTVar| and |writeTVar| inspect
+and mutate |TVar|s. The type |STM alpha| can be read as \emph{a transaction
+which delivers a result of type |alpha|}, and the three aforementioned
+primitives are used to construct more elaborate transactions within the
+|STM| monad:
+\begin{spec}
+(>>=)   :: STM alpha -> (alpha -> STM beta) -> STM beta
+return  :: alpha -> STM alpha
+\end{spec}
+\noindent The definition of \emph{bind} for the |STM| monad composes
+transactions in a sequential manner, while |return| takes a given value to
+a trivial transaction resulting in the same. Transactions can be converted
+to runnable |IO| actions via the |atomically| primitive,
+\begin{spec}
+atomically :: STM alpha -> IO alpha
+\end{spec}
+\noindent while explicit threading is achieved through |forkIO| as before.
 
-key differences
+STM Haskell makes use of the notion of a transaction log (as we mentioned
+previously in section \ref{sec:log-based}) and may automatically re-run
+transactions when conflicts are detected. Therefore it is important that
+|STM| actions only make changes to transactional variables---which can be
+encapsulated within its corresponding log---rather than arbitrary and
+possibly irrevocable |IO| actions. This an easy guarantee to enforce since
+the Haskell type system strictly and statically differentiates between |IO
+alpha| and |STM alpha|, and there is no facility for actually performing an
+|IO| action while inside the |STM| monad. Of course, a transaction can
+always manipulate and return |IO| actions as first-order values, to be
+performed post-commit. In any case, as the bulk of computations in Haskell
+are idiomatically pure, they are necessarily free from side-effects. Thus
+they do not need to be kept track of by the transaction implementation and
+may simply be discarded in the event of a conflict. The ability to
+statically make this three-fold distinction between irrevocable (namely
+|IO|) and revocable (or |STM|) side-effecting computations---used relatively
+infrequently in practice---alongside pure ones, makes Haskell an ideal
+environment for an implementation of STM.
+
+Let us now revisit the example of the previous section, with two threads
+competing to incrementing the same shared counter. Using STM, we can make
+the previous program behave in the intended manner without changing its
+structure: \TODO{use a figure here?}
+%format Counter_TVar
+%format increment_TVar
+%format incBoth_TVar
+%format main_TVar
+\begin{code}
+type Counter_TVar = TVar Integer
+
+increment_TVar :: Counter_TVar -> STM ()
+increment_TVar c = do
+	n <- readTVar c
+	writeTVar c (n + 1)
+
+incBoth_TVar :: Counter_TVar -> Counter_TVar -> STM ()
+incBoth_TVar sum local = do
+	increment_TVar sum
+	increment_TVar local
+
+main_TVar :: IO ()
+main_TVar = do
+	sum <- atomically (newTVar 0)
+	a <- atomically (newTVar 0)
+	b <- atomically (newTVar 0)
+
+	forkOS (forever (atomically (incBoth_TVar sum a)))
+	forkOS (forever (atomically (incBoth_TVar sum b)))
+
+	forever (do
+		(n_sum, n_a, n_b) <- atomically (do
+			n_sum <- readTVar sum
+			n_a <- readTVar a
+			n_b <- readTVar b
+			return (n_sum, n_a, n_b))
+		when (n_sum /= n_a + n_b) (do
+			putStrLn "oh dear."))
+\end{code}
+\noindent Here the counter is represented as an integer |TVar| rather than
+an |IORef|. Correspondingly, the |increment_TVar| primitive and the
+|incBoth_TVar| function now result in |STM| rather than |IO| actions.
+Likewise |main_TVar| atomically samples the three counters inside a single
+transaction to avoid potential race conditions.
+
+With STM, the intention is that when implementing some data structure, we
+need only expose the basic operations as |STM alpha| actions, without the
+need to anticipate all the potential ways in which a user may wish to
+compose said operations in the future.
+
+While the sequencing of transactions provides a convenient and composable
+way to access shared data structures, a concurrency framework ought to also
+provide efficient ways to wait on some collection of resources, or to allow
+coordination between threads. With mutual exclusion, waiting on a number of
+objects could be implemented by waiting on each one in turn, taking care to
+avoid deadlocks. However, there are often cases where we might want to
+proceed whenever \emph{any} one of some collection of objects becomes ready.
+For example, Haskell's standard concurrency library offers generalised
+counting semaphores, which could be used for coordination between multiple
+threads. Similarly, most flavours of Unix provides a \texttt{select(2)}
+system call, which takes a set of file descriptors and blocks until at least
+one is ready to be read from, or written to. Unfortunately, these techniques
+do not scale: for example in the latter case, all the file descriptors being
+waited upon must be collated up to a single top-level \texttt{select()},
+which runs contrary to the philosophy of modular software development.
+
+STM Haskell answers this problem with a pair of primitives for blocking and
+composing alternative transactions:
+\begin{spec}
+retry :: STM alpha
+orElse :: STM alpha -> STM alpha -> STM alpha
+\end{spec}
+The |retry| primitive forces the current transaction to fail, which allows
+us a great degree of flexibility, in contrast to e.g.~Hoare's
+\emph{conditional critical regions} (CCRs)~\cite{?}. The following function
+decrements the given counter only when its value is strictly positive, and
+blocks otherwise.
+%format decrement_TVar
+\begin{code}
+decrement_TVar :: Counter_TVar -> STM ()
+decrement_TVar c = do
+	n_c <- readTVar c
+	unless (n_c > 0)
+		retry
+	writeTVar c (n_c - 1)
+\end{code}
+However, rather than immediately retrying the transaction, the STM run-time
+will suspend the current thread until one or more of the |TVar|s read up to
+the |retry| has changed. This ensures that the thread does not waste
+processor cycles in a busy-waiting situation: since any variations in the
+control flow leading up to the |retry| can only arise from changes in the
+|TVar|s read so far, this does not impact the semantics of the program.
+
+Suppose we now wish to implement a function to decrement |sum| in the
+earlier example. In order to maintain the invariant $|a| + |b| = |sum|$, we
+must also decrement either one of |a| or |b|. Knowing that |decrement_TVar|
+blocks when the counter is zero, we may conclude that if |decrement_TVar
+sum| succeeds, then |a| and |b| cannot both be zero, and we ought to be able
+to decrement one of the two without blocking. But how do we choose? With
+the |orElse| combinator, of course:
+\begin{code}
+decEither_TVar :: Counter_TVar -> Counter_TVar -> Counter_TVar -> STM ()
+decEither_TVar sum a b = do
+	decrement_TVar sum
+	decrement_TVar a `orElse` decrement_TVar b
+\end{code}
+The |orElse| primitive---written here in infix notation---provides us with
+a left-biased choice operator. The expression |t `orElse` u| corresponds to
+a transaction that runs either one of |t| or |u|. It is left-biased in the
+sense that |t| is run first: if it retries, any changes due to |t| is rolled
+back, and |u| is attempted instead. Only when both |t| and |u| cannot
+proceed, would the transaction as a whole retry. Thus the final line of the
+above fragment would preferentially decrement |a|, opting for |b| when this
+is not possible.
+
+\TODO{(|STM alpha|, |retry|, |orElse|) is a monoid!}
+
+A rather elegant use case for |orElse| is to make a blocking operation
+non-blocking, or vice versa. For example, we can derive a non-blocking
+|decrement_TVar| as follows, returning a boolean to indicate success or
+failure:
+\begin{code}
+decrement_TVar' :: Counter_TVar -> STM Bool
+decrement_TVar' c = do
+		decrement_TVar c
+		return True
+	`orElse` do
+		return False
+\end{code}
+
+%converting the composition to an |IO| action only at those points where we
+%require the transaction to execute atomically.
+
+%failure handled with alternatives or retry.
+
+% Hoare / conditional critical regions
+
+\TODO{OH LOOK! We've just implemented composable counting semaphores!}
 
 %}}}%
 
-
-* how did STM come to be in Haskell
-
-
-
+\section{Conclusion}%{{{%
 
 %}}}%
+
 
 % vim: ft=tex:
 

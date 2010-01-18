@@ -1,4 +1,5 @@
 %include greek.fmt
 %subst varid a = "\mathsf{" a "}"
 %subst conid a = "\mathsf{" a "}"
+%subst newline = "\\[-1.5ex]"
 % subst keyword a = "\mathsf{" a "}"
