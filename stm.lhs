@@ -100,7 +100,7 @@ always proceed with any given transaction, as there are no locks to acquire,
 making deadlock a non-issue. The trade-off is that the transaction may later
 fail or be unable to commit, should a different transaction commit
 a conflicting change in the meantime. Nevertheless, the system as a whole
-has made progress. \TODO{wait-free, lock-free, obstruction-free}
+has made progress. \TODO{wait-free, lock-free, obstruction-free?}
 
 %}}}%
 
@@ -208,10 +208,10 @@ the heap or performing irreversible side-effects such as input or output,
 which would be problematic given that a transaction may execute more than
 once before it successfully commits. As arbitrary code is permitted within
 \texttt{atomic} blocks, calls to native methods within a transaction will
-raise run-time exceptions.
-
-\TODO{Unfortunately this work does not seem to be widely adopted by the Java
-community? \ldots \url{http://www.deucestm.org/}}
+raise run-time exceptions. At present, transactional memory has yet to be
+accepted by the wide Java community, although there is plenty of pioneering
+work in both commercial~\cite{azul-systems} and academic
+contexts~\cite{deuce-stm}.
 
 Following on from this work, Harris et al.~\cite{harris05-composable}
 presented an implementation of software transactional memory for the Glasgow
@@ -235,7 +235,7 @@ implementations~\cite{?}.
 
 %}}}%
 
-\section{Implementing Transactions}%{{{%
+\section{Implementing Transactions}\label{sec:implementing-transactions}%{{{%
 
 The high-level view of transactions is that each one is executed atomically
 and in isolation from other concurrent threads, as if the entire transaction
@@ -286,27 +286,33 @@ understand any of the under-the-hood details.
 
 %}}}%
 
-\subsection{Compensating Transactions}%{{{%
+\subsection{Alternative Approaches to Atomicity}%{{{%
 
-\TODO{Advantages: allows arbitrary I/O.}
+\emph{Compensating transactions} is in essence a conflict-detection
+framework, and requires per-transaction specifications of how the system may
+be rolled back to its initial state, should they need to be retried.
+A transactions could fail for a variety of reasons, all of which must be
+dealt with. Furthermore, the manual specification of roll-back means that it
+is difficult to ascertain its correctness. The advantage on the other hand
+is that we can perform arbitrary I/O, provided we can undo them in an
+undetectable way.
 
-\TODO{Disadvantages: roll-back is manual and hard to ensure correct.}
+\emph{Lock inference}~\cite{cf-dr-cunningham} on the other hand attempts to
+automatically insert the fine-grained locks that a programmer might have
+used, using various code analysis techniques. For reasons of safety,
+inference of said locks must necessarily be conservative, and does not give
+optimal concurrency. Additionally, as most code analysis techniques are
+ideally performed on whole programs, we might lose modularity on the level
+of object files and/or require the use of esoteric
+type-systems~\cite{ownership}. As roll-back is not required, we can allow
+arbitrary I/O side-effects, but isolation would only be afforded to mutable
+variables.
 
 %}}}%
 
-\subsection{Transactions via Lock Inference}%{{{%
-
-\TODO{Advantages: allows arbitrary I/O; isolation---at least wrt
-transactional variables---obtained for-free from the locking discipline.}
-
-\TODO{Disadvantages: inference is static, and necessarily conservative, so
-does not give optimal concurrency.}
-
 %}}}%
 
-%}}}%
-
-\section{Haskell}%{{{%
+\section{Haskell}\label{sec:haskell}%{{{%
 
 In this section we will revisit some Haskell basics required for the
 understanding of the implementation of STM given by Harris et
@@ -476,7 +482,7 @@ instance Monad (State sigma) where
 
 %}}}%
 
-\subsection{Monad Properties}%{{{%
+\subsection{Monadic Properties}%{{{%
 
 So far in this subsection I have deliberately avoided using the word
 `monad'. In fact, some members of the Haskell community would rather have
@@ -491,25 +497,33 @@ return_State a = St (\ s -> (s, a))
 \noindent Here, the |return| function produces a trivial computation that
 results in the value of its given argument. Being an abstract mathematical
 structure, our definitions of bind and |return| for the |State sigma| monad
-must satisfy certain laws, which are as follows:
+must satisfy certain properties, which are as follows:
 \begin{gather*}
 	\begin{align*}
-		|return a >>= fmb| &\equiv |fmb a| \tag{ident-left} \\
-		|ma >>= return| &\equiv |ma| \tag{ident-right}
+		|return a >>= fmb| &\quad\equiv\quad |fmb a| \tag{ident-left} \\
+		|ma >>= return| &\quad\equiv\quad |ma| \tag{ident-right}
 	\end{align*} \\
-	|(ma >>= fmb) >>= fmc| \equiv  |ma >>= (\ a -> fmb a >>= fmc)| \tag{assoc}
+	|(ma >>= fmb) >>= fmc| \quad\equiv\quad  |ma >>= (\ a -> fmb a >>= fmc)| \tag{assoc}
 \end{gather*}
-\noindent The first two laws states that |return| is a left as well as
+\noindent The first two lines specify that |return| is a left as well as
 right-identity for |>>=|, while the third says that the |>>=| operator is
 associative. Using the power of equational reasoning afforded to us in this
 pure functional setting, we can show that our definition of |>>=| and
 |return| for the |State sigma| monad satisfies the above laws by simply
-expanding the relevant definitions.~\cite{?}
-
-\TODO{Show proof? Shouldn't be too long; might serve as a gentle intro to
-equational reasoning.}
-
-\TODO{Where can I cram monoids in?}
+expanding the relevant definitions.~\cite{?} For example, the (ident-left)
+property can be shown as follows:
+%TODO typeset nicely!
+\begin{spec}
+    return a >>= fmb
+=={ defn >>= }
+    \ s -> let (s', a') = return a s in fmb a' s'
+=={ defn return }
+    \ s -> let (s', a') = (s, a) in fmb a' s'
+=={ subst a', s' }
+    \ s -> fmb a s
+=={ eta-contract }
+    fmb a
+\end{spec}
 
 %}}}%
 
@@ -525,7 +539,7 @@ monad could be defined as follows,
 \begin{spec}
 type IO alpha = State RealWorld alpha
 \end{spec}
-\noindent where |RealWorld| is the opaque type of the aforementioned token,
+where |RealWorld| is the opaque type of the aforementioned token,
 inaccessible to the end-programmer. Assuming two primitves |getChar :: IO
 Char| and |putChar :: Char -> IO ()| for interacting with the user, we can
 implement an |echo| procedure as follows:
@@ -556,13 +570,13 @@ for m n body = case m < n of
 		body m
 		for (m + 1) n body
 \end{code}
-\noindent The |for| function invokes |body| with successive integers
-arguments, starting at |m| and stopping before |n|. While the type of |for|
-explicitly mentions the |State sigma| monad, |IO| is a particular instance
-of this, so the expression |for 0 10 (\ _ -> echo)| corresponds to an |IO|
-action that echoes $10$ characters entered by the user. As a second example,
-the following |square| function---consisting of two nested
-|for|-loops---invokes |increment| $n^2$ times:
+The |for| function invokes |body| with successive integers arguments,
+starting at |m| and stopping before |n|. While the type of |for| explicitly
+mentions the |State sigma| monad, |IO| is a particular instance of this, so
+the expression |for 0 10 (\ _ -> echo)| corresponds to an |IO| action that
+echoes $10$ characters entered by the user. As a second example, the
+following |square| function---consisting of two nested |for|-loops---invokes
+|increment| $n^2$ times:
 \begin{code}
 square :: Integer -> State Integer ()
 square n = do
@@ -572,10 +586,9 @@ square n = do
 			increment''
 			increment''))
 \end{code}
-
-\noindent Using Haskell's typeclasses---a form of ad-hoc polymorphism---we
+Using Haskell's typeclasses facility---a form of ad-hoc polymorphism---we
 can in fact give type-specific instances of |>>=| and |return|, so the above
-definition of |for| in fact works in any monad we care to define. However
+definition of |for| works in any monad we care to define. However
 a discussion of typeclasses is beyond the scope of this
 thesis.~\cite{typeclasses?}
 
@@ -583,7 +596,7 @@ thesis.~\cite{typeclasses?}
 
 %}}}%
 
-\section{Haskell and I/O}%{{{%
+\section{Haskell and Concurrency}\label{sec:haskell-concurrency}%{{{%
 
 While the Haskell language is pure and lazy, occasionally we still need to
 make use of certain imperative features~\cite{awkward-squad}. By keeping
@@ -840,11 +853,19 @@ composing alternative transactions:
 retry :: STM alpha
 orElse :: STM alpha -> STM alpha -> STM alpha
 \end{spec}
-The |retry| primitive forces the current transaction to fail, which allows
-us a great degree of flexibility, in contrast to e.g.~Hoare's
-\emph{conditional critical regions} (CCRs)~\cite{?}. The following function
-decrements the given counter only when its value is strictly positive, and
-blocks otherwise.
+\noindent The |retry| primitive forces the current transaction to fail and
+retry. This gives a flexible, programmatic way to signal that the
+transaction is not yet ready to proceed, unlike traditional approaches in
+which the requisite conditions must be specified upfront using only
+a restricted subset of the language, such as e.g.~Hoare's \emph{conditional
+critical regions} (CCRs)~\cite{?}.
+
+Armed with the |retry| primitive, we can demonstrate how |Counter_TVar|s
+could be used as counting semaphores~\cite{?}. The |decrement_TVar| function
+I give below behaves as the \texttt{wait} primitive, decrementing the
+counter only when its value is strictly positive, and blocking
+otherwise. Correspondingly the earlier |increment_TVar| defined above
+behaves as \texttt{signal}, incrementing the count.
 %format decrement_TVar
 \begin{code}
 decrement_TVar :: Counter_TVar -> STM ()
@@ -854,62 +875,86 @@ decrement_TVar c = do
 		retry
 	writeTVar c (n_c - 1)
 \end{code}
-However, rather than immediately retrying the transaction, the STM run-time
-will suspend the current thread until one or more of the |TVar|s read up to
-the |retry| has changed. This ensures that the thread does not waste
-processor cycles in a busy-waiting situation: since any variations in the
-control flow leading up to the |retry| can only arise from changes in the
-|TVar|s read so far, this does not impact the semantics of the program.
+\noindent The |retry| statement conceptually discards any side-effects
+performed so far and restarts the transaction from the beginning. However,
+the control flow within the transaction is influenced only by the |TVar|s
+read up until the |retry|, so if none of these have been modified by
+another concurrent thread, the transaction will only end up at the same
+|retry| statement, ending up in a busy-waiting situation and wasting
+processor cycles. The STM run-time can instead suspend the current thread,
+rescheduling it only when one or more of the |TVar|s read has changed, thus
+preserving the semantics of |retry|; the |TVar|s involved in the decision to
+|retry| are conveniently recorded within the transaction log.
 
 Suppose we now wish to implement a function to decrement |sum| in the
 earlier example. In order to maintain the invariant $|a| + |b| = |sum|$, we
 must also decrement either one of |a| or |b|. Knowing that |decrement_TVar|
 blocks when the counter is zero, we may conclude that if |decrement_TVar
 sum| succeeds, then |a| and |b| cannot both be zero, and we ought to be able
-to decrement one of the two without blocking. But how do we choose? With
-the |orElse| combinator, of course:
+to decrement one of the two without blocking. But how do we choose? Taking
+the alternative view of |Counter_TVar| as a counting semaphore, it is not
+possible to wait on multiple semaphores unless such a primitive is provided
+by the system. With STM Haskell we have |orElse|, written below between
+backticks---Haskell's infix notation:
+%format decEither_TVar
 \begin{code}
 decEither_TVar :: Counter_TVar -> Counter_TVar -> Counter_TVar -> STM ()
 decEither_TVar sum a b = do
 	decrement_TVar sum
 	decrement_TVar a `orElse` decrement_TVar b
 \end{code}
-The |orElse| primitive---written here in infix notation---provides us with
-a left-biased choice operator. The expression |t `orElse` u| corresponds to
-a transaction that runs either one of |t| or |u|. It is left-biased in the
-sense that |t| is run first: if it retries, any changes due to |t| is rolled
-back, and |u| is attempted instead. Only when both |t| and |u| cannot
-proceed, would the transaction as a whole retry. Thus the final line of the
-above fragment would preferentially decrement |a|, opting for |b| when this
-is not possible.
+The |orElse| combinator allows us to choose between alternative
+transactions: the expression |t `orElse` u| corresponds to a transaction
+that runs one of |t| or |u|. It is left-biased, in the sense that |t| is run
+first: if it retries, any changes due to |t| is rolled back, and |u| is
+attempted instead. Only when both |t| and |u| cannot proceed, would the
+transaction as a whole retry. The final line of the above fragment would
+decrement |a| preferentially over |b|, and blocking when neither can
+proceed. (That said, the latter case is ruled out by the program invariant.)
+Note that |orElse| need not be explicitly told which transactional variables
+the transactions depend on, as this can be inferred from their respective
+logs.
 
-\TODO{(|STM alpha|, |retry|, |orElse|) is a monoid!}
-
-A rather elegant use case for |orElse| is to make a blocking operation
-non-blocking, or vice versa. For example, we can derive a non-blocking
-|decrement_TVar| as follows, returning a boolean to indicate success or
-failure:
+Using |orElse| for composing alternative transactions allow us to elegantly
+turn blocking operations into non-blocking ones, for example:
+%format decrement_TVar'
 \begin{code}
 decrement_TVar' :: Counter_TVar -> STM Bool
-decrement_TVar' c = do
-		decrement_TVar c
-		return True
-	`orElse` do
-		return False
+decrement_TVar' c = (do decrement_TVar c; return True) `orElse` return False
 \end{code}
+\noindent This non-blocking |decrement_TVar'| operation would attempt to
+decrement the given counter using the original |decrement_TVar| and return
+a boolean |True| to indicate success. Should that retry or fail to commit,
+the |orElse| immediately returns |False| instead.
 
-%converting the composition to an |IO| action only at those points where we
-%require the transaction to execute atomically.
-
-%failure handled with alternatives or retry.
-
-% Hoare / conditional critical regions
-
-\TODO{OH LOOK! We've just implemented composable counting semaphores!}
+By design, |retry| and |orElse| satisfy the following rather elegant
+properties:
+\begin{gather*}
+	\begin{align*}
+		|retry `orElse` u| &\quad\equiv\quad |u| \tag{ident-left} \\
+		|t `orElse` retry| &\quad\equiv\quad |t| \tag{ident-right}
+	\end{align*} \\
+	|(t `orElse` u) `orElse` v| \quad\equiv\quad |t `orElse` (u `orElse` v)| \tag{assoc}
+\end{gather*}
+In other words, the pair $(|STM alpha|, |`orElse`|)$ satisfies the axioms of
+a monoid, with |retry| being the unit.
 
 %}}}%
 
 \section{Conclusion}%{{{%
+
+In this chapter, we have reviewed the concept of transactions in the context
+of databases, followed by an overview of the development of transactional
+memory in both hardware and software, together with how transactions can be
+used as a high-level concurrency primitive. In section
+\ref{sec:implementing-transactions}, we examined a log-based approach to
+implementing transactions, contrasted with some alternatives. Section
+\ref{sec:haskell} introduces the Haskell language, in particular how monads
+are used to model mutable state in a purely functional context. The
+penultimate section (\S\ref{sec:haskell-concurrency}) presents primitives
+for (real) mutable state and concurrency in Haskell, and we finish with
+a primer on STM Haskell---in particular a novel form of composing
+alternative transactions---in order to motivate the study of STM.
 
 %}}}%
 

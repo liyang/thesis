@@ -3,3 +3,4 @@
 %subst conid a = "\mathsf{" a "}"
 %subst newline = "\\[-1.5ex]"
 % subst keyword a = "\mathsf{" a "}"
+%subst backquoted a = "\mathbin{\texttt{`}" a "\texttt{`}}"
