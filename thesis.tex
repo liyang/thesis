@@ -16,6 +16,7 @@
 \usepackage{url}
 \usepackage{longtable}
 \usepackage{multirow}
+\usepackage{comment}
 
 %\def\TODO#1{\par\noindent{}TODO:~\ldots\emph{#1}\ldots\par}
 \def\TODO#1{\noindent{}TODO:~\ldots\emph{#1}\ldots}
@@ -24,6 +25,38 @@
 
 \usepackage{amsmath}
 
+
+% lhs2TeX
+%{{{%
+\usepackage[pdftex]{color}
+
+\renewcommand\hsindent[1]{\quad}
+\setlength{\mathindent}{2ex}
+\DeclareMathAlphabet{\mathkw}{OT1}{cmss}{bx}{n}
+
+\newcommand\cons[1]{\textcolor[rgb]{0,.5,0}{\mathsf{#1}}}
+\newcommand\type[1]{\textcolor[rgb]{0,0,.75}{\mathsf{#1}}}
+\newcommand\keyw[1]{\textcolor[rgb]{.75,.4,0}{\mathkw{#1}}}
+\newcommand\func[1]{\textcolor[rgb]{.75,0,0}{\mathsf{#1}}}
+\newcommand\name[1]{\textcolor[rgb]{.75,0,.75}{\mathtt{#1}}}
+\newcommand\commentstyle[1]{\textcolor[rgb]{0,.6,0.75}{#1}}
+
+\newcommand\Prime{\ensuremath{'}}
+\newcommand\PPrime{\ensuremath{''}}
+
+\newcommand\prefix[1]{#1\!}
+\newcommand\postfix[1]{\!#1}
+
+\newcommand\infix[1]{\mathbin{#1}}
+\newcommand\infixL[1]{\infix{#1}\!}
+\newcommand\infixM[1]{\!\infix{#1}\!}
+\newcommand\infixR[1]{\!\infix{#1}}
+%}}}%
+
+
+
+
+\includeonly{semantics,agda.lagda}
 \begin{document}
 
 \begin{titlepage}

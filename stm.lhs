@@ -1,4 +1,3 @@
-%include polycode.fmt
 %include local.fmt
 
 \begin{code}
@@ -6,8 +5,8 @@
 
 import qualified Prelude as P
 import Prelude
-	( Int, Integer, Num ((+), fromInteger)
-	, Ord ((<)), Bool (..), (/=)
+	( Int, Integer, Num ((+), (-), fromInteger)
+	, Ord ((<), (>)), Bool (..), (/=)
 	, IO, getChar, putChar, putStrLn )
 import Control.Monad
 import Control.Concurrent
@@ -312,7 +311,7 @@ variables.
 
 %}}}%
 
-\section{Haskell}\label{sec:haskell}%{{{%
+\section{Haskell and Sequential Computation}\label{sec:haskell}%{{{%
 
 In this section we will revisit some Haskell basics required for the
 understanding of the implementation of STM given by Harris et
@@ -596,7 +595,7 @@ thesis.~\cite{typeclasses?}
 
 %}}}%
 
-\section{Haskell and Concurrency}\label{sec:haskell-concurrency}%{{{%
+\section{Haskell and Concurrent Computation}\label{sec:haskell-concurrency}%{{{%
 
 While the Haskell language is pure and lazy, occasionally we still need to
 make use of certain imperative features~\cite{awkward-squad}. By keeping
@@ -725,7 +724,7 @@ while retaining the speed benefits of a concurrent implementation.
 
 %}}}%
 
-\section{STM Haskell}%{{{%
+\section{Haskell and Software Transactional Memory}%{{{%
 
 The previous section outlined the standard approach to concurrency in
 Haskell, which makes use of explicit threading and mutable variables via

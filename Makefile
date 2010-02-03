@@ -17,6 +17,8 @@ RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
 DATETIME := $(shell date '+%F %T')
 
+agda.lagda.tex: agda.fmt
+
 # thesis.bib: $(patsubst %.tex.aux,%.aux,$(TEXT:=.aux))
 # 	cat $^ | bibtool -s -x > $@
 

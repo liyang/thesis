@@ -1,4 +1,3 @@
-%include polycode.fmt
 %include local.fmt
 
 %let showMiscCode = False

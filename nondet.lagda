@@ -1,3 +1,5 @@
+%include local.fmt
+
 \chapter{Compiling Non-Determinism Correctly}
 
 \begin{itemize}

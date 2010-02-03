@@ -1,3 +1,5 @@
+%include local.fmt
+
 \chapter{A Model Implementation of STM}
 
 \begin{itemize}

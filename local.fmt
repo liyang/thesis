@@ -4,3 +4,8 @@
 %subst newline = "\\[-1.5ex]"
 % subst keyword a = "\mathsf{" a "}"
 %subst backquoted a = "\mathbin{\texttt{`}" a "\texttt{`}}"
+
+\begin{comment}
+%include polycode.fmt
+\end{comment}
+

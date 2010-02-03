@@ -1,13 +1,101 @@
+%include local.fmt
+
+\def\prod{\mathrel{::=}}
+\def\altn{\mathrel{\mid}}
+\def\NT#1{\mathsf{#1}}
+\def\Nat{\mathbb{N}}
+\def\Expression{\NT{Expression}}
+
 \chapter{Semantics for Compiler Correctness}
 
-\begin{itemize}
-\item denotational, operational for $(+,N)$
-\item equivalence proof
-\item rule induction (coinduction?)
-\item machine semantics for $\{PUSH m, ADD\} x N$
-\item statement of compiler correctness (style? direct vs CPS)
-\item compiler correctness as running example: proof
-\end{itemize}
+%\begin{itemize}
+%\item denotational, small-step for $(+,N)$
+%\item equivalence proof
+%\item rule induction (coinduction?)
+%\item machine semantics for $\{PUSH m, ADD\} x N$
+%\item statement of compiler correctness (style? direct vs CPS)
+%\item compiler correctness as running example: proof
+%\end{itemize}
+
+In the context of computer science, the semantics of a programming language
+is what we mean it to mean. Having a mathematically rigorous definition of
+the language allows us to reason about (programs written in) the language
+precisely and without ambiguity. In this chapter, we will take an elementary
+look at different ways of giving meaning to a language, and various
+techniques for proving properties about programs. After this prelude, we
+reach the nub of this chapter, where we shall define a simple compiler from
+an expression language to a stack machine, and explore what it means to say
+that the compiler is correct.
+
+
+\section{Numbers and Addition}%{{{%
+
+To unambiguously reason about what any given program means, we need to give
+a mathematically rigorous definition of the language in which it is
+expressed. To this end, let us consider the elementary language of natural
+numbers and
+addition~\cite{hutton04-exceptions,hutton06-calculating,hutton07-interruptions}.
+\begin{gather*}
+	\Expression \prod \Nat \altn \Expression \oplus \Expression
+\end{gather*}
+That is, an $\Expression$ is either simply a natural number, or a pair of
+$\Expression$s, punctuated with the $\oplus$ symbol to represent the
+operation of addition.
+
+Although seemingly simplistic, this language has sufficient structure to
+illustrate an essential aspect of computation, namely that of sequencing, as
+we shall see later in section \ref{sec:small-step}.
+
+%}}}%
+
+\section{Denotational and Big-Step Semantics}%{{{%
+
+The denotational style takes a top-down, compositional view of semantics,
+and assigns meaning to a given program in terms of the semantics of its
+constituent parts. 
+
+Thus a denotation for a language is formally a mapping from the source
+language into some underlying semantic domain. 
+
+\def\sb[#1]{[\![#1]\!]}
+
+\begin{align*}
+	\sb[ m ] &= m \\
+	\sb[ a \oplus b ] &= \sb[ a ] + \sb[ b ]
+\end{align*}
+
+
+
+
+
+Closely related is the notion of big-step semantics, where 
+
+Functions are more straightforward, but does not generalise to
+non-deterministic semantics.
+
+As a relation:
+
+%}}}%
+
+\section{Small-Step Semantics}\label{sec:small-step}%{{{%
+
+As a function:
+
+As a relation:
+
+%}}}%
+
+\section{Equivalence Proof and Techniques}%{{{%
+
+%}}}%
+
+\section{Stack Machines and Their Semantics}%{{{%
+
+%}}}%
+
+\section{Compiler Correctness}%{{{%
+
+%}}}%
 
 % vim: ft=tex:
 

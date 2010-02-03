@@ -1,3 +1,5 @@
+%include local.fmt
+
 \chapter{Compiling STM Correctly}
 
 \begin{itemize}

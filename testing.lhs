@@ -1,3 +1,5 @@
+%include local.fmt
+
 \chapter{Machine-Automated Testing in Haskell}
 
 \begin{itemize}
