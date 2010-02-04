@@ -53,9 +53,7 @@ data Expression : Set where
 \end{code}
 %}}}%
 
-\section{Denotational or Big-Step Semantics}
-
-Functions are more straightforward, but does not generalise to non-deterministic semantics.
+\section{Denotational}
 
 As a function:
 %{{{%
@@ -69,6 +67,10 @@ As a function:
 \end{code}
 %}}}%
 
+\section{Big-Step Semantics}
+
+Functions are more straightforward, but does not generalise to non-deterministic semantics.
+
 As a relation:
 %{{{%
 %if False
@@ -78,8 +80,8 @@ infix 4 _⇓_
 %endif
 %format _⇓_ = "\type{\anonymous{\Downarrow}\anonymous}"
 %format ⇓ = "\infix{\type{{\Downarrow}}}"
-%format ⇓-ℕ = "\cons{{\Downarrow}\text{-}\mathbb{N}}"
-%format ⇓-⊕ = "\cons{{\Downarrow}\text{-}\oplus}"
+%format ⇓-ℕ = "\cons{{\Downarrow}\text-\mathbb{N}}"
+%format ⇓-⊕ = "\cons{{\Downarrow}\text-\oplus}"
 \begin{code}
 data _⇓_ : Expression → ℕ → Set where
   ⇓-ℕ  : ∀ {m} → # m ⇓ m
@@ -112,10 +114,10 @@ As a function:
 step : (e : Expression) → ℕ ⊎ Expression
 step (# m) = inj₁ m
 step (a ⊕ b)  with step a
-...           | inj₁ m  with step b
-...           | ...     | inj₁ n   = inj₂ (# (m + n))
-...           | ...     | inj₂ b′  = inj₂ (a ⊕ b′)
-...           | inj₂ a′ = inj₂ (a′ ⊕ b)
+step (a ⊕ b)  | inj₁ m  with step b
+step (a ⊕ b)  | inj₁ m  | inj₁ n   = inj₂ (# (m + n))
+step (a ⊕ b)  | inj₁ m  | inj₂ b′  = inj₂ (a ⊕ b′)
+step (a ⊕ b)  | inj₂ a′ = inj₂ (a′ ⊕ b)
 \end{code}
 %}}}%
 
@@ -132,9 +134,9 @@ infix 3 _↦_ _↦⋆_ _↦⋆#_
 %format ↦⋆ = "\type{{\mapsto}^\star}"
 %format _↦⋆#_ = "\type{\anonymous{\mapsto}^\star\;" # "\anonymous}"
 %format ↦⋆# = "\type{{\mapsto}^\star}\;" #
-%format ↦-ℕ = "\cons{{\mapsto}\text{-}\mathbb{N}}"
-%format ↦-L = "\cons{{\mapsto}\text{-}L}"
-%format ↦-R = "\cons{{\mapsto}\text{-}R}"
+%format ↦-ℕ = "\cons{{\mapsto}\text-\mathbb{N}}"
+%format ↦-L = "\cons{{\mapsto}\text-L}"
+%format ↦-R = "\cons{{\mapsto}\text-R}"
 \begin{code}
 data _↦_ : Rel Expression _ where
   ↦-ℕ  : ∀ {m n}       →           #  m  ⊕ # n  ↦ # (m + n)
@@ -152,6 +154,23 @@ e ↦⋆# m = e ↦⋆ # m
 \section{Equivalence Proof and Techniques}
 
 %{{{%
+%format denotation→big = "\func{denot{\rightarrow}big}"
+\begin{code}
+denotation→big : ∀ {e m} → ⟦ e ⟧ ≡ m → e ⇓ m
+denotation→big {# m}    ≡.refl = ⇓-ℕ
+denotation→big {a ⊕ b}  ≡.refl = ⇓-⊕ (denotation→big ≡.refl) (denotation→big ≡.refl)
+\end{code}
+
+%format big→denotation = "\func{big{\rightarrow}denot}"
+%format a⇓m = "a{\Downarrow}m"
+%format b⇓n = "b{\Downarrow}n"
+\begin{code}
+big→denotation : ∀ {e m} → e ⇓ m → ⟦ e ⟧ ≡ m
+big→denotation ⇓-ℕ = ≡.refl
+big→denotation (⇓-⊕ a⇓m b⇓n) with big→denotation a⇓m | big→denotation b⇓n
+big→denotation (⇓-⊕ a⇓m b⇓n) | ≡.refl | ≡.refl = ≡.refl
+\end{code}
+
 %format big→small = "\func{big{\rightarrow}small}"
 %format a⇓m = "a{\Downarrow}m"
 %format b⇓n = "b{\Downarrow}n"

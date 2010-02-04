@@ -17,9 +17,9 @@
 %\item compiler correctness as running example: proof
 %\end{itemize}
 
-In the context of computer science, the semantics of a programming language
-is what we mean it to mean. Having a mathematically rigorous definition of
-the language allows us to reason about (programs written in) the language
+In the context of computer science, semantics is the study of the meaning of
+programming languages. Having a mathematically rigorous definition of the
+language allows us to reason about (programs written in) the language
 precisely and without ambiguity. In this chapter, we will take an elementary
 look at different ways of giving meaning to a language, and various
 techniques for proving properties about programs. After this prelude, we
@@ -27,8 +27,9 @@ reach the nub of this chapter, where we shall define a simple compiler from
 an expression language to a stack machine, and explore what it means to say
 that the compiler is correct.
 
+\section{Semantics}%{{{%
 
-\section{Numbers and Addition}%{{{%
+\subsection{Numbers and Addition}%{{{%
 
 To unambiguously reason about what any given program means, we need to give
 a mathematically rigorous definition of the language in which it is
@@ -40,52 +41,111 @@ addition~\cite{hutton04-exceptions,hutton06-calculating,hutton07-interruptions}.
 \end{gather*}
 That is, an $\Expression$ is either simply a natural number, or a pair of
 $\Expression$s, punctuated with the $\oplus$ symbol to represent the
-operation of addition.
+operation of addition. We will adhere to a naming convention of $m, n \in
+\Nat$ and $a, b, e \in \Expression$.
 
 Although seemingly simplistic, this language has sufficient structure to
-illustrate an essential aspect of computation, namely that of sequencing, as
-we shall see later in section \ref{sec:small-step}.
+illustrate the essential aspects of computation, namely that of sequencing
+computations and combining their results, as we shall expand upon later in
+section \ref{sec:small-step}.
 
 %}}}%
 
-\section{Denotational and Big-Step Semantics}%{{{%
+\subsection{Denotational Semantics}%{{{%
 
-The denotational style takes a top-down, compositional view of semantics,
-and assigns meaning to a given program in terms of the semantics of its
-constituent parts. 
-
-Thus a denotation for a language is formally a mapping from the source
-language into some underlying semantic domain. 
-
+% semantic brackets
 \def\sb[#1]{[\![#1]\!]}
 
+Denotation semantics attempts to give an interpretation of the source
+language in some suitable existing formalism that we already understand.
+More specifically, the denotation of a program is a representation of what
+the program means in the vocabulary of the chosen formalism, which could be
+the language of sets and functions, the $\lambda$-calculus, or perhaps one
+of the many process calculi. Thus, to formally give a denotational semantics
+for a language is to define a mapping from the source language into some
+underlying semantic domain.
+
+For example, we can give the following semantics for our earlier
+$\Expression$ language, where each term is denoted by a natural number:
 \begin{align*}
+	\sb[\anonymous] &: \Expression \rightarrow \Nat \\
 	\sb[ m ] &= m \\
 	\sb[ a \oplus b ] &= \sb[ a ] + \sb[ b ]
 \end{align*}
-
-
-
-
-
-Closely related is the notion of big-step semantics, where 
-
-Functions are more straightforward, but does not generalise to
-non-deterministic semantics.
-
-As a relation:
+Here, a numeric $\Expression$ is interpreted as just the number itself. The
+denotation of the $\oplus$ operator is $+$ on natural numbers;
+alternatively, we could say that $a \oplus b$ is denoted by the sum of the
+denotations of its subexpressions $a$ and $b$.
 
 %}}}%
 
-\section{Small-Step Semantics}\label{sec:small-step}%{{{%
+\subsection{Big-Step Semantics}%{{{%
 
-As a function:
+\def\ruleName#1{\textsf{#1}}
+\def\ruleTag#1{\quad(\ruleName{#1})}
 
-As a relation:
+The related notion of big-step semantics is concerned with the overall
+result of a computation. Formally, we define a relation ${\Downarrow}
+: \Expression \times \Nat$ between $\Expression$s and their final values,
+given below in a natural deduction style:
+\begin{gather*}
+\frac{\rule{0pt}{1pt}}%
+	{m \Downarrow m} \ruleTag{$\Downarrow$-val} \\[2ex]
+\frac{a \Downarrow m \quad b \Downarrow n}%
+	{a \oplus b \Downarrow m + n} \ruleTag{$\Downarrow$-add}
+\end{gather*}
+The first \ruleName{$\Downarrow$-val} rule says that a simple numeric
+$\Expression$ evaluates to the number itself. The second
+\ruleName{$\Downarrow$-add} rule states that, if $a$ evaluates to $m$ and
+$b$ evaluates to $n$, then $a \oplus b$ evaluates to the sum $m + n$.
+
+One intrinsic advantage of a big-step semantics is that the semantics can be
+non-deterministic, in the sense that each expression could potentially
+evaluate to multiple distinct values. In contrast, a denotational semantics
+deals with non-determinism in the source language by mapping it to
+a potentially different notion of non-determinism in the underlying
+formalism---the semantics of the previous section must instead denote each
+expression as a set of possible numbers.
+
+%}}}%
+
+\subsection{Small-Step Semantics}\label{sec:small-step}%{{{%
+
+Small-step semantics on the other hand is concerned with how a computation
+proceeds step-by-step. Again, we formally define a relation ${\mapsto}
+: \Expression \times \Expression$, between pairs of $\Expression$s in this
+instance:
+\begin{gather*}
+\frac{}%
+	{m \oplus n \mapsto m + n} \ruleTag{$\mapsto$-add} \\[2ex]
+\frac{b \mapsto b'}%
+	{m \oplus b \mapsto m \oplus b'} \ruleTag{$\mapsto$-right} \\[2ex]
+\frac{a \mapsto a'}%
+	{a \oplus b \mapsto a' \oplus b} \ruleTag{$\mapsto$-left}
+\end{gather*}
+The first rule \ruleName{$\mapsto$-add} deals with the case where the
+expressions on both sides of $\oplus$ are numerals: in a single step, it
+reduces to the sum $m + n$. The second \ruleName{$\mapsto$-right} rule
+applies when the left argument of $\oplus$ is a numeral, in which case the
+right argument makes a single reduction, while \ruleName{$\mapsto$-left}
+reduces the left argument of $\oplus$ whenever possible. No rule corresponds
+to a lone numeric $\Expression$ as no further reductions are possible in
+this case.
+
+While the above rules give a left-to-right reduction order for
+$\Expression$s, it would be perfectly reasonable to give the converse
+right-to-left definition, or even to have a non-deterministic interleaved
+reduction order.
+
+\TODO{Blurb on monoids, and correspondence with monads.}
+
+%}}}%
 
 %}}}%
 
 \section{Equivalence Proof and Techniques}%{{{%
+
+
 
 %}}}%
 

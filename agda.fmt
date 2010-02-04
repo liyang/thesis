@@ -48,5 +48,8 @@
 %format Rel = "\func{Rel}"
 %format REL = "\func{REL}"
 
+% Relation.Binary.PropositionalEquality
+%format ≡ = "\type{{\equiv}}"
+%format ≡.refl = "\cons{{\equiv}.refl}"
 
 

@@ -40,8 +40,8 @@ upload: thesis.pdf wordcount.png wordcount-recent.png
 	$(RSYNC) --rsync-path=local/bin/rsync $^ marian.cs.nott.ac.uk:public_html/
 rec: wordcount.wc upload
 	@if darcs w | tee changes ; then \
-		echo "recording this patch? Ctrl+D to skip" ; \
-		read && darcs rec -a --edit-long-comment -m "$(DATETIME)" ; \
+		echo "record this patch? Ctrl+D to skip" ; \
+		read && darcs rec -a --edit-long-comment -m "$(DATETIME)" && darcs push ; \
 	fi
 
 include latex.mk
