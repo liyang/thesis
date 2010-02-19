@@ -55,7 +55,6 @@ data Expression : Set where
 
 \section{Denotational}
 
-As a function:
 %{{{%
 %format ⟦_⟧ = "\func{[\![\anonymous]\!]}"
 %format ⟦ = "\prefix{\func{[\![}}"
@@ -71,7 +70,6 @@ As a function:
 
 Functions are more straightforward, but does not generalise to non-deterministic semantics.
 
-As a relation:
 %{{{%
 %if False
 \begin{code}
@@ -175,7 +173,7 @@ big→denotation (⇓-⊕ a⇓m b⇓n) | ≡.refl | ≡.refl = ≡.refl
 %format a⇓m = "a{\Downarrow}m"
 %format b⇓n = "b{\Downarrow}n"
 \begin{code}
-big→small : ∀ {e : Expression} {m : ℕ} → e ⇓ m → e ↦⋆# m
+big→small : ∀ {e m} → e ⇓ m → e ↦⋆# m
 big→small ⇓-ℕ = ε
 big→small (⇓-⊕ {a} {b} {m} {n} a⇓m b⇓n) =
   gmap (λ a′ →    a′  ⊕ b)   ↦-L (big→small a⇓m) ◅◅
@@ -193,14 +191,15 @@ big→small (⇓-⊕ {a} {b} {m} {n} a⇓m b⇓n) =
 %format a′⇓m = "a\Prime{\Downarrow}m"
 %format b⇓n = "b{\Downarrow}n"
 %format b′⇓n = "b\Prime{\Downarrow}n"
+%format m⇓m = "m{\Downarrow}m"
 \begin{code}
 small→big : ∀ {e m} → e ↦⋆# m → e ⇓ m
 small→big ε = ⇓-ℕ
 small→big (e↦e′ ◅ e′↦⋆m) = sound e↦e′ (small→big e′↦⋆m) where
   sound : ∀ {e e′ m} → e ↦ e′ → e′ ⇓ m → e ⇓ m
-  sound ↦-ℕ         ⇓-ℕ             = ⇓-⊕ ⇓-ℕ ⇓-ℕ
-  sound (↦-L a↦a′)  (⇓-⊕ a′⇓m b⇓n)  = ⇓-⊕ (sound a↦a′ a′⇓m) b⇓n
-  sound (↦-R b↦b′)  (⇓-⊕ ⇓-ℕ b′⇓n)  = ⇓-⊕ ⇓-ℕ (sound b↦b′ b′⇓n)
+  sound ↦-ℕ         ⇓-ℕ               = ⇓-⊕ ⇓-ℕ ⇓-ℕ
+  sound (↦-L a↦a′)  (⇓-⊕ a′⇓m  b⇓n)   = ⇓-⊕ (sound a↦a′ a′⇓m) b⇓n
+  sound (↦-R b↦b′)  (⇓-⊕ m⇓m   b′⇓n)  = ⇓-⊕ m⇓m (sound b↦b′ b′⇓n)
 \end{code}
 %}}}%
 
@@ -238,6 +237,10 @@ _↣⋆_ = Star _↣_
 compile : Expression → List Instruction → List Instruction
 compile (# m) c = PUSH m ∷ c
 compile (a ⊕ b) c = compile a (compile b (ADD ∷ c))
+
+comp : Expression → List Instruction
+comp (# m) = PUSH m ∷ []
+comp (a ⊕ b) = comp a ++ comp b ++ ADD ∷ []
 \end{code}
 %endif
 %}}}%
@@ -249,12 +252,58 @@ infix 3 _↣⋆#_
 _↣⋆#_ : REL Expression ℕ _
 e ↣⋆# m = ∀ {c σ} → ⟨ compile e c , σ ⟩ ↣⋆ ⟨ c , m ∷ σ ⟩
 
--- big→machine : ∀ {e m} → e ⇓ m → e ↣⋆# m
--- big→machine ⇓-ℕ = ↣-PUSH ◅ ε
--- big→machine (⇓-⊕ a⇓m b⇓n) = big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
+big→machine : ∀ {e m} → e ⇓ m → e ↣⋆# m
+big→machine ⇓-ℕ = ↣-PUSH ◅ ε
+big→machine (⇓-⊕ a⇓m b⇓n) = big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
 
 -- small→machine : ∀ {e m} → e ↦⋆# m → e ↣⋆# m
 -- small→machine = big→machine ∘ small→big
+
+eval : Expression → ℕ
+eval = ⟦_⟧
+
+exec : List Instruction → List ℕ → List ℕ
+exec [] σ = σ
+exec (PUSH m ∷ c) σ = exec c (m ∷ σ)
+exec (ADD ∷ c) [] = {!unpossible!!}
+exec (ADD ∷ c) (_ ∷ []) = {!unpossible!!}
+exec (ADD ∷ c) (n ∷ m ∷ σ) = exec c (m + n ∷ σ)
+
+machine→exec : ∀ {c σ σ′} → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩ → exec c σ ≡ σ′
+machine→exec {[]} ε = ≡.refl
+machine→exec {[]} (() ◅ xs)
+machine→exec {PUSH m ∷ c} (↣-PUSH ◅ xs) = machine→exec xs
+machine→exec {ADD ∷ c} (↣-ADD ◅ xs) = machine→exec xs
+
+exec→machine : ∀ {c σ σ′} → exec c σ ≡ σ′ → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩
+exec→machine {[]} ≡.refl = ε
+exec→machine {PUSH _ ∷ c′} exec-c-σ≡σ′ = ↣-PUSH ◅ exec→machine exec-c-σ≡σ′
+exec→machine {ADD ∷ c′} {[]} exec-c-σ≡σ′ = {!unpossible!!}
+exec→machine {ADD ∷ c′} {_ ∷ []} exec-c-σ≡σ′ = {!unpossible!!}
+exec→machine {ADD ∷ c′} {n ∷ m ∷ σ} exec-c-σ≡σ′ = ↣-ADD ◅ exec→machine exec-c-σ≡σ′
+
+correctness : ∀ e {c σ} → exec (compile e c) σ ≡ exec c (eval e ∷ σ)
+correctness (# m) = ≡.refl
+correctness (a ⊕ b) {c} {σ} =
+  begin
+    exec (compile (a ⊕ b) c) σ
+  ≡⟨ ≡.refl ⟩
+    exec (compile a (compile b (ADD ∷ c))) σ
+  ≡⟨ correctness a ⟩
+    exec (compile b (ADD ∷ c)) (eval a ∷ σ)
+  ≡⟨ correctness b ⟩
+    exec (ADD ∷ c) (eval b ∷ eval a ∷ σ)
+  ≡⟨ ≡.refl ⟩
+    exec c (eval a + eval b ∷ σ)
+  ∎ where open ≡.≡-Reasoning
+
+correctness′ : ∀ e {c σ m} → e ⇓ m → exec (compile e c) σ ≡ exec c (m ∷ σ)
+correctness′ e e⇓m with big→denotation e⇓m
+correctness′ e e⇓m | ≡.refl = correctness e
+
+correctness″ : ∀ e {c σ m} → e ↦⋆# m → exec (compile e c) σ ≡ exec c (m ∷ σ)
+correctness″ e = correctness′ e ∘ small→big
+
 \end{code}
 %endif
 %}}}%

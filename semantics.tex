@@ -29,16 +29,18 @@ that the compiler is correct.
 
 \section{Semantics}%{{{%
 
-\subsection{Numbers and Addition}%{{{%
+\subsection{Natural Numbers and Addition}%{{{%
 
 To unambiguously reason about what any given program means, we need to give
 a mathematically rigorous definition of the language in which it is
 expressed. To this end, let us consider the elementary language of natural
 numbers and
 addition~\cite{hutton04-exceptions,hutton06-calculating,hutton07-interruptions}.
-\begin{gather*}
-	\Expression \prod \Nat \altn \Expression \oplus \Expression
-\end{gather*}
+\begin{align*}
+	\Expression
+		& \prod \Nat \eqTag{Exp-$\mathbb{N}$} \\
+		& \altn \Expression \oplus \Expression \eqTag{Exp-$\oplus$}
+\end{align*}
 That is, an $\Expression$ is either simply a natural number, or a pair of
 $\Expression$s, punctuated with the $\oplus$ symbol to represent the
 operation of addition. We will adhere to a naming convention of $m, n \in
@@ -47,7 +49,7 @@ operation of addition. We will adhere to a naming convention of $m, n \in
 Although seemingly simplistic, this language has sufficient structure to
 illustrate the essential aspects of computation, namely that of sequencing
 computations and combining their results, as we shall expand upon later in
-section \ref{sec:small-step}.
+sections \ref{sec:small-step} and \ref{sec:monoid}.
 
 %}}}%
 
@@ -66,94 +68,452 @@ for a language is to define a mapping from the source language into some
 underlying semantic domain.
 
 For example, we can give the following semantics for our earlier
-$\Expression$ language, where each term is denoted by a natural number:
+$\Expression$ language, denoted as a natural number:
 \begin{align*}
 	\sb[\anonymous] &: \Expression \rightarrow \Nat \\
-	\sb[ m ] &= m \\
-	\sb[ a \oplus b ] &= \sb[ a ] + \sb[ b ]
+	\sb[ m ] &= m \eqTag{denote-val} \\
+	\sb[ a \oplus b ] &= \sb[ a ] + \sb[ b ] \eqTag{denote-plus}
 \end{align*}
 Here, a numeric $\Expression$ is interpreted as just the number itself. The
-denotation of the $\oplus$ operator is $+$ on natural numbers;
+denotation of the $\oplus$ operator is the familiar $+$ on natural numbers;
 alternatively, we could say that $a \oplus b$ is denoted by the sum of the
-denotations of its subexpressions $a$ and $b$.
+denotations of its sub-expressions $a$ and $b$. The expression $\sb[(1
+\oplus 2) \oplus (4 \oplus 8)]$ say, has the denotation $15$ by repeatedly
+applying the above definition:
+\begin{align*}
+	\sb[(1 \oplus 2) \oplus (4 \oplus 8)]
+		&= \sb[1 \oplus 2] + \sb[4 \oplus 8] \\
+		&= (\sb[1] + \sb[2]) + (\sb[4] + \sb[8]) \\
+		&= (1 + 2) + (4 + 8) = 15
+\end{align*}
 
 %}}}%
 
-\subsection{Big-Step Semantics}%{{{%
+\subsection{Big-Step Operational Semantics}%{{{%
 
-\def\ruleName#1{\textsf{#1}}
-\def\ruleTag#1{\quad(\ruleName{#1})}
-
-The related notion of big-step semantics is concerned with the overall
+The notion of big-step operational semantics is concerned with the overall
 result of a computation. Formally, we define a relation ${\Downarrow}
 : \Expression \times \Nat$ between $\Expression$s and their final values,
 given below in a natural deduction style:
 \begin{gather*}
-\frac{\rule{0pt}{1pt}}%
-	{m \Downarrow m} \ruleTag{$\Downarrow$-val} \\[2ex]
-\frac{a \Downarrow m \quad b \Downarrow n}%
-	{a \oplus b \Downarrow m + n} \ruleTag{$\Downarrow$-add}
+\inferrule*{ }
+	{m \Downarrow m} \eqTag{big-val} \\[2ex]
+\inferrule*{a \Downarrow m \quad b \Downarrow n}%
+	{a \oplus b \Downarrow m + n} \eqTag{big-plus}
 \end{gather*}
-The first \ruleName{$\Downarrow$-val} rule says that a simple numeric
-$\Expression$ evaluates to the number itself. The second
-\ruleName{$\Downarrow$-add} rule states that, if $a$ evaluates to $m$ and
-$b$ evaluates to $n$, then $a \oplus b$ evaluates to the sum $m + n$.
+The first \eqName{big-val} rule says that a simple numeric $\Expression$
+evaluates to the number itself. The second \eqName{big-plus} rule states
+that, if $a$ evaluates to $m$ and $b$ evaluates to $n$, then $a \oplus b$
+evaluates to the sum $m + n$. Thus according to this semantics, $(1 \oplus
+2) \oplus (4 \oplus 8) \Downarrow 15$ by the following derivation:
+\begin{gather*}
+\inferrule* [left=big-plus]
+{
+	\inferrule* [Left=big-plus]
+	{
+		\inferrule* [Left=big-val]
+			{ }{1 \Downarrow 1}
+		\and
+		\inferrule*
+			{ }{2 \Downarrow 2}
+	}
+	{1 \oplus 2 \Downarrow 3}
+	\and
+	\inferrule*
+	{
+		\inferrule*
+			{ }{4 \Downarrow 4}
+		\and
+		\inferrule*
+			{ }{8 \Downarrow 8}
+	}
+	{4 \oplus 8 \Downarrow 12}
+}
+{(1 \oplus 2) \oplus (4 \oplus 8) \Downarrow 15}
+\end{gather*}
 
-One intrinsic advantage of a big-step semantics is that the semantics can be
-non-deterministic, in the sense that each expression could potentially
-evaluate to multiple distinct values. In contrast, a denotational semantics
-deals with non-determinism in the source language by mapping it to
-a potentially different notion of non-determinism in the underlying
-formalism---the semantics of the previous section must instead denote each
-expression as a set of possible numbers.
+\noindent One advantage of a relational operational semantics is that the
+behaviour can be non-deterministic, in the sense that each expression could
+potentially evaluate to multiple distinct values. In contrast,
+a denotational semantics deals with non-determinism in the source language
+by mapping it to a potentially different notion of non-determinism in the
+underlying formalism. Should we require our expression language to be
+non-deterministic, we would need to switch the denotational domain of the
+previous semantics to the power set of natural numbers, rather than just the
+set of natural numbers.
 
 %}}}%
 
-\subsection{Small-Step Semantics}\label{sec:small-step}%{{{%
+\subsection{Small-Step Operational Semantics}\label{sec:small-step}%{{{%
 
 Small-step semantics on the other hand is concerned with how a computation
-proceeds step-by-step. Again, we formally define a relation ${\mapsto}
-: \Expression \times \Expression$, between pairs of $\Expression$s in this
-instance:
+proceeds as a sequence of steps. Both big-step and small-step semantics are
+`operational' in the sense that the meaning of a program is understood
+through how it operates to arrive at the result. However, in this case each
+reduction step is made explicit, which is particularly apt when we wish to
+consider computations that produce side-effects. Again we formally define
+a relation ${\mapsto} : \Expression \times \Expression$, but between pairs
+of $\Expression$s in this instance:
 \begin{gather*}
-\frac{}%
-	{m \oplus n \mapsto m + n} \ruleTag{$\mapsto$-add} \\[2ex]
-\frac{b \mapsto b'}%
-	{m \oplus b \mapsto m \oplus b'} \ruleTag{$\mapsto$-right} \\[2ex]
-\frac{a \mapsto a'}%
-	{a \oplus b \mapsto a' \oplus b} \ruleTag{$\mapsto$-left}
+\inferrule*{ }%
+	{m \oplus n \mapsto m + n} \eqTag{small-plus} \\[2ex]
+\inferrule*{b \mapsto b'}%
+	{m \oplus b \mapsto m \oplus b'} \eqTag{small-right} \\[2ex]
+\inferrule*{a \mapsto a'}%
+	{a \oplus b \mapsto a' \oplus b} \eqTag{small-left}
 \end{gather*}
-The first rule \ruleName{$\mapsto$-add} deals with the case where the
-expressions on both sides of $\oplus$ are numerals: in a single step, it
-reduces to the sum $m + n$. The second \ruleName{$\mapsto$-right} rule
-applies when the left argument of $\oplus$ is a numeral, in which case the
-right argument makes a single reduction, while \ruleName{$\mapsto$-left}
-reduces the left argument of $\oplus$ whenever possible. No rule corresponds
-to a lone numeric $\Expression$ as no further reductions are possible in
-this case.
+The first rule \eqName{small-plus} deals with the case where the expressions
+on both sides of $\oplus$ are numerals: in a single step, it reduces to the
+sum $m + n$. The second \eqName{small-right} rule applies when the left
+argument of $\oplus$ is a numeral, in which case the right argument makes
+a single reduction, while \eqName{small-left} reduces the left argument of
+$\oplus$ whenever possible. There is no rule corresponding to a lone numeric
+$\Expression$ as no further reductions are possible in this case.
 
-While the above rules give a left-to-right reduction order for
-$\Expression$s, it would be perfectly reasonable to give the converse
-right-to-left definition, or even to have a non-deterministic interleaved
-reduction order.
+As each ${\mapsto}$ corresponds to only a single computational step, it will
+often be more convenient to refer to it via its reflexive, transitive
+closure, defined as follows:
+\begin{gather*}
+\inferrule*[right=small-nil]
+{ }{a \mapsto^\star a}
+\qquad\qquad
+\inferrule*[right=small-cons]
+{a \mapsto a' \and a' \mapsto^\star b}
+{a \mapsto^\star b}
+\end{gather*}
+Thus, the full reduction sequence of $(1 \oplus 2)
+\oplus (4 \oplus 8) \mapsto^\star 15$ would begin at the $1 \oplus 2$
+sub-expression,
+\begin{gather*}
+\inferrule* [left=small-left]
+{
+	\inferrule* [Left=small-plus]
+	{ }{1 \oplus 2 \mapsto 3}
+}
+{(1 \oplus 2) \oplus (4 \oplus 8) \mapsto 3 \oplus (4 \oplus 8)}
+\end{gather*}
+followed by $4 \oplus 8$,
+\begin{gather*}
+\inferrule* [left=small-right]
+{
+	\inferrule* [Left=small-plus]
+	{ }{4 \oplus 8 \mapsto 12}
+}
+{3 \oplus (4 \oplus 8) \mapsto 3 \oplus 12}
+\end{gather*}
+before delivering the final sum:
+\begin{gather*}
+\inferrule* [left=small-plus]
+{ }{3 \oplus 12 \mapsto 15}
+\end{gather*}
 
-\TODO{Blurb on monoids, and correspondence with monads.}
+\noindent It would be perfectly reasonable to give a right-to-left, or even
+a non-deterministic interleaved reduction strategy for our $\Expression$
+language. However, we enforce a left-to-right order to coincide with the
+definition of $\bind$ for the $\mathsf{State}\;\alpha$ monad of \S\ref{?},
+which we motivate in the following section.
+
+%}}}%
+
+\subsection{Monoids as Degenerate Monads}\label{sec:monoid}%{{{%
+
+In the previous chapter, we briefly explored the use of monads as
+a mechanism for modelling sequential computations. In the degenerate case
+where the result type of the computations form a monoid with an operation
+$\cdot$, such computations themselves naturally form a monoid too.
+Concretely, suppose we are working in some monad $\mathsf{M}$ computing
+values of type $\Nat$, where $(\Nat,\;+,\;0)$ is a monoid. With the
+following definition of $\ast$,
+\[
+	a \ast b \quad=\quad
+		a \bind \lambda m \rightarrow
+		b \bind \lambda n \rightarrow
+		\textit{return}\;(m + n)
+\]
+such computations themselves form the monoid
+$(\mathsf{M}\;\Nat,\;\ast,\;\textit{return}\;0)$. As we have done in
+\S\ref{monad-laws}, we can again use equational reasoning to confirm that
+the relevant left-/right-identity and associativity properties hold.
+Therefore, it is not entirely unreasonable to view monoids as a degenerate
+form of monads.
+
+As we only consider values of natural numbers, rather than dealing with
+computations of type $\mathsf{M}\;\Nat$, we may as well deal directly with
+the underlying $(\Nat,\;+)$ monoid, mirrored in the syntax of the
+$\Expression$ language. This simplification allows us to avoid the
+orthogonal issues of binding and substitution. By enforcing a left-to-right
+evaluation order for $\oplus$ to mirror that of $\bind$, we maintain the key
+monadic aspect of sequencing computations.
+
+%}}}%
+
+\TODO{Are the proofs necessary? They're rather elementary.}
+%{{{%
+\begin{verbatim}
+  a * return 0
+={ defn of * }
+  a >>= \ m -> return 0 >>= \ n -> return (m . n)
+={ left-identity of >>= }
+  a >>= \ m -> (\ n -> return (m . n)) 0
+={ application }
+  a >>= \ m -> return (m . 0)
+={ right-identity of . }
+  a >>= \ m -> return m
+={ right-identity of >>= }
+  a
+\end{verbatim}
+%}}}%
+%{{{%
+\begin{verbatim}
+  return 0 * b
+={ defn of * }
+  return 0 >>= \ m -> b >>= \ n -> return (m . n)
+={ left-identity of >>= }
+  (\ m -> b >>= \ n -> return (m . n)) 0
+={ application }
+  b >>= \ n -> return (0 . n)
+={ left-identity of . }
+  b >>= \ n -> return n
+={ right-identity of >>= }
+  b
+\end{verbatim}
+%}}}%
+%{{{%
+\begin{verbatim}
+  (a * b) * c
+={ defn of * }
+  (a >>= \ l -> b >>= \ m -> return (l . m)) >>= \ lm ->
+  c >>= \ n ->
+  return (lm . n)
+={ associativity of >>=, twice }
+  a >>= \ l -> b >>= \ m -> (return (l . m) >>= \ lm ->
+  c >>= \ n ->
+  return (lm . n))
+={ substitute lm by left-id of >>= }
+  a >>= \ l ->
+  b >>= \ m ->
+  c >>= \ n ->
+  return ((l . m) . n)
+={ associativity of . }
+  a >>= \ l ->
+  b >>= \ m ->
+  c >>= \ n ->
+  return (l . (m . n))
+={ factor out (m . n)  }
+  a >>= \ l ->
+  b >>= \ m -> c >>= \ n -> (return (m . n) >>= \ mn ->
+  return (l . mn))
+={ associativity of >>=, twice }
+  a >>= \ l ->
+  (b >>= \ m -> c >>= \ n -> return (m . n)) >>= \ mn ->
+  return (l . mn)
+={ defn of * }
+  a * (b * c)
+\end{verbatim}
+%}}}%
+
+%}}}%
+
+\section{Equivalence Proofs and Techniques}%{{{%
+
+We can now proceed to show various properties of the $\Expression$ language
+in a rigorous manner, now that we have provided precise definitions for the
+semantics of the language. One obvious questions arises, on the matter of
+whether the semantics we have given in the previous section---denotational,
+big-step and small-step---agree in some manner. This section reviews the
+main techniques for proving such properties.
+
+\subsection{Syntax and Rule Induction}%{{{%
+
+\def\subExp{\sqsubset}
+
+The main tool at our disposal is that of well-founded induction, which we
+can apply to any well-founded structure. For example, we can show that the
+syntax of the $\Expression$ language satisfies the condition of
+well-foundedness when paired with the following sub-expression ordering:
+\[
+	a \subExp a \oplus b \qquad b \subExp a \oplus b \eqTag{Exp-$\subExp$}
+\]
+The partial order given by the transitive closure of $\subExp$ is
+well-founded, since any $\subExp$-descending chain of expressions must
+eventually end in a numeral at the leaves of the expression tree. This
+particular ordering arises naturally from the inductive definition of
+$\Expression$: the inductive case \eqName{Exp-$\oplus$} allows us to build
+a larger expression $a \oplus b$ given two existing expressions $a$ and $b$,
+while the base case \eqName{Exp-$\mathbb{N}$} constructs primitive
+expressions out of any natural number. In this particular case, to give
+a proof that some property $P(e)$ holds for all $e \in \Expression$, it
+suffices by the well-founded induction principle to show instead that:
+\[
+	\forall b \in \Expression.\;
+		(\forall a \in \Expression.\; a \subExp b \rightarrow P(a))
+		\rightarrow P(b)
+\]
+More explicitly, we are provided with the hypothesis that $P(a)$ already
+holds for all sub-expressions $a \subExp b$ when proving $P(b)$; in those
+cases when $b$ has no sub-expressions, we must show that $P(b)$ holds
+directly.
+
+The application of well-founded induction to the structure of an inductive
+definition is called \emph{structural induction}: to prove that a property
+$P(x)$ holds for all members $x$ of an inductively defined structure $X$, it
+suffices to initially show that $P(x)$ holds in all the base cases in the
+definition of $X$, and that $P(x)$ holds in the inductive cases assuming
+that $P(x')$ holds for any immediate substructure $x'$ of $x$.
+
+Our earlier reduction rules ${\Downarrow}$ along with ${\mapsto}$ and its
+transitive closure ${\mapsto^\star}$ are similarly inductively defined, and
+therefore admits the same notion of structural induction.
+
+%}}}%
+
+\subsection{Proofs of Semantic Equivalence}%{{{%
+
+We shall illustrate the above technique with some examples. Given that we
+have defined 
+
+\begin{theorem}
+Denotational semantics and big-step operational semantics coincide:
+\[
+	\forall e \in \Expression,\ m \in \Nat.\quad
+		\sb[e] \equiv m \leftrightarrow e \Downarrow m
+\]
+\end{theorem}
+
+\begin{proof}
+We consider each direction of the $\leftrightarrow$ biconditional
+separately. To show $\sb[e] \equiv m \rightarrow e \Downarrow m$, we could
+proceed by induction on the structure of the definition of the
+$\sb[\anonymous]$ function, which happens to be structurally recursive on
+its argument. Therefore we may equivalently proceed by structural induction
+on $e$, giving us two cases to consider:
+\begin{description}
+\item[Case $e \equiv n$:]%{{{%
+Substituting $e$, this base case specialises to showing that:
+\[
+	\sb[n] \equiv m \rightarrow n \Downarrow m
+\]
+By \eqName{denote-val} in the definition of $\sb[\anonymous]$, the
+hypothesis evaluates to $n \equiv m$. This allows us to substitute $m$ for
+$n$ in the conclusion, which is trivially satisfied by instantiating
+\eqName{big-val} with $m$ in the definition of ${\Downarrow}$.
+%}}}%
+\item[Case $e \equiv a \oplus b$:]%{{{%
+Substituting $e$ as before, we need to show that:
+\[
+	\sb[a \oplus b] \equiv m \rightarrow a \oplus b \Downarrow m
+\]
+Applying \eqName{denote-plus} once to the hypothesis, we obtain that $\sb[a]
++ \sb[b] \equiv m$. Substituting for $m$, the conclusion becomes $a \oplus
+b \Downarrow \sb[a] + \sb[b]$. Instantiate the induction hypothesis twice
+with the trivial equalities $\sb[a] \equiv \sb[a]$ and $\sb[b] \equiv
+\sb[b]$ to yield proofs of $a \Downarrow \sb[a]$ and $b \Downarrow \sb[b]$,
+which are precisely the two antecedents required by \eqName{big-plus} to
+obtain $a \oplus b \Downarrow \sb[a] + \sb [b]$.
+%}}}%
+\end{description}
+
+\noindent The second half of the proof requires us to show that $\sb[e]
+\equiv m \leftarrow e \Downarrow m$. We may proceed by structural induction
+directly on our assumed hypothesis of $e \Downarrow m$, which must match
+either \eqName{big-val} or \eqName{big-plus} in the definition of
+$\Downarrow$:
+\begin{description}
+\item[Rule \eqName{big-val}:]%{{{%
+Matching $e \Downarrow m$ with the consequent of \eqName{big-val}, we may
+conclude that there exists an $n$ such that $e \equiv n$ and $m \equiv n$.
+Substituting $n$ for $e$ and $m$ in $\sb[e] \equiv m$ and applying
+\eqName{denote-val} once, the desired conclusion becomes $n \equiv n$, which
+is trivially satisfied by the reflexivity of $\equiv$.
+%}}}%
+\item[Rule \eqName{big-plus}:]%{{{%
+Again by matching $e \Downarrow m$ with the consequent of \eqName{big-plus},
+there exists $a$, $b$, $n_a$ and $n_b$ where $e \equiv a \oplus b$ and $m
+\equiv n_a + n_b$, such that $a \Downarrow n_a$ and $b \Downarrow n_b$.
+Substituting for $e$ and $m$, the conclusion becomes $\sb[a \oplus b] \equiv
+n_a + n_b$, which reduces to:
+\[
+	\sb[a] + \sb[b] \equiv n_a + n_b
+\]
+by applying \eqName{denote-plus} once. Instantiating the induction
+hypothesis twice with $a \Downarrow n_a$ and $b \Downarrow n_b$ yields the
+equalities $\sb[a] \equiv n_a$ and $\sb[b] \equiv n_b$ respectively, which
+allows us to rewrite the conclusion as $\sb[a] + \sb[b] \equiv \sb[a]
++ \sb[b]$ by substituting $n_a$ and $n_b$. The desired result is now
+trivially true by reflexivity of $\equiv$.
+%}}}%
+\end{description}
+
+\noindent Thus we have shown both directions of the theorem.
+\end{proof}
+
+% premise, antecedent / consequent
+% hypothesis / conclusion
+
+
+\begin{theorem}
+Big-step and small-step operational semantics coincide. That is,
+\[
+	\forall e \in \Expression,\ m \in \Nat.\quad
+		e \Downarrow m \leftrightarrow e \mapsto^\star m
+\]
+\end{theorem}
+\begin{proof}
+We shall consider each direction separately as before. To show the forward
+implication, we proceed by rule induction on the assumed $e \Downarrow m$
+hypothesis:
+\begin{description}
+\item[Rule \eqName{big-val}:]%{{{%
+There exists an $n$ such that $e \equiv n$ and $m \equiv n$, by matching $e
+\Downarrow m$ with the consequent of \eqName{big-val}. Substituting $n$ for
+both $e$ and $m$, we can readily conclude that $n \mapsto^\star n$ via
+\eqName{small-nil}.
+%}}}%
+\item[Rule \eqName{big-plus}:]%{{{%
+There exists $a$, $b$, $n_a$ and $n_b$ where $e \equiv a \oplus b$ and $m
+= n_a + n_b$, such that $a \Downarrow n_a$ and $b \Downarrow n_b$. After
+substituting for $e$ and $m$, the desired conclusion becomes:
+\[
+	a \oplus b \mapsto^\star n_a + n_b
+\]
+Instantiating the induction hypothesis with $a \Downarrow n_a$ and $b
+\Downarrow n_b$ gives us evidence of $a \mapsto^\star n_a$ and $b
+\mapsto^\star n_b$ respectively. With the former, we can apply $\anonymous
+\oplus b$ to each of the terms and \eqName{small-left} to obtain a proof of
+$a \oplus b \mapsto^\star n_a \oplus b$, while with the latter, we obtain
+$n_a \oplus b \mapsto^\star n_a \oplus n_b$ by applying $n_a \oplus
+\anonymous$ and \eqName{small-right}.
+
+By the transitivity of $\mapsto^\star$, these two small-step reduction
+sequences combine to give $a \oplus b \mapsto^\star n_a \oplus n_b$, to
+which we need only append an instance of \eqName{small-plus} to arrive at
+the conclusion.
+%}}}%
+\end{description}
+
+For the backward implication $e \Downarrow m \leftarrow e \mapsto^\star$, we
+require a lemma\ldots .
+
+\end{proof}
 
 %}}}%
 
 %}}}%
 
-\section{Equivalence Proof and Techniques}%{{{%
-
-
-
-%}}}%
-
-\section{Stack Machines and Their Semantics}%{{{%
-
-%}}}%
 
 \section{Compiler Correctness}%{{{%
+
+\subsection{Stack Machines and Their Semantics}%{{{%
+
+%}}}%
+
+\subsection{Compiler}%{{{%
+
+%}}}%
+
+\subsection{Proof of High-Level and Virtual Machine Semantics}%{{{%
+
+%}}}%
 
 %}}}%
 

@@ -24,7 +24,15 @@
 \def\source#1{}
 
 \usepackage{amsmath}
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}
 
+\def\eqName#1{\textsf{\mdseries(#1)}}
+\def\eqTag#1{\tag*{\eqName{#1}}}
+
+
+\usepackage{mathpartir}
+\def\TirName#1{\eqName{#1}}
 
 % lhs2TeX
 %{{{%
@@ -52,7 +60,6 @@
 \newcommand\infixM[1]{\!\infix{#1}\!}
 \newcommand\infixR[1]{\!\infix{#1}}
 %}}}%
-
 
 
 
