@@ -363,7 +363,8 @@ that $P(x')$ holds for any immediate substructure $x'$ of $x$.
 
 Our earlier reduction rules ${\Downarrow}$ along with ${\mapsto}$ and its
 transitive closure ${\mapsto^\star}$ are similarly inductively defined, and
-therefore admits the same notion of structural induction.
+therefore admits the same notion of structural induction. These instances
+will be referred to as \emph{rule induction}.
 
 %}}}%
 
@@ -451,6 +452,8 @@ trivially true by reflexivity of $\equiv$.
 % hypothesis / conclusion
 
 
+
+
 \begin{theorem}
 Big-step and small-step operational semantics coincide. That is,
 \[
@@ -491,9 +494,140 @@ the conclusion.
 %}}}%
 \end{description}
 
-For the backward implication $e \Downarrow m \leftarrow e \mapsto^\star$, we
-require a lemma\ldots .
+\noindent The converse implication $e \Downarrow m \leftarrow
+e \mapsto^\star m$ additionally requires lemma \ref{lem:small-sound},
+which states that $e \mapsto e' \rightarrow e' \Downarrow m \rightarrow
+e \Downarrow m$; in other words, the reduct of a single step under the
+small-step semantics evaluates under the big-step semantics to the same
+value as the original expression. We proceed by induction over the
+definition of $\mapsto^\star$, given $e \mapsto^\star m \rightarrow
+e \Downarrow m$:
+\begin{description}
+\item[Rule \eqName{small-nil}:]%{{{%
+If the reduction sequence is empty, then it follows that $e \equiv m$. In
+this case, we can trivially satisfy the conclusion of $m \Downarrow m$ with
+\eqName{big-val}.
+%}}}%
+\item[Rule \eqName{small-cons}:]%{{{%
+For non-empty reduction sequences, there exists an $e'$ such that $e \mapsto
+e'$ and $e' \mapsto^\star m$. Invoke lemma \ref{lem:small-sound} with $e
+\mapsto e'$ and $e' \Downarrow m$, where the latter given by the induction
+hypothesis, to obtain proof of $e \Downarrow m$.
+%}}}%
+\end{description}
+Pending the proof of lemma \ref{lem:small-sound} below, we have thus shown
+the equivalence of big- and small-step semantics for the $\Expression$
+language.
+\end{proof}
 
+\begin{lemma}
+\label{lem:small-sound}
+A single small-step reduction preserves the value of expressions with
+respect to the big-step semantics:
+\[
+	\forall e, e' \in \Expression,\ m \in \Nat.\quad
+		e \mapsto e' \rightarrow
+		e' \Downarrow m \rightarrow e \Downarrow m
+\]
+\end{lemma}
+\begin{proof}
+Assume the two premises $e \mapsto e'$ and $e' \Downarrow m$, and proceed by
+induction on the structure of the first:
+\begin{description}
+\item[Rule \eqName{small-plus}:]%{{{%
+There are $n_a$ and $n_b$ such that $e \equiv n_a \oplus n_b$ and $e' \equiv
+n_a + n_b$. As $e'$ is a numeric expression, the only applicable rule for
+$e' \Downarrow m$ is \eqName{big-val}, which implies $m \equiv n_a + n_b$.
+Thus the desired conclusion of $e \Downarrow m$---after substituting for $e$
+and $m$---may be satisfied as follows:
+\begin{gather*}
+\inferrule* [Left=big-plus]
+{
+	\inferrule* [Left=big-val]
+	{ }{n_a \Downarrow n_a}
+	\and
+	\inferrule*
+	{ }{n_b \Downarrow n_b}
+}{n_a \oplus n_b \Downarrow n_a + n_b}
+\end{gather*}
+%}}}%
+\item[Rule \eqName{small-right}:]%{{{%
+There exists $n_a$, $b$ and $b'$ such that $b \mapsto b'$ with $e \equiv n_a
+\oplus b$ and $e' \equiv n_a \oplus b'$. Substituting for $e'$, the second
+assumption becomes $n_a \oplus b' \Downarrow m$, with \eqName{big-plus} as
+the only matching rule. This implies the existence of the premises $n_a
+\Downarrow n_a$ and $b' \Downarrow n_b$,
+\begin{gather*}
+\inferrule*
+{
+	\inferrule*
+	{ }{n_a \Downarrow n_a}
+	\and
+	\inferrule*
+	{
+		\vdots
+	}{b' \Downarrow n_b}
+}{n_a \oplus b' \Downarrow n_a + n_b}
+\end{gather*}
+for some $n_b$ such that $m \equiv n_a + n_b$. Invoking the induction
+hypothesis with $b \mapsto b'$ and the above derivation of $b' \Downarrow
+n_b$, we obtain a proof of $b \Downarrow n_b$. The conclusion is satisfied
+by the following derivation:
+\begin{gather*}
+\inferrule*
+{
+	\inferrule*
+	{ }{n_a \Downarrow n_a}
+	\and
+	\inferrule* [Right=IH]
+	{
+		\vdots
+	}{b \Downarrow n_b}
+}{n_a \oplus b \Downarrow n_a + n_b}
+\end{gather*}
+%}}}%
+\item[Rule \eqName{small-left}:]%{{{%
+This case proceeds in a similar manner to the previous rule, but with $a$,
+$a'$ and $b$ such that $a \mapsto a'$, where $e \equiv a \oplus b$ and $e'
+\equiv a' \oplus b$. Substituting for $e$ and $e'$ in the second assumption
+and inspecting its premises, we observe that $a' \Downarrow n_a$ and $b
+\Downarrow n_b$ for some $n_a$ and $n_b$ where $m \equiv n_a + n_b$:
+\begin{gather*}
+\inferrule*
+{
+	\inferrule*
+	{
+		\vdots
+	}{a' \Downarrow n_a}
+	\and
+	\inferrule*
+	{
+		\vdots
+	}{b \Downarrow n_b}
+}{a' \oplus b \Downarrow n_a + n_b}
+\end{gather*}
+Instantiating the induction hypothesis with $a \mapsto a'$ and $a'
+\Downarrow n_a$ delivers evidence of $a \Downarrow n_a$. Reusing the second
+premise of $b \Downarrow n_b$ verbatim, we can then derive the
+conclusion of $a \oplus b \Downarrow n_a + n_b$:
+\begin{gather*}
+\inferrule*
+{
+	\inferrule* [Left=IH]
+	{
+		\vdots
+	}{a \Downarrow n_a}
+	\and
+	\inferrule*
+	{
+		\vdots
+	}{b \Downarrow n_b}
+}{a \oplus b \Downarrow n_a + n_b}
+\end{gather*}
+%}}}%
+\end{description}
+This completes the proof of $e \mapsto e' \rightarrow e' \Downarrow
+m \rightarrow e \Downarrow m$.
 \end{proof}
 
 %}}}%
