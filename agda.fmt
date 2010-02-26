@@ -26,16 +26,13 @@
 %format ) = "\keyw{)}"
 %format Set = "\type{Set}"
 
-
-% Data.Nat
-%format ℕ = "\type{\mathbb{N}}"
-%format 0 = "\name{0}"
-%format + = "\mathbin{\func{+}}"
-
 % Data.Sum
 %format ⊎ = "\infix{\type{\uplus}}"
 %format inj₁ = "\cons{inj_L}"
 %format inj₂ = "\cons{inj_R}"
+
+% Data.Product renaming (_,_ to _&_)
+%format & = "\cons{\infix{,}}"
 
 % Data.Star
 %format Star = "\type{Star}"
@@ -44,6 +41,17 @@
 %format ◅◅ = "\infix{\func{\lhd\!\lhd}}"
 %format gmap = "\func{gmap}"
 
+% Data.Nat
+%format ℕ = "\type{\mathbb{N}}"
+%format 0 = "\name{0}"
+%format + = "\mathbin{\func{+}}"
+
+% Data.List
+%format List = "\type{List}"
+%format ∷ = "\cons{::}"
+%format [ = "\cons{[}"
+%format ] = "\cons{]}"
+
 % Relation.Binary
 %format Rel = "\func{Rel}"
 %format REL = "\func{REL}"
@@ -51,5 +59,4 @@
 % Relation.Binary.PropositionalEquality
 %format ≡ = "\type{{\equiv}}"
 %format ≡.refl = "\cons{{\equiv}.refl}"
-
 

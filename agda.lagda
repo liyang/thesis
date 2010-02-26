@@ -6,7 +6,6 @@
 \begin{code}
 module agda where
 
-open import Data.Empty
 open import Data.Sum
 import Data.Product as Σ
 open Σ renaming (_,_ to _&_)
@@ -14,6 +13,7 @@ import Data.Star as Star
 open Star
 
 open import Data.Nat
+open import Data.List
 
 open import Function
 
@@ -206,103 +206,229 @@ small→big (e↦e′ ◅ e′↦⋆m) = sound e↦e′ (small→big e′↦⋆m
 \section{Stack Machines and Their Semantics}
 
 %{{{%
-%if False
+%format Instruction = "\type{Instruction}"
+%format PUSH = "\cons{PUSH}"
+%format ADD = "\cons{ADD}"
 \begin{code}
-open import Data.List
-
 data Instruction : Set where
   PUSH : ℕ → Instruction
   ADD : Instruction
-
-data Machine : Set where
-  ⟨_,_⟩ : List Instruction → List ℕ → Machine
 \end{code}
 
+%format compile = "\func{compile}"
+\begin{code}
+compile : Expression → List Instruction → List Instruction
+compile (# m)    c = PUSH m ∷ c
+compile (a ⊕ b)  c = compile a (compile b (ADD ∷ c))
+\end{code}
+
+%format Machine = "\type{Machine}"
+%format ⟨_‚_⟩ = "\cons{\langle\anonymous{,}\anonymous\rangle}"
+%format ⟨ = "\prefix{\cons{\langle}}"
+%format ‚ = "\cons{,}"
+%format ⟩ = "\postfix{\cons{\rangle}}"
+\begin{code}
+data Machine : Set where
+  ⟨_‚_⟩ : List Instruction → List ℕ → Machine
+\end{code}
+
+%format _↣_ = "\type{\anonymous{\rightarrowtail}\anonymous}"
+%format ↣ = "\type{{\rightarrowtail}}"
+%format _↣⋆_ = "\type{\anonymous{\rightarrowtail}^\star\anonymous}"
+%format ↣⋆ = "\type{{\rightarrowtail}^\star}"
+%format _↣⋆#_ = "\type{\anonymous{\rightarrowtail}^\star\;" # "\anonymous}"
+%format ↣⋆# = "\type{{\rightarrowtail}^\star}\;" #
+%format σ = "\sigma"
+%format ↣-PUSH = "\cons{{\rightarrowtail}\text-PUSH}"
+%format ↣-ADD = "\cons{{\rightarrowtail}\text-ADD}"
 \begin{code}
 infix 3 _↣_
 data _↣_ : Rel Machine _ where
-  ↣-PUSH : ∀ {m c σ} → ⟨ PUSH m ∷ c , σ ⟩ ↣ ⟨ c , m ∷ σ ⟩
-  ↣-ADD : ∀ {m n c σ} → ⟨ ADD ∷ c , n ∷ m ∷ σ ⟩ ↣ ⟨ c , m + n ∷ σ ⟩
+  ↣-PUSH : ∀ {m c σ} → ⟨ PUSH m ∷ c ‚ σ ⟩ ↣ ⟨ c ‚ m ∷ σ ⟩
+  ↣-ADD : ∀ {m n c σ} → ⟨ ADD ∷ c ‚ n ∷ m ∷ σ ⟩ ↣ ⟨ c ‚ m + n ∷ σ ⟩
+\end{code}
 
+%if False
+\begin{code}
 infix 3 _↣⋆_
 _↣⋆_ : Rel Machine _
 _↣⋆_ = Star _↣_
-\end{code}
-%endif
-%}}}%
 
-%{{{%
-%if False
-\begin{code}
-compile : Expression → List Instruction → List Instruction
-compile (# m) c = PUSH m ∷ c
-compile (a ⊕ b) c = compile a (compile b (ADD ∷ c))
-
-comp : Expression → List Instruction
-comp (# m) = PUSH m ∷ []
-comp (a ⊕ b) = comp a ++ comp b ++ ADD ∷ []
-\end{code}
-%endif
-%}}}%
-
-%{{{%
-%if False
-\begin{code}
 infix 3 _↣⋆#_
 _↣⋆#_ : REL Expression ℕ _
-e ↣⋆# m = ∀ {c σ} → ⟨ compile e c , σ ⟩ ↣⋆ ⟨ c , m ∷ σ ⟩
+e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩
+\end{code}
+%endif
 
+%}}}%
+
+%{{{%
+%format big→machine = "\func{big{\rightarrow}machine}"
+\begin{code}
 big→machine : ∀ {e m} → e ⇓ m → e ↣⋆# m
 big→machine ⇓-ℕ = ↣-PUSH ◅ ε
-big→machine (⇓-⊕ a⇓m b⇓n) = big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
+big→machine (⇓-⊕ a⇓m b⇓n) =
+	big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
+\end{code}
+
+%format exec = "\func{exec}"
+%format na = "n_a"
+%format a↣⋆#na = a "{\rightarrowtail^\star}" na
+%format nb = "n_b"
+%format b↣⋆#nb = b "{\rightarrowtail^\star}" nb
+\begin{code}
+exec : ∀ e → ∃ λ m → e ↣⋆# m
+exec (# m) = m & λ {c} {σ} → ↣-PUSH ◅ ε
+exec (a ⊕ b) with exec a | exec b
+exec (a ⊕ b) | na & a↣⋆#na | nb & b↣⋆#nb = na + nb &
+	λ {c} {σ} → a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
+\end{code}
+
+%format unique = "\func{unique}"
+%format σ′ = σ "\Prime{}"
+%format σ″ = σ "\PPrime{}"
+%format σ₀ = σ "_0"
+%format c′ = c "\Prime{}"
+%format c′↣⋆σ″ = c′ "{\rightarrowtail^\star}" σ″
+%format c′↣⋆σ′ = c′ "{\rightarrowtail^\star}" σ′
+%format c↣⋆σ″ = c "{\rightarrowtail^\star}" σ″
+\begin{code}
+unique : ∀ {c σ σ′ σ″} →  ⟨ c ‚ σ ⟩ ↣⋆ ⟨ [] ‚ σ′ ⟩ →
+                          ⟨ c ‚ σ ⟩ ↣⋆ ⟨ [] ‚ σ″ ⟩ → σ′ ≡ σ″
+unique {[]} ε ε = ≡.refl
+unique {[]} ε              (() ◅ c′↣⋆σ″)
+unique {[]} (() ◅ c′↣⋆σ′)  c↣⋆σ″
+unique {PUSH m ∷ c′} (↣-PUSH ◅ c′↣⋆σ′) (↣-PUSH ◅ c′↣⋆σ″) = unique c′↣⋆σ′ c′↣⋆σ″
+unique {ADD ∷ c′} {          []  } (() ◅ c′↣⋆σ′) c↣⋆σ″
+unique {ADD ∷ c′} {     m ∷  []  } (() ◅ c′↣⋆σ′) c′↣⋆σ″
+unique {ADD ∷ c′} {n ∷  m ∷  σ   } (↣-ADD ◅ c′↣⋆σ′) (↣-ADD ◅ c′↣⋆σ″) = unique c′↣⋆σ′ c′↣⋆σ″
+\end{code}
+
+%format machine→big = "\func{machine{\rightarrow}big}"
+%format e↣⋆#m = e "{\rightarrowtail^\star}" m
+%format e′↣⋆#m = e "\Prime{}{\rightarrowtail^\star}" m
+%format a⊕b↣⋆#m = a "{\oplus}" b "{\rightarrowtail^\star}" m
+\begin{code}
+machine→big : ∀ {e m} → e ↣⋆# m → e ⇓ m
+machine→big {# m} e↣⋆#m with e↣⋆#m {[]} {[]}
+machine→big {# m} e↣⋆#m | ↣-PUSH ◅ ε = ⇓-ℕ
+machine→big {# m} e↣⋆#m | ↣-PUSH ◅ () ◅ e′↣⋆#m
+machine→big {a ⊕ b} a⊕b↣⋆#m with exec a | exec b
+machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
+	with unique (a⊕b↣⋆#m {σ = []}) (a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε)
+machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
+	| ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
+\end{code}
+%}}}%
+
+%{{{%
+%if False
+\begin{code}
+-- comp : Expression → List Instruction
+-- comp (# m) = PUSH m ∷ []
+-- comp (a ⊕ b) = comp a ++ comp b ++ ADD ∷ []
+
+-- import Level
+-- infix 3 _Comp_
+-- data _Comp_ : REL Expression (List Instruction) Level.zero where
+--   Comp# : ∀ {m} → # m Comp [ PUSH m ]
+--   Comp⊕ : ∀ {a ca b cb} → a Comp ca → b Comp cb → a ⊕ b Comp ca ++ cb ++ [ ADD ]
+
+-- infix 3 _WithCont_CompilesTo_
+-- data _WithCont_CompilesTo_ : Expression → List Instruction → List Instruction → Set where
+--   Compile# : ∀ {m c} → # m WithCont c CompilesTo PUSH m ∷ c
+--   Compile⊕ : ∀ {a b c ⊕B A⊕B} → a WithCont ⊕B CompilesTo A⊕B → b WithCont (ADD ∷ c) CompilesTo ⊕B → a ⊕ b WithCont c CompilesTo A⊕B
+
+-- compile→Compile : ∀ {e c c′} → compile e c ≡ c′ → e WithCont c CompilesTo c′
+-- compile→Compile {# m} ≡.refl = Compile#
+-- compile→Compile {a ⊕ b} ≡.refl = Compile⊕ (compile→Compile ≡.refl) (compile→Compile ≡.refl)
+
+-- Compile→compile : ∀ {e c c′} → e WithCont c CompilesTo c′ → compile e c ≡ c′
+-- Compile→compile Compile# = ≡.refl
+-- Compile→compile (Compile⊕ a b) with Compile→compile a | Compile→compile b
+-- Compile→compile (Compile⊕ a b) | ≡.refl | ≡.refl = ≡.refl
+\end{code}
+%endif
+%}}}%
+
+%{{{%
+%if False
+\begin{code}
+-- machine→small : ∀ {e m} → ⟨ compile e c , [] ⟩ ↣⋆ ⟨ c , m ∷ [] ⟩ → e ↦⋆# m
+-- machine→small {# m} .{m} (↣-PUSH ◅ ε) = ε
+-- machine→small {# m} (↣-PUSH ◅ () ◅ _)
+-- machine→small {a ⊕ b} (a↣a′ ◅ a′↣⋆m) = {!!}
+
+-- decompile : ∀ {a b c A⊕B} → a ⊕ b WithCont c CompilesTo A⊕B → ∃ λ ⊕B → compile a ⊕B ≡ A⊕B × compile b (ADD ∷ c) ≡ ⊕B
+-- decompile (Compile⊕ {⊕B = ⊕B} aWith⊕BCompA⊕B bWithADDComp⊕B) = ⊕B & Compile→compile aWith⊕BCompA⊕B & Compile→compile bWithADDComp⊕B
+
+-- decomp : ∀ e c σ → ∃ λ m → ⟨ compile e c , σ ⟩ ↣⋆ ⟨ c , m ∷ σ ⟩
+-- decomp (# m) c σ = m & ↣-PUSH ◅ ε
+-- decomp (a ⊕ b) c σ with decomp a (compile b (ADD ∷ c)) σ
+-- decomp (a ⊕ b) c σ | m & a↣⋆m with decomp b (ADD ∷ c) (m ∷ σ)
+-- decomp (a ⊕ b) c σ | m & a↣⋆m | n & b↣⋆n = m + n & a↣⋆m ◅◅ b↣⋆n ◅◅ ↣-ADD ◅ ε
+
+--   split foo | na & a↣⋆#na | nb & b↣⋆#nb = na & nb & (λ {c} {σ} → a↣⋆#na) & (λ {c} {σ} → b↣⋆#nb) & {!boo moo poo!}
+--     where
+--     moo = a↣⋆#na {compile b [ ADD ]} {[]} ◅◅ b↣⋆#nb {[ ADD ]} {[ na ]} ◅◅ ↣-ADD ◅ ε
+--     poo = a⊕b↣⋆#m {[]} {[]}
+
+-- machine→big {a ⊕ b} {m} a⊕b↣⋆#m with split a⊕b↣⋆#m where
+--   split : a ⊕ b ↣⋆# m → ∃ λ na → ∃ λ nb → a ↣⋆# na × b ↣⋆# nb × m ≡ na + nb
+--   split foo with decomp a | decomp b
+--   split foo | na & a↣⋆#na | nb & b↣⋆#nb = na & nb & (λ {c} {σ} → a↣⋆#na) & (λ {c} {σ} → b↣⋆#nb) & {!boo moo poo!}
+--     where
+--     moo = a↣⋆#na {compile b [ ADD ]} {[]} ◅◅ b↣⋆#nb {[ ADD ]} {[ na ]} ◅◅ ↣-ADD ◅ ε
+--     poo = a⊕b↣⋆#m {[]} {[]}
+-- machine→big {a ⊕ b} .{na + nb} a⊕b↣⋆#m | na & nb & a↣⋆#na & b↣⋆#nb & ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
 
 -- small→machine : ∀ {e m} → e ↦⋆# m → e ↣⋆# m
 -- small→machine = big→machine ∘ small→big
 
-eval : Expression → ℕ
-eval = ⟦_⟧
+-- eval : Expression → ℕ
+-- eval = ⟦_⟧
 
-exec : List Instruction → List ℕ → List ℕ
-exec [] σ = σ
-exec (PUSH m ∷ c) σ = exec c (m ∷ σ)
-exec (ADD ∷ c) [] = {!unpossible!!}
-exec (ADD ∷ c) (_ ∷ []) = {!unpossible!!}
-exec (ADD ∷ c) (n ∷ m ∷ σ) = exec c (m + n ∷ σ)
+-- exec : List Instruction → List ℕ → List ℕ
+-- exec [] σ = σ
+-- exec (PUSH m ∷ c) σ = exec c (m ∷ σ)
+-- exec (ADD ∷ c) [] = {!unpossible!!}
+-- exec (ADD ∷ c) (_ ∷ []) = {!unpossible!!}
+-- exec (ADD ∷ c) (n ∷ m ∷ σ) = exec c (m + n ∷ σ)
 
-machine→exec : ∀ {c σ σ′} → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩ → exec c σ ≡ σ′
-machine→exec {[]} ε = ≡.refl
-machine→exec {[]} (() ◅ xs)
-machine→exec {PUSH m ∷ c} (↣-PUSH ◅ xs) = machine→exec xs
-machine→exec {ADD ∷ c} (↣-ADD ◅ xs) = machine→exec xs
+-- machine→exec : ∀ {c σ σ′} → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩ → exec c σ ≡ σ′
+-- machine→exec {[]} ε = ≡.refl
+-- machine→exec {[]} (() ◅ xs)
+-- machine→exec {PUSH m ∷ c} (↣-PUSH ◅ xs) = machine→exec xs
+-- machine→exec {ADD ∷ c} (↣-ADD ◅ xs) = machine→exec xs
 
-exec→machine : ∀ {c σ σ′} → exec c σ ≡ σ′ → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩
-exec→machine {[]} ≡.refl = ε
-exec→machine {PUSH _ ∷ c′} exec-c-σ≡σ′ = ↣-PUSH ◅ exec→machine exec-c-σ≡σ′
-exec→machine {ADD ∷ c′} {[]} exec-c-σ≡σ′ = {!unpossible!!}
-exec→machine {ADD ∷ c′} {_ ∷ []} exec-c-σ≡σ′ = {!unpossible!!}
-exec→machine {ADD ∷ c′} {n ∷ m ∷ σ} exec-c-σ≡σ′ = ↣-ADD ◅ exec→machine exec-c-σ≡σ′
+-- exec→machine : ∀ {c σ σ′} → exec c σ ≡ σ′ → ⟨ c , σ ⟩ ↣⋆ ⟨ [] , σ′ ⟩
+-- exec→machine {[]} ≡.refl = ε
+-- exec→machine {PUSH _ ∷ c′} exec-c-σ≡σ′ = ↣-PUSH ◅ exec→machine exec-c-σ≡σ′
+-- exec→machine {ADD ∷ c′} {[]} exec-c-σ≡σ′ = {!unpossible!!}
+-- exec→machine {ADD ∷ c′} {_ ∷ []} exec-c-σ≡σ′ = {!unpossible!!}
+-- exec→machine {ADD ∷ c′} {n ∷ m ∷ σ} exec-c-σ≡σ′ = ↣-ADD ◅ exec→machine exec-c-σ≡σ′
 
-correctness : ∀ e {c σ} → exec (compile e c) σ ≡ exec c (eval e ∷ σ)
-correctness (# m) = ≡.refl
-correctness (a ⊕ b) {c} {σ} =
-  begin
-    exec (compile (a ⊕ b) c) σ
-  ≡⟨ ≡.refl ⟩
-    exec (compile a (compile b (ADD ∷ c))) σ
-  ≡⟨ correctness a ⟩
-    exec (compile b (ADD ∷ c)) (eval a ∷ σ)
-  ≡⟨ correctness b ⟩
-    exec (ADD ∷ c) (eval b ∷ eval a ∷ σ)
-  ≡⟨ ≡.refl ⟩
-    exec c (eval a + eval b ∷ σ)
-  ∎ where open ≡.≡-Reasoning
+-- correctness : ∀ e {c σ} → exec (compile e c) σ ≡ exec c (eval e ∷ σ)
+-- correctness (# m) = ≡.refl
+-- correctness (a ⊕ b) {c} {σ} =
+--   begin
+--     exec (compile (a ⊕ b) c) σ
+--   ≡⟨ ≡.refl ⟩
+--     exec (compile a (compile b (ADD ∷ c))) σ
+--   ≡⟨ correctness a ⟩
+--     exec (compile b (ADD ∷ c)) (eval a ∷ σ)
+--   ≡⟨ correctness b ⟩
+--     exec (ADD ∷ c) (eval b ∷ eval a ∷ σ)
+--   ≡⟨ ≡.refl ⟩
+--     exec c (eval a + eval b ∷ σ)
+--   ∎ where open ≡.≡-Reasoning
 
-correctness′ : ∀ e {c σ m} → e ⇓ m → exec (compile e c) σ ≡ exec c (m ∷ σ)
-correctness′ e e⇓m with big→denotation e⇓m
-correctness′ e e⇓m | ≡.refl = correctness e
+-- correctness′ : ∀ e {c σ m} → e ⇓ m → exec (compile e c) σ ≡ exec c (m ∷ σ)
+-- correctness′ e e⇓m with big→denotation e⇓m
+-- correctness′ e e⇓m | ≡.refl = correctness e
 
-correctness″ : ∀ e {c σ m} → e ↦⋆# m → exec (compile e c) σ ≡ exec c (m ∷ σ)
-correctness″ e = correctness′ e ∘ small→big
+-- correctness″ : ∀ e {c σ m} → e ↦⋆# m → exec (compile e c) σ ≡ exec c (m ∷ σ)
+-- correctness″ e = correctness′ e ∘ small→big
 
 \end{code}
 %endif
@@ -511,10 +637,10 @@ machine→small (a ⊕ b) ∀cσ:a⊕b↣⋆m | a⊕b↣⋆m = {!!}
 -- -- with decomp a (compile ) | decomp b
 -- -- machine→small (a ⊕ b) ∀cσ:e↣⋆m | x ◅ xs | foo | bar = {!!}
 
--- -- machine→small : ∀ {e m} → ⟨ compile e [] , [] ⟩ ↣⋆ ⟨ [] , m ∷ [] ⟩ → e ↦⋆# m
--- -- machine→small {# m} .{m} (↣-PUSH ◅ ε) = ε
--- -- machine→small {# m} (↣-PUSH ◅ () ◅ _)
--- -- machine→small {a ⊕ b} (a↣a′ ◅ a′↣⋆m) = {!!}
+machine→small : ∀ {e m} → ⟨ compile e [] , [] ⟩ ↣⋆ ⟨ [] , m ∷ [] ⟩ → e ↦⋆# m
+machine→small {# m} .{m} (↣-PUSH ◅ ε) = ε
+machine→small {# m} (↣-PUSH ◅ () ◅ _)
+machine→small {a ⊕ b} (a↣a′ ◅ a′↣⋆m) = {!!}
 %\end{code}
 %endif
 %}}}%
