@@ -27,6 +27,7 @@
 \usepackage{amsthm}
 \newtheorem{theorem}{Theorem}[chapter]
 \newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
 
 \def\eqName#1{\textsf{\mdseries(#1)}}
 \def\eqTag#1{\tag*{\eqName{#1}}}
@@ -64,7 +65,7 @@
 
 
 
-\includeonly{semantics,agda.lagda}
+%\includeonly{semantics.lhs,agda.lagda}
 \begin{document}
 
 \begin{titlepage}
@@ -95,11 +96,11 @@ June 2010
 
 \begin{abstract}%{{{%
 Concurrent programming is notoriously difficult, but with multi-core
-processors becoming the norm, it is now a reality that every programmer must
-face. Concurrency has traditionally been managed using low-level
-mutual exclusion \emph{locks}, which are error-prone and do not naturally
-support the compositional style of programming that is becoming
-indispensable for today's large-scale software projects.
+processors becoming the norm, is now a reality that every programmer must
+face. Concurrency has traditionally been managed using low-level mutual
+exclusion \emph{locks}, which are error-prone and do not naturally support
+the compositional style of programming that is becoming indispensable for
+today's large-scale software projects.
 
 A novel, high-level approach that has emerged in recent years is that of
 \emph{software transactional memory} (STM), which avoids the need for
@@ -109,12 +110,13 @@ and subtle, and ensuring its correctness places significant demands on the
 compiler writer.
 
 This thesis considers the problem of formally verifying a compiler for STM.
-Based on a minimal language, we first explore various STM design choices,
-along with the issue of compiler correctness via the use of automated
-testing tools. Then we outline a new approach to concurrent compiler
-correctness using the notion of bisimulation, implemented using the Agda
-theorem prover. Finally, we apply this approach to our minimal language to
-give the first formally verified compiler for software transactional memory.
+Utilising a minimal language incorporating only the features that we are
+interested in studying, we first explore various STM design choices, along
+with the issue of compiler correctness via the use of automated testing
+tools. Then we outline a new approach to concurrent compiler correctness
+using the notion of bisimulation, implemented using the Agda theorem prover.
+Finally, we apply this approach to our minimal language to give the first
+formally verified compiler for software transactional memory.
 \end{abstract}%}}}%
 
 \chapter*{Acknowledgements}
@@ -127,7 +129,7 @@ give the first formally verified compiler for software transactional memory.
 
 \include{introduction.lhs}
 \include{stm.lhs}
-\include{semantics}
+\include{semantics.lhs}
 \include{testing.lhs}
 \include{model.lhs}
 \include{agda.lagda}

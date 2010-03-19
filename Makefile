@@ -1,4 +1,4 @@
-TEXT := thesis.tex introduction.lhs stm.lhs semantics.tex \
+TEXT := thesis.tex introduction.lhs stm.lhs semantics.lhs \
 	testing.lhs model.lhs agda.lagda nondet.lagda concurrency.lagda \
 	verified.lagda conclusion.tex
 

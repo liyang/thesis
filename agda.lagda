@@ -14,6 +14,7 @@ open Star
 
 open import Data.Nat
 open import Data.List
+open import Data.List.Properties
 
 open import Function
 
@@ -165,8 +166,7 @@ denotation→big {a ⊕ b}  ≡.refl = ⇓-⊕ (denotation→big ≡.refl) (deno
 \begin{code}
 big→denotation : ∀ {e m} → e ⇓ m → ⟦ e ⟧ ≡ m
 big→denotation ⇓-ℕ = ≡.refl
-big→denotation (⇓-⊕ a⇓m b⇓n) with big→denotation a⇓m | big→denotation b⇓n
-big→denotation (⇓-⊕ a⇓m b⇓n) | ≡.refl | ≡.refl = ≡.refl
+big→denotation (⇓-⊕ a⇓m b⇓n) rewrite big→denotation a⇓m | big→denotation b⇓n = ≡.refl
 \end{code}
 
 %format big→small = "\func{big{\rightarrow}small}"
@@ -255,8 +255,6 @@ _↣⋆_ : Rel Machine _
 _↣⋆_ = Star _↣_
 
 infix 3 _↣⋆#_
-_↣⋆#_ : REL Expression ℕ _
-e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩
 \end{code}
 %endif
 
@@ -265,10 +263,22 @@ e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ �
 %{{{%
 %format big→machine = "\func{big{\rightarrow}machine}"
 \begin{code}
+_↣⋆#_ : REL Expression ℕ _
+e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩
+
 big→machine : ∀ {e m} → e ⇓ m → e ↣⋆# m
 big→machine ⇓-ℕ = ↣-PUSH ◅ ε
 big→machine (⇓-⊕ a⇓m b⇓n) =
-	big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
+  big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
+\end{code}
+
+\begin{code}
+small→machine : ∀ {e m} → e ↦⋆# m → e ↣⋆# m
+small→machine ε = ↣-PUSH ◅ ε
+small→machine (↦-ℕ ◅ ε) = ↣-PUSH ◅ ↣-PUSH ◅ ↣-ADD ◅ ε
+small→machine (↦-ℕ ◅ () ◅ xs)
+small→machine (↦-L a↦a′ ◅ a′⊕b↦m) = {!small→machine a′⊕b↦m!}
+small→machine (↦-R b↦b′ ◅ na⊕b′↦m) = {!!}
 \end{code}
 
 %format exec = "\func{exec}"
@@ -281,7 +291,7 @@ exec : ∀ e → ∃ λ m → e ↣⋆# m
 exec (# m) = m & λ {c} {σ} → ↣-PUSH ◅ ε
 exec (a ⊕ b) with exec a | exec b
 exec (a ⊕ b) | na & a↣⋆#na | nb & b↣⋆#nb = na + nb &
-	λ {c} {σ} → a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
+  λ {c} {σ} → a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
 \end{code}
 
 %format unique = "\func{unique}"
@@ -305,19 +315,21 @@ unique {ADD ∷ c′} {n ∷  m ∷  σ   } (↣-ADD ◅ c′↣⋆σ′) (↣-A
 \end{code}
 
 %format machine→big = "\func{machine{\rightarrow}big}"
-%format e↣⋆#m = e "{\rightarrowtail^\star}" m
-%format e′↣⋆#m = e "\Prime{}{\rightarrowtail^\star}" m
+%format m↣⋆#m = m "{\rightarrowtail^\star}" m
+%format m′↣⋆#m = m "\Prime{}{\rightarrowtail^\star}" m
 %format a⊕b↣⋆#m = a "{\oplus}" b "{\rightarrowtail^\star}" m
 \begin{code}
 machine→big : ∀ {e m} → e ↣⋆# m → e ⇓ m
-machine→big {# m} e↣⋆#m with e↣⋆#m {[]} {[]}
-machine→big {# m} e↣⋆#m | ↣-PUSH ◅ ε = ⇓-ℕ
-machine→big {# m} e↣⋆#m | ↣-PUSH ◅ () ◅ e′↣⋆#m
+machine→big {# m} m↣⋆#m with m↣⋆#m {[]} {[]}
+machine→big {# m} m↣⋆#m | ↣-PUSH ◅ ε = ⇓-ℕ
+machine→big {# m} m↣⋆#m | ↣-PUSH ◅ () ◅ m′↣⋆#m
 machine→big {a ⊕ b} a⊕b↣⋆#m with exec a | exec b
 machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
-	with unique (a⊕b↣⋆#m {σ = []}) (a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε)
+  with unique {σ = []} a⊕b↣⋆#m a⊕b↣⋆#na+nb where
+    a⊕b↣⋆#na+nb : a ⊕ b ↣⋆# na + nb
+    a⊕b↣⋆#na+nb = a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
 machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
-	| ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
+  | ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
 \end{code}
 %}}}%
 
