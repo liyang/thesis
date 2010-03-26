@@ -751,7 +751,7 @@ while retaining the speed benefits of concurrency.
 
 %}}}%
 
-\section{Haskell and Software Transactional Memory}%{{{%
+\section{Haskell and Software Transactional Memory}\label{sec:stm-intro}%{{{%
 
 The previous section outlined the standard approach to concurrency in
 Haskell, which makes use of explicit threading and mutable variables via
