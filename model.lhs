@@ -8,11 +8,13 @@
 %\def\finsert#1#2#3{#1{\left[ #2 \mapsto #3 \right]}}
 \def\finsert#1#2#3{#1 \uplus \{ #2 \mapsto #3 \}}
 \def\flookup#1#2{#1 \mathbin{?} #2}
+\def\hsinfix#1{\mathbin{\func{\texttt`#1\texttt`}}}
 
 \def\expr#1#2{#2\ensuremath{_\mathsf{\scriptscriptstyle#1}}}
 
-\def\starred#1{#1^\star}
+\def\starred#1{\red #1^\star}
 \def\red#1{\expr{#1}{\mapsto}}
+\def\eval#1{\expr{#1}{\Downarrow}}
 
 \def\AddLT{\expr T{AddL}}
 \def\AddRT{\expr T{AddR}}
@@ -32,22 +34,32 @@
 \def\relcomp{\mathbin{\;;\;}}
 %}}}%
 %{{{%
+%if False
 \begin{code}
+{-# LANGUAGE CPP #-}
+#define NIL []
+
 module Main where
 
 import Prelude
 import Control.Arrow (first, second)
+import Control.Monad (ap)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import Data.Traversable
-
+import Test.QuickCheck
 
 type Var = Char
 type List = []
+
+mupdate :: Ord alpha => Map alpha beta -> Map alpha beta -> Map alpha beta
+mupdate = flip Map.union
 \end{code}
+%endif
 %}}}%
+%format `mupdate` = "\mathbin{\func{\uplus}}"
 
 \chapter{A Model of STM}
 
@@ -66,6 +78,8 @@ correctness statement for the combination. Since the model is implemented as
 a Haskell program, we can test its correctness using QuickCheck and HPC.
 
 \TODO{this chapter is based on previous paper?}
+
+\TODO{need to say something about the executable model in the introduction}
 
 \section{A Simple Transactional Language}%{{{%
 
@@ -94,6 +108,7 @@ computations.
 %format Tran = "\type{Tran}"
 %format ValT = "\cons{Val\sub T}"
 %format `AddT` = "\mathbin{\cons{\oplus\sub T}}"
+%format AddT = "(\cons{\oplus\sub T})"
 %format Read = "\cons{Read}"
 %format Write = "\cons{Write}"
 %format Proc = "\type{Proc}"
@@ -107,10 +122,10 @@ orthogonal issues. The language we consider has a two-level
 syntax---mirroring that of the STM Haskell primitives---which can be
 represented as the following |Tran| and |Proc| data types in Haskell:
 \def\sub#1{_{\scriptscriptstyle #1}}
-\def\const#1{}
+\def\hide#1{}
 \begin{code}
-data Tran  = ValT Integer  | Tran `AddT` Tran  | Read Var     | Write Var Tran{-"\const{"-}deriving (Eq, Ord){-"}"-}
-data Proc  = ValP Integer  | Proc `AddP` Proc  | Atomic Tran  | Fork Proc{-"\const{"-}deriving (Eq, Ord){-"}"-}
+data Tran  = ValT Integer  | Tran `AddT` Tran  | Read Var     | Write Var Tran{-"\hide{"-}deriving (Eq, Ord, Show){-"}"-}
+data Proc  = ValP Integer  | Proc `AddP` Proc  | Atomic Tran  | Fork Proc{-"\hide{"-}deriving (Eq, Ord, Show){-"}"-}
 \end{code}
 The two syntactic classes correspond to actions in the |STM| and |IO| monads
 respectively. The language is intentionally minimal, since issues such as
@@ -290,20 +305,22 @@ implement a helper function to run a given initial expression to completion
 for our executable model. Let us first define |joinSet|, which flattens
 nested |Set|s:
 \begin{code}
-joinSet :: {-"\const{"-}Ord alpha => {-"}"-}Set (Set alpha) -> Set alpha
+joinSet :: {-"\hide{"-}Ord alpha => {-"}"-}Set (Set alpha) -> Set alpha
 joinSet = Set.fold Set.union Set.empty
 \end{code}
+Here, $\func{Set.union}$ and $\func{Set.empty}$ are typeset as |Set.union|
+and |Set.empty| respectively.
 
 %format reduceUntil = "\func{reduceUntil}"
 %format step = "\func{step}"
 %format partition = "\func{partition}"
 \def\stepSig{|step :: (Set alpha, Set beta) -> Set beta|}
 \def\partitionSig{|partition :: alpha -> (Set alpha, Set beta) -> (Set alpha, Set beta)|}
-\noindent The following definition of |reduceUntil|---parameterised over
-a relation |reduce|---reduces the given |init| state to completion,
-according to the predicate |p|:
+The following definition of |reduceUntil|---parameterised over a relation
+|reduce|---reduces the given |init| state to completion, according to the
+predicate |p|:
 \begin{code}
-reduceUntil :: {-"\const{"-}(Ord alpha, Ord beta) => {-"}"-}(alpha -> Maybe beta) -> Rel alpha -> REL alpha beta
+reduceUntil :: {-"\hide{"-}(Ord alpha, Ord beta) => {-"}"-}(alpha -> Maybe beta) -> Rel alpha -> REL alpha beta
 reduceUntil p reduce init = step (Set.singleton init, Set.empty) where
 
 	{-"\stepSig"-}
@@ -323,65 +340,30 @@ iteration with the aid of |partition|, and repeatedly applies |reduce| to
 the set of remaining running states until it becomes exhausted.
 
 %format isValT = "\func{isVal_T}"
+Finally, given the following |isValT| predicate,
 \begin{code}
 isValT :: (Heap, Tran) -> Maybe (Heap, Integer)
 isValT (h, ValT n  ) = Just (h, n)
 isValT (h, _       ) = Nothing
 \end{code}
+the expression |reduceUntil isValT redT| then corresponds to an
+implementation of $\starred T$, which produces a set of |(Heap, Integer)|
+pairs from an initial |(Heap, Tran)|.
 
 %}}}%
 
 \subsection{Process Soup Semantics}%{{{%
 
-%format Soup = "\type{Soup}"
-%format redP = "\func{reduce_{Proc}}"
-\begin{code}
-type Soup = [Proc]
-
-redP :: Proc -> Rel (Heap, Soup)
-redP (ValP n)      (h, s) = Set.empty
-
-redP (Fork q)      (h, s) = Set.singleton (h, ValP 0 : q : s)
-redP (Atomic t)    (h, s) = second (\ n -> ValP n : s)
-	`Set.map` (reduceUntil isValT redT (h, t))
-
-redP (a `AddP` b)  (h, s) = case (a, b) of
-		(ValP m  , ValP n  ) -> Set.singleton (h, ValP (m + n) : s)
-		(ValP m  , _       ) -> second (\ (b' : s') -> ValP m `AddP` b' : s')
-			`Set.map` redS (h, b : s)
-		(_       , _       ) -> second (\ (a' : s') -> a' `AddP` b : s')
-			`Set.map` redS (h, a : s)
-\end{code}
-
-%format redS = "\func{reduce_{Soup}}"
-\begin{code}
-redS :: Rel (Heap, Soup)
-redS (h, []     ) = Set.empty
-redS (h, p : s  ) = (second (p : {-"{}"-}) `Set.map` redS (h, s))
-	`Set.union` redP p (h, s)
-\end{code}
-
-%format isValP = "\func{isVal_P}"
-%format isValS = "\func{isVal_S}"
-\begin{code}
-isValP :: Proc -> Maybe Integer
-isValP (ValP n)  = Just n
-isValP _         = Nothing
-
-isValS :: (Heap, Soup) -> Maybe (Heap, [Integer])
-isValS (h, s) = case traverse isValP s of
-	Nothing   -> Nothing
-	Just ns   -> Just (h, ns)
-\end{code}
-
 The reduction relation $\red P$ for processes acts on pairs $\Hp<h, s>$
 consisting of a heap |h| as before, and a `soup' |s| of running
-processes~\cite{peyton-jones01-awkward}. The soup itself is a multi-set,
-which we represent as a list of type |[Proc]| for implementation reasons.
-The process rules are in general defined by matching on the first process in
-the soup. However, we begin by giving the \eqName{Preempt} rule, which
-allows the rest of the soup to make progress, giving rise to non-determinism
-in the language:
+processes~\cite{peyton-jones01-awkward}. While the soup itself is to be
+regarded as a multi-set, here we use a more concrete representation, namely
+a list of |Proc|s.
+
+The reduction rules for process are in general defined by matching on the
+first process in the soup. However, we begin by giving the \eqName{Preempt}
+rule, which allows the rest of the soup to make progress, giving rise to
+non-determinism in the language:
 \[
 	\inferrule%
 		{\Hp<h, s> \red P \Hp<h', s'>}%
@@ -389,31 +371,77 @@ in the language:
 	\eqTag{Preempt}
 \]
 
-Executing |Fork p| adds |p| to the process soup, and evaluates to |ValP 0|
-(which corresponds to |return ()| in Haskell) as the result of this action:
+%format redP = "\func{reduce_{P}}"
+%format redS = "\func{reduce_{S}}"
+\noindent Our implementation of $\red P$ comprise a pair of
+mutually-recursive definitions,
+\begin{code}
+redP  :: Proc ->  Rel (Heap, [Proc])
+redS  ::          Rel (Heap, [Proc])
+\end{code}
+where |redP| performs a single-step reduction of a particular |Proc| in the
+context of the given heap and soup, and |redS| corresponds to the general
+case:
+\begin{code}
+redS (h, NIL    ) = Set.empty
+redS (h, p : s  ) = (second (p : {-"{}"-}) `Set.map` redS (h, s))
+	`Set.union` redP p (h, s)
+\end{code}
+When the soup is empty, no reduction is possible, so we return a empty set.
+
+The second case in the definition of |redS| handles non-empty process
+soups, where we can either apply \eqName{Preempt} to reduce the rest rest of
+the soup |s|, or to only reduce the first process |p| using |redP|. These
+two sets of reducts are combined using |Set.union|.
+
+It is not possible for values to reduce any further in our semantics, so 
+we return an empty set when |p| is a |ValP|.
+\savecolumns
+\begin{code}
+redP (ValP n)      (h, s) = Set.empty
+\end{code}
+
+\noindent Executing |Fork p| adds |p| to the process soup, and evaluates to
+|ValP 0| (which corresponds to |return ()| in Haskell) as the result of this
+action:
 \[
 	\Hp<h, |Fork p : s|> \red P \Hp<h, |ValP 0 : p : s|>
 	\eqTag{Fork}
 \]
+This is handled by the following case in the definition of |redP|:
+\restorecolumns
+\begin{code}
+redP (Fork p)      (h, s) = Set.singleton (h, ValP 0 : p : s)
+\end{code}
 
 \noindent Next, the \eqName{Atomic} rule has a premise which evaluates the
-given expression until it reaches a value (where $\starred{\red T}$ denotes
-the reflexive, transitive closure of $\red T$), and a conclusion which
+given expression until it reaches a value (where $\starred T$ denotes the
+reflexive, transitive closure of $\red T$), and a conclusion which
 encapsulates this as a single transition on the process level:
 \begin{gather*}
 	\inferrule%
-		{\Hp<h, e> \starred{\red T} \Hp<h', |ValT n|>}%
+		{\Hp<h, e> \starred T \Hp<h', |ValT n|>}%
 		{\Hp<h, |Atomic e : s|> \red P \Hp<h', |ValP n : s|>}
 	\eqTag{Atomic}
 \end{gather*}
 In this manner we obtain a \emph{stop-the-world} semantics for atomic
 transactions, preventing interference from other concurrently executing
-processes. Note that while the use of $\starred{\red T}$ may seem odd in
+processes. Note that while the use of $\starred T$ may seem odd in
 a small-step semantics, it expresses the intended meaning in a clear and
 concise manner~\cite{harris05-composable}.
 
-Finally, it is straightforward to handle |`AddP`| on the process level using
-three rules, in an analogous manner to |`AddT`| on the transaction level:
+Our model of the \eqName{Atomic} rule implements the same stop-the-world
+semantics using |reduceUntil| defined in the previous section. The values
+resulting from the execution of |t| are then placed back into the soup:
+\restorecolumns
+\begin{code}
+redP (Atomic t)    (h, s) = second (\ n -> ValP n : s)
+	`Set.map` reduceUntil isValT redT (h, t)
+\end{code}
+
+\noindent Finally, it is straightforward to handle |`AddP`| on the process
+level using three rules, in an analogous manner to |`AddT`| on the
+transaction level:
 \begin{gather*}
 	\Hp<h, |ValP m `AddP` ValP n : s|> \red P \Hp<h, |ValP (m + n) : s|>
 	\eqTag{\AddZP}
@@ -428,14 +456,44 @@ three rules, in an analogous manner to |`AddT`| on the transaction level:
 		{\Hp<h, |a `AddP` b : s|> \red P \Hp<h', |a' `AddP` b : s'|>}
 	\eqTag{\AddLP}
 \end{gather*}
+The corresponding implementation mirrors that of |`AddT`|, evaluating
+expressions in a left-to-right order:
+%	(ValP m  `AddP` b)  -> second (\ (b' : s') -> ValP m `AddP` b' : s') `Set.map` redS (h, b : s)
+%	(a       `AddP` b)  -> second (\ (a' : s') -> a' `AddP` b : s') `Set.map` redS (h, a : s)
+%format mapHead = "\func{mapHead}"
+\begin{code}
+redP (a `AddP` b)  (h, s) = case (a, b) of
+	(ValP m,  ValP n) -> Set.singleton (h, ValP (m + n) : s)
+	(ValP m,  b)  -> second (mapHead (ValP m  `AddP`    )) `Set.map` redS (h, b : s)
+	(a     ,  b)  -> second (mapHead (        `AddP` b  )) `Set.map` redS (h, a : s)
+	where mapHead f (p : s) = f p : s
+\end{code}
+In a similar way to our earlier |isValT|, we define an |isValS| predicate to
+determine when an entire soup has finished reducing.
+%format isValP = "\func{isVal_P}"
+%format isValS = "\func{isVal_S}"
+\begin{code}
+isValS :: (Heap, [Proc]) -> Maybe (Heap, [Integer])
+isValS (h, s) = case traverse isValP s of
+	Nothing   -> Nothing
+	Just ns   -> Just (h, ns)
+	where
+	isValP :: Proc -> Maybe Integer
+	isValP (ValP n)  = Just n
+	isValP _         = Nothing
+\end{code}
+This completes our executable model of the high-level semantics:
+|reduceUntil isValS redS| then corresponds to an implementation of $\red P$,
+which produces a set of |(Heap, [Integer])| pairs from an initial |(Heap,
+[Proc])|.
 
-\noindent In summary, the above semantics for transactions and processes
-mirror those for STM Haskell, but for a simplified language. Moreover, while
-the original semantics uses evaluation contexts to identify the point at
-which transition rules such as \eqName{\AddZP} can be applied, our language
-is sufficiently simple to allow the use of explicit structural rules such as
-\eqName{\AddLP} and \eqName{\AddRP}, which for our purposes have the
-advantage of being directly implementable.
+In summary, the above semantics for transactions and processes mirror those
+for STM Haskell, but for a simplified language. Moreover, while the original
+semantics uses evaluation contexts to identify the point at which transition
+rules such as \eqName{\AddZP} can be applied, our language is sufficiently
+simple to allow the use of explicit structural rules such as \eqName{\AddLP}
+and \eqName{\AddRP}, which for our purposes have the advantage of being
+directly implementable.
 
 %}}}%
 
@@ -468,7 +526,7 @@ machine, in which |Code| comprises a sequence of |Instruction|s:
 \begin{code}
 type Code         =  List Instruction
 data Instruction  =  PUSH Integer | ADD | READ Var | WRITE Var
-                  |  BEGIN | COMMIT | FORK Code{-"\const{"-}deriving (Eq, Ord){-"}"-}
+                  |  BEGIN | COMMIT | FORK Code{-"\hide{"-}deriving (Eq, Ord){-"}"-}
 \end{code}
 The |PUSH| instruction leaves its argument on top of the stack, while |ADD|
 replaces the top two numbers with their sum. The behaviour of the remaining
@@ -494,22 +552,22 @@ instructions, while the remaining language constructs map directly to their
 analogous machine instructions. The intention is that executing a compiled
 transaction or process always leaves a single result value on top of the
 stack.
-\begin{spec}
+\begin{code}
 compileT :: Tran -> Code -> Code
-compileT e cc = case e of
-	ValT i      -> PUSH i : cc
-	x `AddT` y  -> compileT x (compileT y (ADD : cc))
-	Read v      -> READ v : cc
-	Write v e'  -> compileT e' (WRITE v : cc)
+compileT e c = case e of
+	ValT i      -> PUSH i : c
+	x `AddT` y  -> compileT x (compileT y (ADD : c))
+	Read v      -> READ v : c
+	Write v e'  -> compileT e' (WRITE v : c)
 
 compileP :: Proc -> Code -> Code
-compileP e cc = case e of
-	ValP i      -> PUSH i : cc
-	x `AddP` y  -> compileP x (compileP y (ADD : cc))
-	Atomic e'   -> BEGIN : compileT e' (COMMIT : cc)
-	Fork x      -> FORK (compileP x []) : cc
-\end{spec}
-For example, invoking |compileP (incTwice counter) []| delivers the
+compileP e c = case e of
+	ValP i      -> PUSH i : c
+	x `AddP` y  -> compileP x (compileP y (ADD : c))
+	Atomic e'   -> BEGIN : compileT e' (COMMIT : c)
+	Fork x      -> FORK (compileP x NIL) : c
+\end{code}
+For example, invoking |compileP (incTwice counter) NIL| delivers the
 following code:
 \begin{spec}
 [ FORK [ BEGIN, READ counter, PUSH 1, ADD, WRITE counter, COMMIT ]
@@ -656,68 +714,28 @@ but for the purposes of this article, we will use value equality.
 
 \subsection{Virtual Machine}%{{{%
 
-The state of the virtual machine is given by a pair $\Hp<h, s>$, comprising
-a heap $h$ mapping variables to integers, and a soup $s$ of concurrent
-\emph{threads}. Each |Thread| consists of a tuple of the form |(c, sigma, f,
-r, w)|, where |c| is the code to be executed, |sigma| is the local stack,
-|f| gives the code to be rerun if a transaction fails to commit, and
-finally, |r| and |w| are two logs (partial maps from variables to integers)
-acting as read and write caches between a transaction and the heap.
 %format Thread = "\type{Thread}"
 %format Stack = "\type{Stack}"
 %format Log = "\type{Log}"
+The state of the virtual machine is given by a pair $\Hp<h, s>$, comprising
+a heap $h$ mapping variables to integers, and a soup $s$ of concurrent
+\emph{threads}. A |Thread| is represented as a tuple of the form |(c, sigma,
+f, r, w)|, where |c| is the code to be executed, |sigma| is the thread-local
+stack, |f| gives the code to be rerun if a transaction fails to commit, and
+finally, |r| and |w| are two logs (partial maps from variables to integers)
+acting as read and write caches between a transaction and the heap.
 \begin{code}
 type Thread  =  (Code, Stack, Code, Log, Log)
 type Stack   =  [Integer]
 type Log     =  Map Var Integer
 \end{code}
 
-%format sigma'
-%format sigma_1
-%format sigma_2
-%format stepM = "\func{step_M}"
-%format stepT = "\func{step_T}"
-%format stepI = "\func{step_I}"
-\begin{code}
-stepM :: Rel (Heap, [Thread])
-stepM (h, []     ) = Set.empty
-stepM (h, t : s  ) = (second (t : {-"{}"-}) `Set.map` stepM (h, s))
-	`Set.union` stepT t (h, s)
-
-stepT :: Thread -> Rel (Heap, [Thread])
-stepT ([]   ,  sigma, f, r, w) (h, s) = Set.empty
-stepT (i : c,  sigma, f, r, w) (h, s) = stepI i where
-	~(n : sigma_1@ ~(m : sigma_2)) = sigma
-
-	stepI :: Instruction -> Set (Heap, [Thread])
-	stepI (FORK c')  = Set.singleton (h,   (c,      0  :  sigma,    f,        r,          w) : t      : s)
-		where t = (c', [], [], Map.empty, Map.empty)
-	stepI (PUSH n)   = Set.singleton (h,   (c,      n  :  sigma,    f,        r,          w)          : s)
-
-	stepI ADD        = Set.singleton (h,   (c, m +  n  :  sigma_2,  f,        r,          w)          : s)
-	stepI BEGIN      = Set.singleton (h,   (c,            sigma, BEGIN : c,   Map.empty,  Map.empty)  : s)
-
-	stepI (READ v)   = Set.singleton (h,   (c,      n  :  sigma,    f,        r',         w)          : s)
-		where (n, r') = case Map.lookup v w of
-			Just n'  -> (n', r)
-			Nothing  -> case Map.lookup v r of
-				Just n'  -> (n', r)
-				Nothing  -> (h ? v, Map.insert v (h ? v) r)
-
-	stepI (WRITE v)  = Set.singleton (h,   (c,      n :  sigma_1,   f,        r,          w')         : s)
-		where w' = Map.insert v n w
-	stepI COMMIT     = Set.singleton (h',  (c',          sigma',    f,        r,          w)          : s)
-		where (h', c', sigma') = case (r `Map.intersection` h) `Map.isSubmapOf` h of
-			True   -> (w `Map.union`  h,  c, n :  sigma_1)
-			False  -> (               h,  f,      sigma)
-\end{code}
-
-We specify the behaviour of the machine using a transition relation $\red M$
-between machine states, defined via a collection of transition rules that
-proceed by case analysis on the first thread in the soup. As with the
-previous semantics, we begin by defining a \eqName{PREEMPT} rule to allow
-the rest of the soup to make progress, giving rise to non-determinism in the
-machine:
+\noindent We specify the behaviour of the machine using a transition
+relation $\red M$ between machine states, defined via a collection of
+transition rules that proceed by case analysis on the first thread in the
+soup. As with the previous semantics, we begin by defining
+a \eqName{PREEMPT} rule to allow the rest of the soup to make progress,
+giving rise to non-determinism in the machine:
 \[
 	\inferrule%
 		{\Hp<h, s> \red M \Hp<h', s'>}%
@@ -729,24 +747,66 @@ switching at every instruction, as our focus is on the implementation of
 transactions rather than scheduling policies. We return to this issue when
 we consider the correctness of our compiler in \S\ref{sec:model-correctness}.
 
-Executing |FORK| adds a new thread |t| to the soup, comprising the given
-code |c'| with an initially empty stack, restart code and read and write
-logs:
+%format stepM = "\func{step_M}"
+%format stepT = "\func{step_T}"
+We model $\red M$ using a pair of mutually recursive functions |stepM|
+and |stepT| in a similar fashion to that of $\red P$ earlier. The former
+implements reduction between arbitrary soups of threads:
+\begin{code}
+stepM :: Rel (Heap, [Thread])
+stepM (h, NIL    ) = Set.empty
+stepM (h, t : s  ) = (second (t : {-"{}"-}) `Set.map` stepM (h, s)) `Set.union` stepT t (h, s)
+\end{code}
+The first case handles empty soups, returning an empty set of resulting
+states. The second case takes the first thread |t| in the soup, and
+implements the \eqName{PREEMPT} rule by reducing the rest of the soup |s|
+before placing |t| back at the head. These are then combined with the states
+resulting from a single step of |t|, implemeted by |stepT| below:
+%format sigma'
+%format sigma_1 = sigma "_1"
+%format sigma_2 = sigma "_2"
+%format stepI = "\func{step_I}"
+\savecolumns
+\begin{code}
+stepT :: Thread -> Rel (Heap, [Thread])
+stepT (NIL  ,  sigma, f, r, w) (h, s) = Set.empty
+stepT (i : c,  sigma, f, r, w) (h, s) = stepI i where
+	~(n : sigma_1@ ~(m : sigma_2)) = sigma
+	stepI :: Instruction -> Set (Heap, [Thread])
+	{-"\ldots"-}
+\end{code}
+A thread with an empty list of instructions cannot make any transitions, so
+we return an empty set. When there is at least one instruction remaining, we
+use the |stepI| helper function to handle each particular instruction. The
+above code also brings into scope the names |c|, |sigma|, |f|, |r| and |w|
+as detailed previously, as well as |sigma_1| and |sigma_2| for the current
+stack with one or two values popped.
+
+Let us detail the semantics of each instruction in turn. Firstly, executing
+|FORK| adds a new thread |t| to the soup, comprising the given code |c'|
+with an initially empty stack, restart code and read and write logs:
 \begin{align*}
 	&
 		\Hp<h, \Td(|FORK c' : c|,     |sigma|, f, r, w) : s> \red M
-		\Hp<h, \Td(          |c|, |0 : sigma|, f, r, w) : t : s>
+		\Hp<h, \Td(          |c|, 0 |: sigma|, f, r, w) : t : s>
 	\eqTag{FORK} \\[1ex]
-	&	\text{where }t = \Td(c', |[]|, |[]|, \emptyset, \emptyset)
+	&	\text{where }t = \Td(c', |NIL|, |NIL|, \emptyset, \emptyset)
 \end{align*}
+The above transition may be implemented directly, as follows:
+\restorecolumns
+%format cc = c'
+\begin{code}
+	stepI (FORK cc)  = Set.singleton (h,   (c,      0  :  sigma,    f,        r,          w) : t      : s)
+		where t = (cc, NIL, NIL, Map.empty, Map.empty)
+\end{code}
 
-The |PUSH| instruction places the integer |n| on top of the stack, while
-|ADD| takes the top two integer from the stack and replaces them with their
-sum:
+\noindent The |PUSH| instruction places its argument |n| on top of the
+stack, while |ADD| takes the top two integer from the stack and replaces
+them with their sum:
 \begin{align*}
 	\langle|h, (PUSH n, c, sigma, f, r, w) : s|\rangle &\red M \langle|h, (c, n : sigma, f, r, w)  : s|\rangle
 	\eqTag{PUSH} \\
-	\langle|h, (ADD, c, n : m : sigma, f, r, w) : s|\rangle &\red M \langle|h, (c, m + n : sigma, f, r, w)  : s|\rangle
+	\langle|h, (ADD, c, n : m : sigma, f, r, w) : s|\rangle &\red M \langle|h, (c, m |+| n : sigma, f, r, w)  : s|\rangle
 	\eqTag{ADD}
 \end{align*}
 %\[
@@ -760,21 +820,34 @@ sum:
 %% HaX: My eyes. They bleed.
 %	%\eqTag{\parbox{8ex}{\makebox[8ex][r]{PUSH}\\\makebox[8ex][r]{ADD}}}
 %\]
+The corresponding cases in the definition of |stepI| reads almost
+identically:
+\restorecolumns
+\begin{code}
+	stepI (PUSH n)   = Set.singleton (h,   (c,      n  :  sigma,    f,        r,          w)          : s)
+	stepI ADD        = Set.singleton (h,   (c, m +  n  :  sigma_2,  f,        r,          w)          : s)
+\end{code}
 
-Executing |BEGIN| starts a transaction, which involves clearing the read and
-write logs, while making a note of the code to be executed if the
-transaction fails:
+\noindent Executing |BEGIN| starts a transaction, which involves clearing
+the read and write logs, while making a note of the code to be executed if
+the transaction fails:
 \[
 	\Hp<h, \Td(|BEGIN : c|, \sigma,          |f|,       |r|,       |w|) : s> \red M
 	\Hp<h, \Td(        |c|, \sigma,  |BEGIN : c|, \emptyset, \emptyset) : s> \\
 	\eqTag{BEGIN}
 \]
+Accordingly, |stepI| sets up the retry code and initialises both read and
+write logs:
+\restorecolumns
+\begin{code}
+	stepI BEGIN      = Set.singleton (h,   (c,            sigma, BEGIN : c,   Map.empty,  Map.empty)  : s)
+\end{code}
 
-Next, |READ| places the appropriate value for the variable |v| on top of the
-stack. The instruction first consults the write log. If the variable has not
-been written to, the read log is then consulted. Otherwise, if the variable
-has also not been read, its value is looked up from the heap and the read
-log updated accordingly:
+\noindent Next, |READ| places the appropriate value for the variable |v| on
+top of the stack. The instruction first consults the write log. If the
+variable has not been written to, the read log is then consulted. Otherwise,
+if the variable has not been read from either, its value is looked up from
+the heap and the read log updated accordingly:
 \begin{align*}
 	&
 	\Hp<h, \Td(|READ v : c|,     \sigma, f, r,  w) : s> \red M
@@ -783,12 +856,23 @@ log updated accordingly:
 	&\text{where }\Hp<n, r'> = \begin{cases}
 		\Hp<w(v), r> & \text{if }v \in \text{dom}(w) \\
 		\Hp<r(v), r> & \text{if }v \in \text{dom}(r) \\
-		\Hp<h(v), \finsert r v {h(v)}> & \text{otherwise}
+		\Hp<h(v), \finsert r v {h ? v}> & \text{otherwise}
 	\end{cases}
 \end{align*}
+The transliteration of the \eqName{READ} rule to our implementation is as
+follows:
+\restorecolumns
+\begin{code}
+	stepI (READ v)   = Set.singleton (h,   (c,      n  :  sigma,    f,        r',         w)          : s)
+		where (n, r') = case (Map.lookup v w, Map.lookup v r, h ? v) of
+			(Just n',  _,        _   ) -> (n', r)
+			(Nothing,  Just n',  _   ) -> (n', r)
+			(Nothing,  Nothing,  n'  ) -> (n', Map.insert v n' r)
+\end{code}
 
-In turn, |WRITE| simply updates the write log for the variable |v| with the
-value on the top of the stack, without changing the heap or the stack:
+\noindent In turn, |WRITE| simply updates the write log for the variable |v|
+with the value on the top of the stack, without changing the heap or the
+stack:
 \begin{align*}
 	&
 	\Hp<h, \Td(|WRITE v : c|, |n : sigma|, f, r, w ) : s> \red M
@@ -796,17 +880,29 @@ value on the top of the stack, without changing the heap or the stack:
 	\eqTag{WRITE} \\
 	&\text{where }w' = \finsert w v n
 \end{align*}
+The \eqName{WRITE} rule has a similarly straightforward implementation:
+\restorecolumns
+\begin{code}
+	stepI (WRITE v)  = Set.singleton (h,   (c,      n :  sigma_1,   f,        r,          w')         : s) where
+		w' = Map.insert v n w
+\end{code}
 
-Finally, |COMMIT| first checks the read log |r| for consistency with the
+\noindent Finally, |COMMIT| checks the read log |r| for consistency with the
 current heap |h|, namely that the logged value for each variable read is
-equal to its value in the heap. Note that the write log may contain
-variables not in the read log, for which no check is necessary. Using our
-representation of logs and heaps, this condition can be concisely stated as
-$r \subseteq h$. If they are consistent, then the transaction has succeeded,
-so we may commit its write log to the heap. This update is expressed in
-terms of the overriding operator on maps as $h \uplus w$. Otherwise the
-transaction has failed, in which case the heap is not changed, the result on
-the top of the stack is discarded, and the transaction is restarted at |f|:
+equal to its value in the heap. According to the above definitions of
+\eqName{READ} and \eqName{WRITE}, variables written to before being read
+from during the same transaction will not result in a read log entry, since
+the corresponding value in the global heap cannot influence the results of
+the transaction. Therefore, we do not need to perform consistency checks for
+variables that occur only in the write log.
+
+Using our representation of logs and heaps, the consistency condition can be
+concisely stated as $r \subseteq h$. If they are consistent, then the
+transaction has succeeded, so we may commit its write log $w$ to the heap.
+This update is expressed in terms of the overriding operator on maps as $h
+\uplus w$. Otherwise the transaction has failed, in which case the heap is
+not changed, the result on the top of the stack is discarded, and the
+transaction is restarted at |f|:
 \begin{align*}
 	&\Hp<h,  \Td(|COMMIT  : c|,  |n : sigma|,  f, r, w) : s> \red M
 		\Hp<h', \Td(          |c'|,     |sigma'|, f, r, w) : s> \\
@@ -820,6 +916,28 @@ the top of the stack is discarded, and the transaction is restarted at |f|:
 \end{align*}
 There is no need to explicitly clear the logs in the above rule, since this
 is taken care of by the first instruction of |f| always being a |BEGIN|.
+\restorecolumns
+\begin{code}
+	stepI COMMIT     = Set.singleton (h',  (c',          sigma',    f,        r,          w)          : s)
+		where (h', c', sigma') = case (r `Map.intersection` h) `Map.isSubmapOf` h of
+			True   -> (h `mupdate` w,  c, n :   sigma_1)
+			False  -> (h,              f,       sigma)
+\end{code}
+
+%format haltedT = "\func{halted_T}"
+%format haltedM = "\func{halted_M}"
+\noindent Finally we give a |haltedM| predicate on virtual machines to
+discriminate between completed and running threads.
+\begin{code}
+haltedM :: (Heap, [Thread]) -> Maybe (Heap, [Integer])
+haltedM (h, s) = case traverse haltedT s of
+	Just ns -> Just (h, ns)
+	Nothing -> Nothing
+	where
+	haltedT :: Thread -> Maybe Integer
+	haltedT (NIL, n : NIL, _, _, _)  = Just n
+	haltedT _                      = Nothing
+\end{code}
 
 %}}}%
 
@@ -844,66 +962,139 @@ semantics via a compiler correctness theorem.
 
 In order to formulate our correctness result, we utilise a number of
 auxiliary definitions. First of all, since our semantics is
-non-deterministic, we define a relation |eval| that encapsulates the idea of
-completely evaluating a process using our high-level semantics:
+non-deterministic, we define a relation $\eval P$ that encapsulates the
+idea of completely evaluating a process using our high-level semantics:
 \[
-	p \infix{eval} \Hp<h, s> \quad\leftrightarrow\quad \Hp<\emptyset, |[p]|> \starred{\red P} \Hp<h, s> \not\red P
+	\Hp<h, ps> \eval P \Hp<h', ps'> \quad\leftrightarrow\quad \Hp<h, ps> \starred P \Hp<h', ps'> \not\red P
 \]
-That is, a process |p :: Proc| can evaluate to any heap |h| and process soup
-|s| that results from starting with the empty heap and completely reducing
-|p| using our high-level semantics, where $\not\red{\mbox{}}$ expresses that
-no further transitions are possible. Similarly, we define a relation
-|exec| that encapsulates complete execution of a thread |t :: Thread|
-using our virtual machine, resulting in a heap |h| and a thread soup |s|:
-\[
-	t \infix{exec} \Hp<h, s> \quad\leftrightarrow\quad \Hp<\emptyset, |[t]|> \starred{\red M} \Hp<h, s> \not\red M
-\]
+%format eval = "\func{eval}"
+That is, a process soup |ps :: [Proc]| with the initial heap |h| can
+evaluate to any heap |h'| and soup |ps'| that results from completely
+reducing |ps| using our high-level semantics, where $\not\red P$ expresses
+that no further transitions are possible. We may implement the
+$\eval P$ relation as the following |eval| function:
+\begin{code}
+eval :: REL (Heap, [Proc]) (Heap, [Integer])
+eval = reduceUntil isValS redS
+\end{code}
 
-Next, we define a function |load :: Proc -> Thread| that converts a process
-into a corresponding thread for execution, which comprises the compiled code
-for the process, together with an empty stack, restart code and read and
-write logs:
+\noindent Similarly, we define a relation $\eval M$ that encapsulates
+complete execution of a thread soup |ts :: [Thread]| with the initial heap
+|h| using our virtual machine, resulting in a heap |h'| and a thread soup
+|ts'|:
 \[
-	|load p = (compileP p [], [], [], Map.empty, Map.empty)|
+	\Hp<h, ts> \eval M \Hp<h', ts'> \quad\leftrightarrow\quad \Hp<h, ts> \starred M \Hp<h', ts'> \not\red M
 \]
-Dually, we define a partial function |unload :: Map Thread Proc| that
-extracts the resulting integer from a completely executed thread into
-our process language:
-\[
-	|unload ([], [n], f, r, w) = ValP n|
-\]
+%format exec = "\func{exec}"
+Likewise, we may implement $\eval M$ as the following |exec| function:
+\begin{code}
+exec :: REL (Heap, [Thread]) (Heap, [Integer])
+exec = reduceUntil haltedM stepM
+\end{code}
 
-Using these definitions, the correctness of our compiler can now be
-expressed by the following relational equation, in which $\relcomp$ denotes
-composition of relations, and the functions |load| and |unload| are viewed
-as relations by taking their graph:
-\begin{theorem}[Compiler Correctness]\label{thm:correct}%
-~\\[-3ex]
+%format load = "\func{load}"
+\noindent Next, we define a function |load| that converts a process into
+a corresponding thread for execution, which comprises the compiled code for
+the process, together with an empty stack, restart code and read and write
+logs:
+\begin{code}
+load :: [Proc] -> [Thread]
+load = map (\ p -> (compileP p NIL, NIL, NIL, Map.empty, Map.empty))
+\end{code}
+
+%Dually, we define a partial function |unload :: Map Thread Proc| that
+%extracts the resulting integer from a completely executed thread into
+%our process language:
+%\[
+%	|unload (NIL, [n], f, r, w) = ValP n|
+%\]
+
+\noindent Using these definitions, the correctness of our compiler can now
+be expressed by the following equation:
 \begin{align*}
-	 |eval| \;=\; |load| \relcomp |exec| \relcomp (|id| \times |map unload|)
+	\forall p \in |Proc|&, h \in |Heap|, s \in |[Integer]|.\\
+		&\Hp<|Map.empty|, |p : NIL|> \eval P \Hp<h, s>
+		\leftrightarrow
+		\Hp<|Map.empty|, |load (p : NIL)|> \eval M \Hp<h, s>
+\end{align*}
+\noindent That is, evaluating a process |p| starting with an initial heap
+using our high-level stop-the-world process semantics is equivalent to
+compiling and loading the process, and executing the resulting thread using
+the interleaved virtual machine semantics.
+
+We can generalise the above over a process soup rather than a single
+process, as well as an arbitrary initial heap:
+\begin{theorem}[Compiler Correctness]\label{thm:correct}%
+\begin{align*}
+	\forall ps \in |[Proc]|&, h, h' \in |Heap|, s \in |[Integer]|.\\
+	& \Hp<h, ps> \eval P \Hp<h', s>
+		\leftrightarrow
+	\Hp<h, |load ps|> \eval M \Hp<h', s>
+	%|eval| \;=\; |load| \relcomp |exec| \relcomp (|id| \times |map unload|)
 \end{align*}
 \end{theorem}
-That is, evaluating a process using our high-level semantics is equivalent
-to compiling and loading the process, executing the resulting thread using
-the virtual machine, and unloading each of the final values.
-
-The above theorem can also be split into two inclusions, where $\supseteq$
-corresponds to soundness, and states that the compiled code will always
-produce a result that is permitted by the semantics. Dually, $\subseteq$
-corresponds to completeness, and states that the compiled code can produce
-every result permitted by the semantics.
+\noindent The above $\leftrightarrow$ implication can also be considered
+separately, where the $\rightarrow$ direction corresponds to soundness, and
+states that the compiled code will always produce a result that is permitted
+by the semantics. Dually, the $\leftarrow$ direction corresponds to
+completeness, and states that the compiled code can indeed produce every
+result permitted by the semantics.
 
 In practice, some language implementations are not complete with respect to
 the semantics for the language by design, because implementing every
-behaviour that is permitted by the semantics may not be practical. For
-example, a real implementation may utilise a scheduler that only permits
-a context switch between threads at particular intervals, rather than after
-every transition as in our semantics, because doing so would be
+behaviour that is permitted by the semantics may not be practical or
+efficient. For example, a real implementation may utilise a scheduler that
+only permits a context switch between threads at fixed intervals, rather
+than after every transition as in our semantics, because doing so would be
 prohibitively expensive.
 
 %}}}%
 
+%{{{%
+\begin{code}
+arb :: Arbitrary a => Int -> Gen a
+arb s = resize (max 0 s) arbitrary
+
+instance Arbitrary Tran where
+	arbitrary = sized $ \ size -> frequency
+		[ (8, ValT `fmap` elements [ 0, 1 ])
+		, (4, AddT `fmap` arb (size - 1) `ap` arb (size - 1))
+		, (4, Read `fmap` var)
+		, (4, Write `fmap` var `ap` (resize (size - 1 `max` 0) arbitrary))
+		] where var = elements [ 'a', 'b' ]
+	shrink t = case t of
+		ValT _ -> []
+		a `AddT` b -> [a, b]
+		Read _ -> []
+		Write _ u -> [u]
+
+instance Arbitrary Proc where
+	arbitrary = sized $ \ size -> frequency
+		[ (8, ValP `fmap` elements [ 0, 1 ])
+		, (4, AddP `fmap` arb (size - 1) `ap` arb (size - 1))
+		, (4, Atomic `fmap` arb (size `div` 2))
+		, (size, Fork `fmap` resize (size `div` 2) arbitrary)
+		]
+	shrink p = case p of
+		ValP _ -> []
+		a `AddP` b -> [a, b]
+		Fork q -> [q]
+		Atomic t -> Atomic `fmap` shrink t
+
+one :: Proc -> Bool
+one p = reduceUntil isValS redS (Map.empty, [p])
+	== reduceUntil haltedM stepM (Map.empty, load [p])
+
+many :: [Proc] -> Bool
+many ps = reduceUntil isValS redS (Map.empty, ps)
+	== reduceUntil haltedM stepM (Map.empty, load ps)
+\end{code}
+%}}}%
+
 \subsection{Validation of Correctness}%{{{%
+
+\TODO{this section needs a rewrite after chapter \ref{ch:qc+hpc} is
+written!}
 
 Proving the correctness of programs in the presence of concurrency is
 notoriously difficult. Ultimately we would like to have a formal proof of
@@ -950,16 +1141,18 @@ of our implementation of transactions.
 
 
 % 1 page / 1 page
-%if False
-\section{Conclusion and Further Work}\label{sec:further}%{{{%
+%if True
+\section{Conclusion}%{{{%
 
-In this article we have shown how to implement software transactional memory
-correctly, for a simplified language based on STM Haskell. Using QuickCheck
-and HPC, we tested a low-level, log-based implementation of transactions
-with respect to a high-level, stop-the-world semantics, by means of
-a compiler and its correctness theorem.  This appears to be the first time
-that the correctness of a compiler for a language with transactions has been
-mechanically tested.
+\TODO{cut down / rewrite}
+
+In this chapter we have shown how to implement software transactional memory
+correctly, for a simplified language inspired by STM Haskell. Using
+QuickCheck and HPC, we tested a low-level, log-based implementation of
+transactions with respect to a high-level, stop-the-world semantics, by
+means of a compiler and its correctness theorem.  This appears to be the
+first time that the correctness of a compiler for a language with
+transactions has been mechanically tested.
 
 The lightweight approach provided by QuickCheck and HPC was indispensable in
 allowing us to experiment with the design of the language and its
@@ -1037,8 +1230,6 @@ such as linearisability~\cite{herlihy90-linear}.
 
 %}}}%
 %endif
-
-% wager
 
 % vim: ft=tex:
 

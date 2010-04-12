@@ -1,4 +1,4 @@
-TEXT := thesis.tex introduction.lhs stm.lhs semantics.lhs \
+TEXT := thesis.tex introduction.lhs stm.lhs semantics.tex \
 	testing.lhs model.lhs agda.lagda nondet.lagda concurrency.lagda \
 	verified.lagda conclusion.tex
 
@@ -17,7 +17,8 @@ RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
 DATETIME := $(shell date '+%F %T')
 
-agda.lagda.tex: agda.fmt
+%.lagda.tex: agda.fmt
+%.lhs.tex: haskell.fmt
 
 # thesis.bib: $(patsubst %.tex.aux,%.aux,$(TEXT:=.aux))
 # 	cat $^ | bibtool -s -x > $@

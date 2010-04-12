@@ -1,4 +1,6 @@
 %include local.fmt
+%include haskell.fmt
+
 
 %if False
 \begin{code}
@@ -331,7 +333,19 @@ In this section we will revisit some basic aspects of Haskell required for
 the understanding of the implementation of STM given by Harris et
 al.~\cite{harris05-composable}. The material should be accessible to the
 reader with a general understanding of functional programming; no working
-knowledge of Haskell in particular is required.
+knowledge of Haskell in particular is required. To aid readability, we will
+also make use of the following colour scheme for different syntactic
+classes:
+\begin{longtable}{l||l}
+Syntactic Class & Examples \\
+\hline
+Keywords & |type|, |data|, |let|, |do|\ldots \\
+Types & |Unit|, |Bool|, |Integer|, |IO|\ldots \\
+Constructors & |False|, |True|, |Just|, |Nothing|\ldots \\
+Functions & |return|, |getChar|, |readTVar|\ldots \\
+Literals & |0|, |1|, |"hello world"|\ldots
+\end{longtable}
+\TODO{finish colouring this chapter in!}
 
 \subsection{Monads for Sequential Computation}%{{{%
 

@@ -25,6 +25,16 @@
 %format ( = "\keyw{(}"
 %format ) = "\keyw{)}"
 %format Set = "\type{Set}"
+%format Set0 = "\type{Set_0}"
+%format Set1 = "\type{Set_1}"
+%format Set2 = "\type{Set_2}"
+
+% Function
+%format id = "\func{id}"
+
+% Data.Unit
+%format ⊤ = "\type{\top}"
+%format tt = "\cons{tt}"
 
 % Data.Sum
 %format ⊎ = "\infix{\type{\uplus}}"
@@ -43,8 +53,11 @@
 
 % Data.Nat
 %format ℕ = "\type{\mathbb{N}}"
-%format 0 = "\name{0}"
+%format 0 = "\cons{0}"
+%format zero = "\cons{zero}"
+%format suc = "\cons{suc}"
 %format + = "\mathbin{\func{+}}"
+%format _+_ = "\func{\anonymous{+}\anonymous}"
 
 % Data.List
 %format List = "\type{List}"

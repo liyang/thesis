@@ -1,11 +1,127 @@
 %include local.fmt
 %include agda.fmt
 
+\chapter{Machine-Assisted Proofs in Agda}
+
+Agda~\cite{norell07-agda} is a dependently-typed functional programming
+language based on Martin-L\"of intuitionistic type
+theory~\cite{per-martin-lof}. Via the Curry-Howard correspondence---that is,
+types as propositions and programs as proofs---it is also used as a proof
+assistant for constructive mathematics. In this chapter, we shall provide
+a gentle introduction to the language, and demonstrate how we can formalise
+statements of compiler correctness into machine-checked proofs, culminating
+in a verified formalisation of the proofs of chapter \ref{ch:semantics}.
+
+\section{Introduction to Agda}%{{{%
+
 %{{{%
 %if False
 \begin{code}
 module agda where
 
+private
+  module ignore where
+\end{code}
+%endif
+%}}}%
+
+%{{{%
+
+The current incarnation of Agda has a syntax similar to that of Haskell, and
+should look familiar to readers versed in the latter. As we have done in
+previous chapters, we will adopt a colouring convention for ease of
+readability:
+\begin{longtable}{l||l}
+Syntactic Class & Examples \\
+\hline
+Keywords & |data|, |where|, |with|\ldots \\
+Types & |ℕ|, |List|, |Set|\ldots \\
+Constructors & |zero|, |suc|, |tt|, |[]|\ldots \\
+Functions & |id|, |_+_|, |gmap|\ldots
+%\\
+%Literals & |0|, |1|, |"hello world"|\ldots
+\end{longtable}
+
+\noindent Semantically, Agda is distinguished by its foundation on
+\emph{dependent types}, and is closely related to systems such as
+Epigram~\cite{conor-thesis-and-papers} and Coq~\cite{coq?}. Dependent types
+systems are so-called because they allow for types depend on---or
+\emph{indexed} by values---as well as other types. In an informal sense,
+generalised abstract data types (GADTs)~\cite{gadts} in recent
+implementations of Haskell allow data types to be indexed on their argument
+types, in a similar fashion. This provides us with a rich vocabulary of
+discourse for stating the properties of our programs. We shall explore how
+this is facilitated by dependent types later in section
+\ref{sec:curry-howard}.
+
+%}}}%
+
+\subsection{Data and Functions}%{{{%
+
+We start our introduction to Agda with some simple data and function
+definitions. The language itself does not specify any primitive data types,
+and it serves as a good introduction to see how some of these may be defined
+in its standard library~\cite{nad-stdlib}. For example, we may define the
+Peano numbers as follows:
+\begin{code}
+    data ℕ : Set where
+      zero  : ℕ
+      suc   : ℕ → ℕ
+\end{code}
+This ought to be syntactically reminiscent of Haskell's GADT declarations,
+but with a few minor differences. Firstly, arbitrary Unicode~\cite{unicode?}
+characters may be used in identifiers, and we do not use upper and lower
+case letters to distinguish between values and constructors\footnote{The
+implication here is that the processes of syntax highlighting and
+type-checking are inextricably linked, and that the colouring provides more
+information to the reader.}. Secondly, we write |:| to mean
+\emph{has-type-of}, and write |Set| for the \emph{type of
+types}\footnote{Agda in fact has countably infinite levels of |Set|s, with
+$|Set : Set1 : Set2 : |\ldots$. This stratification prevents the formation
+of say, \emph{Russel's paradox}, that would lead to inconsistencies in the
+system.}.
+
+Thus, the above defines |ℕ| as a new data type inhabiting |Set|, with
+a nullary constructor |zero| as the base case and an unary constructor |suc|
+as the inductive case, corresponding to Peano's two axioms: |zero| is
+a natural number, and every number |n| has a successor |suc n|.
+
+We may define addition on the natural numbers as follows, by induction on
+its first argument:
+\begin{code}
+    _+_ : ℕ → ℕ → ℕ
+    zero   + n = n
+    suc m  + n = suc (m + n)
+\end{code}
+Agda allows the use of arbitrary mixfix operators, where underscores
+`$\func{\anonymous}$' denote the positions of arguments. Another difference
+is that all functions in Agda must be total. For example, omitting the
+|zero| case of |_+_| would lead to an error during the typechecking process,
+rather than a warning in Haskell. Additionally, only structural recursion is
+permitted. In the definition of |_+_| above, we recurse on the definition of
+|ℕ|: the first argument is strictly smaller on the right hand side, i.e.~|m|
+rather than |suc m|. While more general forms of recursion are possible,
+Agda requires us to give a proof of their totality.
+
+%}}}%
+
+\subsection{Programs as Proofs and Types as Predicates}\label{sec:curry-howard}%{{{%
+
+
+
+%}}}%
+
+\subsection{Dependent Types}%{{{%
+
+
+
+%}}}%
+
+%}}}%
+
+%{{{%
+%if False
+\begin{code}
 open import Data.Sum
 import Data.Product as Σ
 open Σ renaming (_,_ to _&_)
@@ -24,8 +140,6 @@ open ≡ using (_≡_; _≢_; _with-≡_)
 \end{code}
 %endif
 %}}}%
-
-\chapter{Machine-Assisted Proofs in Agda}
 
 \begin{itemize}
 \item intro to Agda

@@ -1,6 +1,6 @@
 %include local.fmt
 
-\chapter{Machine-Automated Testing in Haskell}
+\chapter{Machine-Automated Testing in Haskell}\label{ch:qc+hpc}
 
 \begin{itemize}
 \item executable semantics in Haskell
