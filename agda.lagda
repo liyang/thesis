@@ -6,11 +6,12 @@
 Agda~\cite{norell07-agda} is a dependently-typed functional programming
 language based on Martin-L\"of intuitionistic type
 theory~\cite{per-martin-lof}. Via the Curry-Howard correspondence---that is,
-types as propositions and programs as proofs---it is also used as a proof
-assistant for constructive mathematics. In this chapter, we shall provide
-a gentle introduction to the language, and demonstrate how we can formalise
-statements of compiler correctness into machine-checked proofs, culminating
-in a verified formalisation of the proofs of chapter \ref{ch:semantics}.
+viewing types as propositions and programs as proofs---it is also used as
+a proof assistant for constructive mathematics. In this chapter, we shall
+provide a gentle introduction to the language, and demonstrate how we can
+formalise statements of compiler correctness into machine-checked proofs,
+culminating in a verified formalisation of the proofs of chapter
+\ref{ch:semantics}.
 
 \section{Introduction to Agda}%{{{%
 
@@ -50,8 +51,9 @@ systems are so-called because they allow for types depend on---or
 generalised abstract data types (GADTs)~\cite{gadts} in recent
 implementations of Haskell allow data types to be indexed on their argument
 types, in a similar fashion. This provides us with a rich vocabulary of
-discourse for stating the properties of our programs. We shall explore how
-this is facilitated by dependent types later in section
+discourse for not only stating the properties of our programs, but also to
+be able to prove such properties within the same system. We will begin to
+explore how this is facilitated by dependent types from section
 \ref{sec:curry-howard}.
 
 %}}}%
@@ -97,25 +99,111 @@ Agda allows the use of arbitrary mixfix operators, where underscores
 `$\func{\anonymous}$' denote the positions of arguments. Another difference
 is that all functions in Agda must be total. For example, omitting the
 |zero| case of |_+_| would lead to an error during the typechecking process,
-rather than a warning in Haskell. Additionally, only structural recursion is
-permitted. In the definition of |_+_| above, we recurse on the definition of
-|ℕ|: the first argument is strictly smaller on the right hand side, i.e.~|m|
-rather than |suc m|. While more general forms of recursion are possible,
-Agda requires us to give a proof of their totality.
+rather than a warning as in Haskell. Additionally, only structural recursion
+is permitted. In the definition of |_+_| above, we recurse on the definition
+of |ℕ|: the first argument is strictly smaller on the right hand side,
+i.e.~|m| rather than |suc m|. While more general forms of recursion are
+possible, Agda requires us to give a proof of their totality.
 
 %}}}%
 
 \subsection{Programs as Proofs and Types as Predicates}\label{sec:curry-howard}%{{{%
 
+The Curry-Howard correspondence refers to the initial observation by Curry
+that types---in the sense familiar to functional programmers---correspond to
+axiom-schemes for intuitionistic logic, while Howard later noted that proofs
+in formal systems such as natural deduction can be directly interpreted as
+terms in a model of computation such as the typed lambda calculus.
 
+The intuitionistic approach to logic only relies on constructive methods,
+disallowing notions from classical logic such as the law of excluded middle
+or double-negation elimination. For example, intuitionist reject the former
+statement of $P \vee \lnot P$, since there exists a statement $P$ in any
+sufficiently powerful logic that can neither be proved nor disproved within
+the system by G\"odel's incompleteness theorems. In other words,
+intuitionism equates the truth of a statement $P$ with the possibility of
+constructing a proof object that satisfies $P$. A proof refuting the
+non-existence of such an object---that is, proving $\lnot \lnot
+P$---provides strictly less information than constructing a proof object
+satisfying $P$ itself.
+
+What does this mean for the proletarian programmer then? Curry-Howard
+interprets the type |A -> B| as the logical statement `\emph{|A| implies
+|B|}' and vice-versa. Accordingly, a program |p : A -> B| corresponds to the
+proof of `\emph{|A| implies |B|}', in that executing |p| constructs a proof
+of |B|, given a proof of |A| as input. Thus in a suitable type system,
+programming is the same as constructing proofs, in a very concrete sense.
+
+In a traditional functional programming language such as Haskell, the type
+system exists to segregate values of different types. On the other hand,
+distinct values of the same type all look the same to the type-checker,
+which means we are unable to form types corresponding to propositions about
+particular values. Haskell's GADTs break down this barrier in a limited
+sense, by allowing the constructors of a parametric type to target
+particular instantiations of the return type. While this allows us to abuse
+a Haskell type checker that supports GADTs as a proof-checker in some simple
+cases, it comes at the cost of requiring `counterfeit type-level copies of
+data'.~\cite{mcbride02-faking}
 
 %}}}%
 
 \subsection{Dependent Types}%{{{%
 
+Dependent type systems follow a more principled approach, being founded on
+Martin-L\"of intuitionistic type theory~\cite{martin-lof-1971}. These have
+been studied over several decades, eventually evolving to its current form
+in the second incarnation of Agda~\cite{ulf}.
 
+Coming from a Hindley-Milner background, the key distinction of dependent
+types is that values can influence the types of other, subsequent values.
+Let us introduce the notion by considering an example of a dependent type:
+%format fz = "\cons{fz}"
+%format fs = "\cons{fs}"
+\begin{code}
+    data Fin : ℕ → Set where
+      fz  : {n : ℕ}          → Fin (suc n)
+      fs  : {n : ℕ} → Fin n  → Fin (suc n)
+\end{code}
+This defines a data type |Fin|---similar to |ℕ| above---that is additionally
+parametrised---or \emph{indexed}---by a natural number. Its two constructor
+are analogues of the |zero| and |suc| of |ℕ|. The |fz| constructor takes an
+parameter of type |ℕ| named |n|, that is referred to in its resultant type
+of |Fin (suc n)|. The braces |{| and |}| indicate that |n| is an implicit
+parameter, which we may omit at applications of |fz|, provided that the
+value of |n| can be automatically inferred. We can see how this might be
+possible in the case of the |fs| constructor: its explicit argument has type
+|Fin n|, from which we may deduce |n|.
+
+The above |Fin| represents a family of types, where each type |Fin n| has
+exactly |n| distinct values. This is apparent in the resultant types of the
+constructors, for example: neither |fz| and |fs| can inhabit |Fin zero|, as
+they both target |Fin (suc n)| for some value of |n|. The only inhabitant of
+|Fin (suc zero)| is |fz|, since |fs| requires an argument of type |Fin
+zero|, which would correspond to a proof that |Fin zero| is inhabited.
+
+This is only a trivial demonstration of the power of dependent types. Being
+able to form any proposition in intuitionistic logic as a type gives us
+a powerful vocabulary with which to state and verify the properties of our
+programs. Conversely, by interpreting a type as its correspond proposition,
+we have mapped the activity of constructing mathematical proofs to `just'
+programming, albeit in a more rigorous fashion than usual.
 
 %}}}%
+
+%2010/04/14: [01:30] <pigworker> They have names. "Martin-Löf equality"
+%takes just the set as as the parameter; "Paulin-Mohring equality" takes the
+%set and one of the elements as parameter.
+
+\TODO{equality, dependent functions, dependent pairs, star}
+
+\begin{code}
+    data _≡_ {X : Set} : X → X → Set where
+      refl : {x : X} -> x ≡ x
+
+    trans : {X : Set} {x y z : X} -> x ≡ y -> y ≡ z -> x ≡ z
+    trans refl refl = refl
+\end{code}
+
 
 %}}}%
 

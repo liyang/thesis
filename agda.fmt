@@ -51,6 +51,9 @@
 %format ◅◅ = "\infix{\func{\lhd\!\lhd}}"
 %format gmap = "\func{gmap}"
 
+% Data.Fin
+%format Fin = "\type{Fin}"
+
 % Data.Nat
 %format ℕ = "\type{\mathbb{N}}"
 %format 0 = "\cons{0}"
