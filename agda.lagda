@@ -120,30 +120,31 @@ disallowing notions from classical logic such as the law of excluded middle
 or double-negation elimination. For example, intuitionist reject the former
 statement of $P \vee \lnot P$, since there exists a statement $P$ in any
 sufficiently powerful logic that can neither be proved nor disproved within
-the system by G\"odel's incompleteness theorems. In other words,
+the system, by G\"odel's incompleteness theorems. In other words,
 intuitionism equates the truth of a statement $P$ with the possibility of
 constructing a proof object that satisfies $P$. A proof refuting the
 non-existence of such an object---that is, proving $\lnot \lnot
 P$---provides strictly less information than constructing a proof object
 satisfying $P$ itself.
 
-What does this mean for the proletarian programmer then? Curry-Howard
-interprets the type |A -> B| as the logical statement `\emph{|A| implies
-|B|}' and vice-versa. Accordingly, a program |p : A -> B| corresponds to the
-proof of `\emph{|A| implies |B|}', in that executing |p| constructs a proof
-of |B|, given a proof of |A| as input. Thus in a suitable type system,
-programming is the same as constructing proofs, in a very concrete sense.
+What does this mean for the proletarian programmer? Under the Curry-Howard
+correspondence, the type |A -> B| is interpreted as the logical statement
+`\emph{|A| implies |B|}' and vice-versa. Accordingly, a program |p : A -> B|
+corresponds to the proof of `\emph{|A| implies |B|}', in that executing |p|
+constructs a witness of |B|, given a witness of |A| as input. Thus in
+a suitable type system, programming is the same as constructing proofs in
+a very concrete sense.
 
-In a traditional functional programming language such as Haskell, the type
-system exists to segregate values of different types. On the other hand,
-distinct values of the same type all look the same to the type-checker,
-which means we are unable to form types corresponding to propositions about
-particular values. Haskell's GADTs break down this barrier in a limited
-sense, by allowing the constructors of a parametric type to target
-particular instantiations of the return type. While this allows us to abuse
-a Haskell type checker that supports GADTs as a proof-checker in some simple
-cases, it comes at the cost of requiring `counterfeit type-level copies of
-data'.~\cite{mcbride02-faking}
+In a traditional strictly typed programming language such as Haskell, the
+type system exists to segregate values of different types. On the other
+hand, distinct values of the same type all look the same to the
+type-checker, which means we are unable to form types corresponding to
+propositions about particular values. Haskell's GADTs break down this
+barrier in a limited sense, by allowing the constructors of a parametric
+type to target particular instantiations of the return type. While this
+allows us to abuse a Haskell type checker that supports GADTs as
+a proof-checker in some simple cases, it comes at the cost of requiring
+`counterfeit type-level copies of data'.~\cite{mcbride02-faking}
 
 %}}}%
 
@@ -180,13 +181,16 @@ constructors, for example: neither |fz| and |fs| can inhabit |Fin zero|, as
 they both target |Fin (suc n)| for some value of |n|. The only inhabitant of
 |Fin (suc zero)| is |fz|, since |fs| requires an argument of type |Fin
 zero|, which would correspond to a proof that |Fin zero| is inhabited.
+Applications of the |Fin| family include for example, type-safe lookup of
+vectors or arrays, where we wish to have a static guarantee on the size of
+the index is required.
 
-This is only a trivial demonstration of the power of dependent types. Being
-able to form any proposition in intuitionistic logic as a type gives us
-a powerful vocabulary with which to state and verify the properties of our
-programs. Conversely, by interpreting a type as its correspond proposition,
-we have mapped the activity of constructing mathematical proofs to `just'
-programming, albeit in a more rigorous fashion than usual.
+This is only an elementary demonstration of the power of dependent types.
+Being able to form any proposition in intuitionistic logic as a type gives
+us a powerful vocabulary with which to state and verify the properties of
+our programs. Conversely, by interpreting a type as its correspond
+proposition, we have mapped the activity of constructing mathematical proofs
+to `just' programming, albeit in a more rigorous fashion than usual.
 
 %}}}%
 
@@ -194,16 +198,285 @@ programming, albeit in a more rigorous fashion than usual.
 %takes just the set as as the parameter; "Paulin-Mohring equality" takes the
 %set and one of the elements as parameter.
 
-\TODO{equality, dependent functions, dependent pairs, star}
+\subsection{Equality and Its Properties}%{{{%
 
+The previous section introduced dependent types from a programming and data
+types point-of-view. We shall now take a look at how we can use dependent
+types to state logical propositions and to construct their proofs.
+
+A simple and commonplace construct is that of an equality type,
+corresponding to the proposition that two elements of the same type are
+definitionally equal. The following definition encodes the Martin-L\"of
+equality relation:
+%format _≡_ = "\type{\anonymous{\equiv}\anonymous}"
+%format refl = "\cons{refl}"
+\savecolumns
 \begin{code}
     data _≡_ {X : Set} : X → X → Set where
-      refl : {x : X} -> x ≡ x
+      refl : {x : X} → x ≡ x
+\end{code}
+Agda does not share Haskell's Hindley-Milner polymorphism, although we can
+simply take an additional parameter of the type we wish to be polymorphic
+over. In the above definition of equality, the variable |X| corresponds to
+the type of the underlying values, which can often be inferred from the
+surrounding context. By marking this parameter as implicit, we effectively
+achieve the same end result.
 
-    trans : {X : Set} {x y z : X} -> x ≡ y -> y ≡ z -> x ≡ z
+The above definition of |_≡_| is indexed by two explicit parameters of type
+|X|. Its sole constructor is |refl|, that inhabits the type |x ≡ x| given an
+argument of |x : X|. Logically, |refl| corresponds to the axiom of
+reflexivity $\forall x.\ x \equiv x$. In cases where the type of the
+argument---such as |x| here---can be inferred form the surrounding context,
+the |∀| keyword allows us to write the type in a way that better resembles
+the corresponding logical notation, for example:
+\restorecolumns
+\begin{spec}
+      refl : ∀ {x} → x ≡ x
+\end{spec}
+In general, Agda syntax allows us to write `$\anonymous$' in place of
+expressions---including types---that may be automatically inferred. The
+above is in fact syntactic sugar for the following:
+\restorecolumns
+\begin{spec}
+      refl : {x : _} → x ≡ x
+\end{spec}
+Agda includes an interactive user interface for the Emacs~\cite{stallman}
+operating system, which supports incremental development by the placement of
+`holes' where arbitrary expressions are expected. Incomplete programs with
+holes can be passed to the type checker, which then informs the user of the
+expected type. Thus, writing proofs in Agda is typically a two-way dialogue
+between the user and the type checker.
+
+%format sym = "\func{sym}"
+%format x≡y = "x{\equiv}y"
+Given the above definition of reflexivity as an axiom, we may go on to prove
+that |≡| is also symmetric and transitive. The former is the proposition
+that given any |x|, |y|, a proof of |x ≡ y| implies that |y ≡ x|. This is
+implemented as the following |sym| function,
+\def\symHole{|sym x y x≡y = ?|}
+\begin{code}
+    sym : {X : Set} (x y : X) → x ≡ y → y ≡ x
+    {-"\symHole"-}
+\end{code}
+where the `|?|' mark indicates an as-yet unspecified expression. Multiple
+arguments of the same type are simply separated with spaces, while arrows
+between pairs of named arguments can be omitted, since there cannot be any
+ambiguity.
+
+Successfully type-checking the above turns the `|?|' into a \emph{hole}
+$\hole{\{~\}}$, inside which we may further refine the proof. The expected
+type of the hole is also displayed, and we can ask the type-checker to
+enumerate any local names that are in scope. In this case, the hole is
+expected to be of type |y ≡ x|, and the arguments |x y : X| and |x≡y
+: x ≡ y| are in scope.
+
+At this point, we can ask the system to perform case-analysis on |x≡y|.
+Being an instance of |_≡_|, we expect this argument can only be |refl|
+constructor. But something magical also happens during the case analysis:
+\begin{spec}
+    sym x .x refl = {-"\hole{\{~\}}"-}
+\end{spec}
+Since |refl| only inhabits the type |x ≡ x|, the type checker concludes that
+the first two arguments |x| and |y| must be the same, and rewrites the
+second as |.x| to reflect this fact. Whereas pattern matching in Haskell is
+an isolated affair, in a dependently typed context the same can potentially
+cause interactions with other arguments, revealing more information about
+the arguments that can be checked and enforced by the system.
+
+Accordingly, |y| is no longer in-scope, and the goal type becomes |x ≡ x|,
+which is satisfied by |refl|:
+\begin{code}
+    sym x .x refl = refl
+\end{code}
+%format sym' = sym
+As we do not explicitly refer to |x| on the right hand side, we could have
+made the |x| and |y| arguments implicit too, leading to a more succinct
+definition:
+\begin{code}
+    sym' : {X : Set} → {x y : X} → x ≡ y → y ≡ x
+    sym' refl = refl
+\end{code}
+We prove transitivity in a similar fashion,
+%format trans = "\func{trans}"
+\begin{code}
+    trans : ∀ {X : Set} {x y z : X} → x ≡ y → y ≡ z → x ≡ z
     trans refl refl = refl
 \end{code}
+where pattern-matching the first explicit argument with |refl| unifies |x|
+and |y|, while repeating this with the second argument unifies |x| and |z|.
+The resulting goal of |x ≡ x| is then met on the right hand side with
+|refl|.
 
+%}}}%
+
+\subsection{Existentials and Dependent Pairs}%{{{%
+
+In the previous section, we had already surreptitiously modelled the
+universal quantifier $\forall$ as dependent functions---that is, functions
+where values of earlier arguments may influence later types. Dually, we can
+model the existential quantifier $\exists$ using \emph{dependent pairs}.
+This is typically defined in terms of the |Σ| type:
+\begin{code}
+    data Σ (X : Set) (P : X → Set) : Set where
+      _‚_ : (x : X) → (p : P x) → Σ X P
+\end{code}
+We can interpret the type |Σ X (λ x → P x)| as the existentially quantified
+statement that $\exists x \in X.\ P(x)$. Correspondingly, a proof of this
+comprises a pair |x| and |p|, where the latter is a proof of the proposition
+|P x|. Unlike classical proofs of existence which may not necessarily be
+constructive, a proof of the existence of some |x| satisfying |P|
+necessarily requires us to supply such an |x|. Conversely, we can always
+extract an |x| from such a proof.
+
+As |X| can often be inferred from the type of the predicate |P|, we may
+define a convenience function |∃| that accepts |X| as an implicit argument:
+\begin{code}
+    ∃ : {X : Set} (P : X → Set) → Set
+    ∃ {X} = Σ X
+\end{code}
+The above definition of |∃| allows us to write |∃ λ x → P x|, which better
+resembles the corresponding logical proposition of $\exists x.\ P(x)$.
+
+Of course, the predicate |P| need not necessarily depend on the first
+element of a pair. In such cases, the resulting type is a non-dependent
+pair, which corresponds to a logical conjunction. This can be recovered as
+a degenerate case of the above |Σ| type, in which we simply ignore the value
+of the first type:
+\begin{code}
+    _×_ : Set → Set → Set
+    X × Y = Σ X (λ _ → Y)
+\end{code}
+
+%\noindent Logical disjunction on the other hand corresponds to a sum type,
+%sometimes called a tagged-union.
+%\begin{code}
+%    data _⊎_ (X Y : Set) : Set where
+%      inj₁  : (x : X) → X ⊎ Y
+%      inj₂  : (y : Y) → X ⊎ Y
+%\end{code}
+
+%}}}%
+
+\subsection{Binary Relations and Reflexive Transitive Closures}%{{{%
+
+% \cite{McBride/Norell/Jansson}
+
+Before we conclude this very brief introduction to Agda, we shall introduce
+the \emph{reflexive transitive closure} of McBride, Norell and
+Jansson~\cite{fita-2007-nov}, which generalises the notion of sequences in
+a dependently-typed context. This general construct will prove useful later
+when working with sequences of small-step reductions.
+
+We begin by defining binary relations parametrised on their underlying
+types:
+\begin{code}
+    Rel : Set → Set1
+    Rel X = X → X → Set
+\end{code}
+|Rel X| corresponds to the type of binary relations on |X|. In fact, our
+earlier definition of propositional equality could equivalently have been
+written as follows:
+\begin{spec}
+    data _≡_ {X : Set} : Rel X where
+      refl : {x : X} → x ≡ x
+\end{spec}
+
+\noindent The definition of |Star| is parametrised on a set of indices |I|
+and a binary relation |R| on |I|. The type |Star {I} R| is itself another
+binary relation, indexed on the same |I|:
+\begin{code}
+    data Star {I : Set} (R : Rel I) : Rel I where
+      ε    : {i : I} → Star R i i
+      _◅_  : {i j k : I} → (x : R i j) → (xs : Star R j k) → Star R i k
+\end{code}
+Here, |ε| gives a trivial witness of reflexivity for any |i|. The |_◅_|
+constructor provides a heterogeneous definition of transitivity, accepting
+a proof of |R i j| and an |R|-chain relating |j| and |k| as its two
+arguments. Thus |Star R| defines the type of the reflexive transitive
+closure of |R|. Being data, we may take apart an element of |Star R i k| and
+inspect each step of the |R|-chain.
+
+Alternatively the constructors |ε| and |_◅_| could be thought of as
+generalisations of the \emph{nil} and \emph{cons} constructors of the list
+data type for proofs of the form |R i k|, with the constraint that two
+adjacent elements |x : R i j| and |y : R j k| must share a common index |j|.
+
+%if False
+\begin{code}
+    infixr 5 _◅_
+    data ⊤ : Set where
+      tt : ⊤
+\end{code}
+%endif
+
+In the degenerate case of a constant relation |(λ _ _ → X) : Rel I| that
+ignores its indices, we recover the usual definition of lists of |X|:
+\begin{code}
+    List : Set → Set
+    List X = Star (λ _ _ → X) tt tt
+\end{code}
+Here |tt| is the unique constructor of the unit type |⊤|, with |ε| and |_◅_|
+taking the r\^oles of \emph{nil} and \emph{cons} respectively. For example,
+we could write the two-element list of 0 and 1 as follows:
+\begin{code}
+    two : List ℕ
+    two = zero ◅ suc zero ◅ ε
+\end{code}
+Given its similarities to lists, |Star| admits many of the usual list-like
+functions. For example, while the |_◅◅_| function below provides a proof of
+transitivity for |Star R|, it could equally be considered the generalisation
+of \emph{append} on lists, as suggested by the structure of its definition:
+\begin{code}
+    _◅◅_ :  {I : Set} {R : Rel I} {i j k : I} →
+            Star R i j → Star R j k → Star R i k
+    ε         ◅◅ ys = ys
+    (x ◅ xs)  ◅◅ ys = x ◅ (xs ◅◅ ys)
+\end{code}
+Similarly, we can define an analogue of \emph{map} on lists:
+%format I′ = "I\Prime{}"
+\begin{code}
+    gmap :  {I I′ : Set} {R : Rel I} {S : Rel I′} (f : I → I′) →
+            (  {x y : I}  →       R x y  →       S (f x)  (f y)) →
+               {i j : I}  → Star  R i j  → Star  S (f i)  (f j)
+    gmap f g ε         = ε
+    gmap f g (x ◅ xs)  = g x ◅ gmap f g xs
+\end{code}
+As well a function |g| that is mapped over the individual elements of the
+sequence, |gmap| also takes a function |f| that allows for the indices to
+change.
+
+%format <₁ = "\infix{\type{<_1}}"
+%format _<₁_ = "\type{\anonymous{<_1}\anonymous}"
+%format lt₁ = "\cons{lt_1}"
+To conclude, let us consider a simple use case for |Star|. Take the
+\emph{predecessor} relation on natural numbers, defined as |_<₁_| below:
+\begin{code}
+    data _<₁_ : Rel ℕ where
+      lt₁ : (n : ℕ) → n <₁ suc n
+\end{code}
+Here, |lt₁ n| witnesses |n| as the predecessor of |suc n|. We can then
+conveniently define the reflexive transitive closure of |_<₁_| as follows:
+%format ≤ = "\infix{\type{\le}}"
+%format _≤_ = "\type{\anonymous{\le}\anonymous}"
+\begin{code}
+    _≤_ : Rel ℕ
+    _≤_ = Star _<₁_
+\end{code}
+Of course, this is just the familiar \emph{less than or equal} relation, for
+which we can easily prove some trivial properties:
+%format 0≤n = "\func{0{\le}n}"
+\begin{code}
+    0≤n : (n : ℕ) → zero ≤ n
+    0≤n zero     = ε
+    0≤n (suc n)  = 0≤n n ◅◅ (lt₁ n ◅ ε)
+\end{code}
+Note that a proof of |zero ≤ n| as produced by the above |0≤n| function
+actually consists of a \emph{sequence} of proofs in the style of ``\emph{0
+is succeeded by 1, which is succeeded by 2, \ldots{} which is succeeded by
+|n|}'' that can be taken apart and inspected one by one. We will be doing
+exactly this when considering reduction sequences in our later proofs.
+
+%}}}%
 
 %}}}%
 
@@ -228,11 +501,6 @@ open ≡ using (_≡_; _≢_; _with-≡_)
 \end{code}
 %endif
 %}}}%
-
-\begin{itemize}
-\item intro to Agda
-\item replay previous proofs
-\end{itemize}
 
 \section{Integers and Addition}
 

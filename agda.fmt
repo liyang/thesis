@@ -12,6 +12,8 @@
 %format mutual = "\keyw{mutual}"
 %format forall = "\prefix{\keyw{\forall}}"
 %format _ = "\keyw{\anonymous}"
+%format ? = "{?}"
+%format shed (e) = "\hole{\{" e "\}}"
 
 %format = = "\mathrel{\keyw{=}}"
 %format ∀ = "\keyw{\forall}"
@@ -38,17 +40,25 @@
 
 % Data.Sum
 %format ⊎ = "\infix{\type{\uplus}}"
-%format inj₁ = "\cons{inj_L}"
-%format inj₂ = "\cons{inj_R}"
+%format _⊎_ = "\type{\anonymous\uplus\anonymous}"
+%format inj₁ = "\cons{in_L}"
+%format inj₂ = "\cons{in_R}"
 
-% Data.Product renaming (_,_ to _&_)
-%format & = "\cons{\infix{,}}"
+% Data.Product renaming (_,_ to _‚_) -- lhs2TeX doesn't like commas
+%format Σ = "\type{\Sigma}"
+%format × = "\infix{\func{\times}}"
+%format _×_ = "\func{\anonymous{\times}\anonymous}"
+%format ‚ = "\infix{\cons{,}}"
+%format _‚_ = "\cons{\anonymous,\anonymous}"
+%format ∃ = "\func{\exists}"
 
 % Data.Star
 %format Star = "\type{Star}"
 %format ε = "\cons{\varepsilon}"
 %format ◅ = "\infix{\cons{\lhd}}"
-%format ◅◅ = "\infix{\func{\lhd\!\lhd}}"
+%format _◅_ = "\cons{\anonymous{\lhd}\anonymous}"
+%format ◅◅ = "\infix{\func{{\lhd}\!{\lhd}}}"
+%format _◅◅_ = "\func{\anonymous{\lhd}\!{\lhd}\anonymous}"
 %format gmap = "\func{gmap}"
 
 % Data.Fin
