@@ -61,7 +61,7 @@ mupdate = flip Map.union
 %}}}%
 %format `mupdate` = "\mathbin{\func{\uplus}}"
 
-\chapter{A Model of STM}
+\chapter{A Model of STM}\label{ch:model}
 
 %\begin{itemize}
 %\item expand TFP paper

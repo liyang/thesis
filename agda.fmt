@@ -31,6 +31,10 @@
 %format Set1 = "\type{Set_1}"
 %format Set2 = "\type{Set_2}"
 
+%if True
+%format Level.zero = "{\!\!}"
+%endif
+
 % Function
 %format id = "\func{id}"
 
@@ -60,6 +64,7 @@
 %format ◅◅ = "\infix{\func{{\lhd}\!{\lhd}}}"
 %format _◅◅_ = "\func{\anonymous{\lhd}\!{\lhd}\anonymous}"
 %format gmap = "\func{gmap}"
+%format gfold = "\func{gfold}"
 
 % Data.Fin
 %format Fin = "\type{Fin}"

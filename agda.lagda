@@ -357,7 +357,7 @@ of the first type:
 
 %}}}%
 
-\subsection{Binary Relations and Reflexive Transitive Closures}%{{{%
+\subsection{Relations and Reflexive Transitive Closures}%{{{%
 
 % \cite{McBride/Norell/Jansson}
 
@@ -483,6 +483,7 @@ exactly this when considering reduction sequences in our later proofs.
 %{{{%
 %if False
 \begin{code}
+import Level
 open import Data.Sum
 import Data.Product as Σ
 open Σ renaming (_,_ to _&_)
@@ -502,10 +503,16 @@ open ≡ using (_≡_; _≢_; _with-≡_)
 %endif
 %}}}%
 
-\section{Integers and Addition}
+\section{Agda for Compiler Correctness}%{{{%
 
-The language in question:
-%{{{%
+In this section, we shall revisit the language of numbers and addition from
+chapter \ref{ch:semantics}, and demonstrate how this might be formalised
+using Agda.
+
+\subsection{Syntax and Semantics}%{{{%
+
+Just like we had done in chapter \ref{ch:model}, we can encode the syntax of
+our language as a basic algebraic data type:
 %if False
 \begin{code}
 infixl 4 _⊕_
@@ -522,81 +529,86 @@ data Expression : Set where
   #_   : (m : ℕ)             → Expression
   _⊕_  : (a b : Expression)  → Expression
 \end{code}
-%}}}%
+The two constructors |#_| and |_⊕_| correspond to the
+\eqName{Exp-$\mathbb{N}$} and \eqName{Exp-$\oplus$} rules of in our original
+definition of the |Expression| language in chapter \ref{ch:semantics}.
 
-\section{Denotational}
+\TODO{what else do I say here?}
 
-%{{{%
 %format ⟦_⟧ = "\func{[\![\anonymous]\!]}"
 %format ⟦ = "\prefix{\func{[\![}}"
 %format ⟧ = "\postfix{\func{]\!]}}"
+Its denotational semantics---being a mapping from the syntax to the
+underlying domain of $\mathbb{N}$---can be simply implemented as a function:
 \begin{code}
 ⟦_⟧ : Expression → ℕ
 ⟦ # m ⟧    = m
 ⟦ a ⊕ b ⟧  = ⟦ a ⟧ + ⟦ b ⟧
 \end{code}
-%}}}%
+The two cases in the definition of |⟦_⟧| correspond to \eqName{denote-val}
+and \eqName{denote-plus} respectively. A numeric expression is interpreted
+as just its value, while the |⊕| operator translates to the familiar |+| on
+natural numbers.
 
-\section{Big-Step Semantics}
-
-Functions are more straightforward, but does not generalise to non-deterministic semantics.
-
-%{{{%
+%format _⇓_ = "\type{\anonymous{\Downarrow}\anonymous}"
+%format ⇓ = "\infix{\type{{\Downarrow}}}"
+%format ⇓-ℕ = "\cons{{\Downarrow}\text-\mathbb{N}}"
+%format ⇓-⊕ = "\cons{{\Downarrow}\text-\oplus}"
+We had previously modelled the big-step semantics of our language as
+a binary relation $\Downarrow$ between expressions and numbers. In Agda,
+such a relation can be implemented as a dependent data type, indexed on
+|Expression|s and natural numbers |ℕ|:
 %if False
 \begin{code}
 infix 4 _⇓_
 \end{code}
 %endif
-%format _⇓_ = "\type{\anonymous{\Downarrow}\anonymous}"
-%format ⇓ = "\infix{\type{{\Downarrow}}}"
-%format ⇓-ℕ = "\cons{{\Downarrow}\text-\mathbb{N}}"
-%format ⇓-⊕ = "\cons{{\Downarrow}\text-\oplus}"
 \begin{code}
-data _⇓_ : Expression → ℕ → Set where
+data _⇓_ : REL Expression ℕ Level.zero where
   ⇓-ℕ  : ∀ {m} → # m ⇓ m
   ⇓-⊕  : ∀ {a b m n} → a ⇓ m → b ⇓ n → a ⊕ b ⇓ m + n
 \end{code}
-%}}}%
+The |⇓-ℕ| constructor corresponds to the \eqName{big-val} rule: an
+expression |# m| evaluates to just the value |m|. The |⇓-⊕| constructor
+takes two arguments of type |a ⇓ m| and |b ⇓ n|, corresponding to the two
+premises of \eqName{big-plus}.
 
-\section{Small-Step Semantics}
+%%{{{%
+%%if False
+%\begin{code}
+%-- ⊕≡e⇒∄m≡e : ∀ {a b e} → a ⊕ b ≡ e → ∄ λ m → # m ≡ e
+%-- ⊕≡e⇒∄m≡e ≡.refl (n & ())
 
-As a function:
-%{{{%
-%if False
-\begin{code}
--- ⊕≡e⇒∄m≡e : ∀ {a b e} → a ⊕ b ≡ e → ∄ λ m → # m ≡ e
--- ⊕≡e⇒∄m≡e ≡.refl (n & ())
+%-- step : (e : Expression) → {_ : ∄ λ m → # m ≡ e} → Expression
+%-- step (# m) {¬m} = ⊥-elim (¬m (m & ≡.refl))
+%-- step (a ⊕ b) with ≡.inspect a
+%-- step (a ⊕ b) | (_ ⊕ _) with-≡ ⊕≡a = step a {⊕≡e⇒∄m≡e ⊕≡a} ⊕ b
+%-- step (a ⊕ b) | (# m) with-≡ m≡a with ≡.inspect b
+%-- step (a ⊕ b) | (# m) with-≡ m≡a | (_ ⊕ _) with-≡ ⊕≡b = a ⊕ step b {⊕≡e⇒∄m≡e ⊕≡b}
+%-- step (a ⊕ b) | (# m) with-≡ m≡a | (# n) with-≡ n≡b = # m + n
+%\end{code}
+%%endif
+%%format step = "\func{step}"
+%%format a′ = "a\Prime{}"
+%%format b′ = "b\Prime{}"
+%\begin{code}
+%step : (e : Expression) → ℕ ⊎ Expression
+%step (# m) = inj₁ m
+%step (a ⊕ b)  with step a
+%step (a ⊕ b)  | inj₁ m  with step b
+%step (a ⊕ b)  | inj₁ m  | inj₁ n   = inj₂ (# (m + n))
+%step (a ⊕ b)  | inj₁ m  | inj₂ b′  = inj₂ (a ⊕ b′)
+%step (a ⊕ b)  | inj₂ a′ = inj₂ (a′ ⊕ b)
+%\end{code}
+%%}}}%
 
--- step : (e : Expression) → {_ : ∄ λ m → # m ≡ e} → Expression
--- step (# m) {¬m} = ⊥-elim (¬m (m & ≡.refl))
--- step (a ⊕ b) with ≡.inspect a
--- step (a ⊕ b) | (_ ⊕ _) with-≡ ⊕≡a = step a {⊕≡e⇒∄m≡e ⊕≡a} ⊕ b
--- step (a ⊕ b) | (# m) with-≡ m≡a with ≡.inspect b
--- step (a ⊕ b) | (# m) with-≡ m≡a | (_ ⊕ _) with-≡ ⊕≡b = a ⊕ step b {⊕≡e⇒∄m≡e ⊕≡b}
--- step (a ⊕ b) | (# m) with-≡ m≡a | (# n) with-≡ n≡b = # m + n
-\end{code}
-%endif
-%format step = "\func{step}"
-%format a′ = "a\Prime{}"
-%format b′ = "b\Prime{}"
-\begin{code}
-step : (e : Expression) → ℕ ⊎ Expression
-step (# m) = inj₁ m
-step (a ⊕ b)  with step a
-step (a ⊕ b)  | inj₁ m  with step b
-step (a ⊕ b)  | inj₁ m  | inj₁ n   = inj₂ (# (m + n))
-step (a ⊕ b)  | inj₁ m  | inj₂ b′  = inj₂ (a ⊕ b′)
-step (a ⊕ b)  | inj₂ a′ = inj₂ (a′ ⊕ b)
-\end{code}
-%}}}%
-
-As a relation:
-%{{{%
 %if False
 \begin{code}
 infix 3 _↦_ _↦⋆_ _↦⋆#_
 \end{code}
 %endif
+The small-step semantics for |Expression|s is implemented in the same
+fashion,
 %format _↦_ = "\type{\anonymous{\mapsto}\anonymous}"
 %format ↦ = "\type{{\mapsto}}"
 %format _↦⋆_ = "\type{\anonymous{\mapsto}^\star\anonymous}"
@@ -607,38 +619,86 @@ infix 3 _↦_ _↦⋆_ _↦⋆#_
 %format ↦-L = "\cons{{\mapsto}\text-L}"
 %format ↦-R = "\cons{{\mapsto}\text-R}"
 \begin{code}
-data _↦_ : Rel Expression _ where
+data _↦_ : Rel Expression Level.zero where
   ↦-ℕ  : ∀ {m n}       →           #  m  ⊕ # n  ↦ # (m + n)
   ↦-L  : ∀ {a a′ b  }  → a ↦ a′ →     a  ⊕ b    ↦    a′  ⊕ b
   ↦-R  : ∀ {m b  b′ }  → b ↦ b′ →  #  m  ⊕ b    ↦ #  m   ⊕ b′
-
-_↦⋆_ : Rel Expression _
+\end{code}
+with \eqName{small-val}, \eqName{small-left} and \eqName{small-right}
+represented as the |↦-ℕ|, |↦-L| and |↦-R| constructors. Using |Star| which
+we had defined earlier in this chapter, we obtain the reflexive transitive
+closure of |_↦_|, along with proofs of the usual properties, for free:
+\begin{code}
+_↦⋆_ : Rel Expression Level.zero
 _↦⋆_ = Star _↦_
+\end{code}
 
-_↦⋆#_ : REL Expression ℕ _
+%if False
+\begin{code}
+_↦⋆#_ : REL Expression ℕ Level.zero
 e ↦⋆# m = e ↦⋆ # m
 \end{code}
+%endif
+
 %}}}%
 
-\section{Equivalence Proof and Techniques}
 
-%{{{%
-%format denotation→big = "\func{denot{\rightarrow}big}"
-\begin{code}
-denotation→big : ∀ {e m} → ⟦ e ⟧ ≡ m → e ⇓ m
-denotation→big {# m}    ≡.refl = ⇓-ℕ
-denotation→big {a ⊕ b}  ≡.refl = ⇓-⊕ (denotation→big ≡.refl) (denotation→big ≡.refl)
-\end{code}
 
-%format big→denotation = "\func{big{\rightarrow}denot}"
+\subsection{Semantics Equivalence}%{{{%
+
+%format denote→big = "\func{denote{\rightarrow}big}"
+%format big→denote = "\func{big{\rightarrow}denote}"
 %format a⇓m = "a{\Downarrow}m"
 %format b⇓n = "b{\Downarrow}n"
-\begin{code}
-big→denotation : ∀ {e m} → e ⇓ m → ⟦ e ⟧ ≡ m
-big→denotation ⇓-ℕ = ≡.refl
-big→denotation (⇓-⊕ a⇓m b⇓n) rewrite big→denotation a⇓m | big→denotation b⇓n = ≡.refl
-\end{code}
 
+Let us move swiftly on to the semantic equivalence theorems of section
+\ref{sec:semantic-equivalence}. Our previous technique of rule induction
+essentially boils down to induction on the structure of inductively-defined
+data types.
+
+The proof for the forward direction of theorem \ref{thm:denote-big} is
+implemented as |denote→big|, which proceeds by case analysis on its argument
+|e : Expression|:
+\begin{code}
+denote→big : ∀ {e m} → ⟦ e ⟧ ≡ m → e ⇓ m
+denote→big {# n}    ≡.refl = ⇓-ℕ
+denote→big {a ⊕ b}  ≡.refl = ⇓-⊕ (denote→big ≡.refl) (denote→big ≡.refl)
+\end{code}
+For the |e ≡ # n| case, matching the proof of |⟦ # n ⟧ ≡ m| with |≡.refl|
+convinces the typechecker that |m| and |n| are equal, so |e ⇓ n| is
+witnessed by |⇓-ℕ|. Agda considers terms equal up to $\beta$-reduction, so
+the |⟦ a ⊕ b ⟧ ≡ m| argument is equivalently a proof of |⟦ a ⟧ + ⟦ b ⟧ ≡ m|,
+by the definition of |⟦_⟧|. The goal type of |a ⊕ b ⇓ ⟦ a ⟧ + ⟦ b ⟧| is
+therefore met with |⇓-⊕|, whose premises of |a ⇓ ⟦ a ⟧| and |b ⇓ ⟦ b ⟧| are
+obtained by recursively invoking |denote→big| with two trivial witnesses to
+|⟦ a ⟧ ≡ ⟦ a ⟧| and |⟦ b ⟧ ≡ ⟦ b ⟧|.
+
+The backwards direction of theorem \ref{thm:denote-big} is given by the
+following |big→denote|, which uses structural induction on the definition of
+|_⇓_|:
+\begin{code}
+big→denote : ∀ {e m} → e ⇓ m → ⟦ e ⟧ ≡ m
+big→denote ⇓-ℕ = ≡.refl
+big→denote (⇓-⊕ a⇓m b⇓n) with big→denote a⇓m | big→denote b⇓n
+big→denote (⇓-⊕ a⇓m b⇓n) | ≡.refl | ≡.refl = ≡.refl
+\end{code}
+For the base case of |⇓-ℕ|, it must follow that |e ≡ # m|, so the goal type
+after $\beta$-reduction of |⟦_⟧| becomes |m ≡ m|, which is satisfied
+trivially. The |⇓-⊕| inductive case brings with it two proofs of |a ⇓ m| and
+|b ⇓ n|, which can be used to obtain proofs of |⟦ a ⟧ ≡ m| and |⟦ b ⟧ ≡ n|
+via the induction hypothesis. The goal of |⟦ a ⟧ + ⟦ b ⟧ ≡ m + n| after
+$\beta$-reduction is then trivially satisfied, thus completing the proof of
+theorem \ref{thm:denote-big}.
+
+The \!\!|with|\!\! keyword provides an analogue of Haskell's
+$\keyw{case}\;\ldots\;\keyw{of}$ construct that allows us to pattern match
+on intermediate results. Agda requires us to repeat the left hand side of
+the function definition when using a \!\!|with|\!\!-clause, since dependent
+pattern matching may affect the other arguments, as noted earlier in this
+chapter.
+
+We go on to prove theorem \ref{thm:big-small}---the equivalence between the
+big-step and small-step semantics---in a similar manner:
 %format big→small = "\func{big{\rightarrow}small}"
 %format a⇓m = "a{\Downarrow}m"
 %format b⇓n = "b{\Downarrow}n"
@@ -650,6 +710,15 @@ big→small (⇓-⊕ {a} {b} {m} {n} a⇓m b⇓n) =
   gmap (λ b′ → #  m   ⊕ b′)  ↦-R (big→small b⇓n) ◅◅
   ↦-ℕ ◅ ε
 \end{code}
+The goal in the case of |⇓-ℕ| is trivially satisfied by the empty reduction
+sequence, since |e ≡ # m|. In the |⇓-⊕| case, recursively invoking
+|big→small| with |a⇓m| and |b⇓n| gives reduction sequences for |a ↦⋆# m| and
+|b ↦⋆# n| respectively. We can map over the former using |↦-L| over the
+witnesses and |λ a′ → a′ ⊕ b| over the indices to obtain the reduction
+sequence |a ⊕ b ↦⋆# m ⊕ b|, and likewise for the second to obtain |#
+m ⊕ b ↦⋆ # m ⊕ # n|. By appending these two resulting sequences followed by
+a final application of the |↦-ℕ| rule---equivalently, invoking
+transitivity---we obtain the desired goal of |a ⊕ b ↦⋆# m + n|.
 
 %format small→big = "\func{small{\rightarrow}big}"
 %format e′ = "e\Prime{}"
@@ -662,18 +731,34 @@ big→small (⇓-⊕ {a} {b} {m} {n} a⇓m b⇓n) =
 %format b⇓n = "b{\Downarrow}n"
 %format b′⇓n = "b\Prime{\Downarrow}n"
 %format m⇓m = "m{\Downarrow}m"
+The proof for the reverse direction of \ref{thm:big-small} proceeds by
+`folding'\footnote{Unfortunately we cannot use |gfold| from Agda's standard
+library, as |_⇓_ : REL Expression ℕ| is not a homogeneous relation.} lemma
+\ref{lem:small-sound}---implemented as the |sound| helper function
+below---over the |e ↦⋆# m| reduction sequence:
 \begin{code}
 small→big : ∀ {e m} → e ↦⋆# m → e ⇓ m
-small→big ε = ⇓-ℕ
-small→big (e↦e′ ◅ e′↦⋆m) = sound e↦e′ (small→big e′↦⋆m) where
+small→big ε               = ⇓-ℕ
+small→big (e↦e′ ◅ e′↦⋆m)  = sound e↦e′ (small→big e′↦⋆m) where
   sound : ∀ {e e′ m} → e ↦ e′ → e′ ⇓ m → e ⇓ m
   sound ↦-ℕ         ⇓-ℕ               = ⇓-⊕ ⇓-ℕ ⇓-ℕ
   sound (↦-L a↦a′)  (⇓-⊕ a′⇓m  b⇓n)   = ⇓-⊕ (sound a↦a′ a′⇓m) b⇓n
   sound (↦-R b↦b′)  (⇓-⊕ m⇓m   b′⇓n)  = ⇓-⊕ m⇓m (sound b↦b′ b′⇓n)
 \end{code}
+The |sound| helper performs case analysis on the structure of the |e ↦ e′|
+small-step reduction. In the case of |↦-ℕ|, it must be the case that |e
+≡ # m ⊕ # n| and |e′ ≡ # m + n| respectively, which in turn forces the |e′
+⇓ m| argument to be |⇓-ℕ|. The goal type of |# m ⊕ # n ⇓ m + n| is
+accordingly witnessed by |⇓-⊕ ⇓-ℕ ⇓-ℕ|.
+
+For the two remaining |↦-L| and |↦-R| rules, it must necessarily be the case
+that |e′ ≡ a′ ⊕ b| or |e′ ≡ # m ⊕ b′| respectively. Thus the |e′ ⇓ m|
+argument contains a witness of either |a′ ⇓ m| or |b′ ⇓ n|, which we use to
+recursively obtain a proof of |a ⇓ m| or |b ⇓ n|.
+
 %}}}%
 
-\section{Stack Machines and Their Semantics}
+\subsection{Stack Machines and Their Semantics}%{{{%
 
 %{{{%
 %format Instruction = "\type{Instruction}"
@@ -742,14 +827,14 @@ big→machine (⇓-⊕ a⇓m b⇓n) =
   big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
 \end{code}
 
-\begin{code}
+\begin{spec}
 small→machine : ∀ {e m} → e ↦⋆# m → e ↣⋆# m
 small→machine ε = ↣-PUSH ◅ ε
 small→machine (↦-ℕ ◅ ε) = ↣-PUSH ◅ ↣-PUSH ◅ ↣-ADD ◅ ε
 small→machine (↦-ℕ ◅ () ◅ xs)
 small→machine (↦-L a↦a′ ◅ a′⊕b↦m) = {!small→machine a′⊕b↦m!}
 small→machine (↦-R b↦b′ ◅ na⊕b′↦m) = {!!}
-\end{code}
+\end{spec}
 
 %format exec = "\func{exec}"
 %format na = "n_a"
@@ -802,6 +887,14 @@ machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
   | ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
 \end{code}
 %}}}%
+
+%}}}%
+
+%}}}%
+
+
+% ignore me
+%{{{%
 
 %{{{%
 %if False
@@ -906,7 +999,7 @@ machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
 --   ∎ where open ≡.≡-Reasoning
 
 -- correctness′ : ∀ e {c σ m} → e ⇓ m → exec (compile e c) σ ≡ exec c (m ∷ σ)
--- correctness′ e e⇓m with big→denotation e⇓m
+-- correctness′ e e⇓m with big→denote e⇓m
 -- correctness′ e e⇓m | ≡.refl = correctness e
 
 -- correctness″ : ∀ e {c σ m} → e ↦⋆# m → exec (compile e c) σ ≡ exec c (m ∷ σ)
@@ -1127,6 +1220,7 @@ machine→small {a ⊕ b} (a↣a′ ◅ a′↣⋆m) = {!!}
 %endif
 %}}}%
 
+%}}}%
 
-% vim: ft=tex:
+% vim: ft=tex fo-=m fo-=M:
 
