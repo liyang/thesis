@@ -41,16 +41,16 @@ open RawFunctor Action.rawFunctor
 --   ∀ {h h′ r r′ α} → α ≄☢ → h ∧ r ↠‹ α › h′ ∧ r′ → h ≡ h′
 -- is it necessary?
 -- Will need separate ≃☢ type and ⁺≃☢-inj lemmas though
-↠τ-heap : ∀ {h h′ r r′} → h ∧ r ↠τ h′ ∧ r′ → h ≡ h′
+↠τ-heap : ∀ {h h′ r r′} → h ∧ r ↠τ h′ ∧ r′ → h′ ≡ h
 ↠τ-heap {h} (._ ∧ α≃τ ∧ ↠-↦ e↦e′) = ↦τ-heap (E⁺≃τ-inj α≃τ) e↦e′ where
-  ↦τ-heap : ∀ {h′ e e′ α} → α ≃τ → IO ‣ h ∧ e ↦‹ α › h′ ∧ e′ → h ≡ h′
-  ↦τ-heap α≃τ ↦-⊕ℕ = ≡.refl
-  ↦τ-heap α≃τ (↦-⊕R b↦b′) = ↦τ-heap α≃τ b↦b′
-  ↦τ-heap α≃τ (↦-⊕L a↦a′) = ↦τ-heap α≃τ a↦a′
+  ↦τ-heap : ∀ {h′ e e′ α} → α ≃τ → IO ‣ h ∧ e ↦‹ α › h′ ∧ e′ → h′ ≡ h
+  ↦τ-heap α≃τ ↦-⊞ = ≡.refl
+  ↦τ-heap α≃τ (↦-R b↦b′) = ↦τ-heap α≃τ b↦b′
+  ↦τ-heap α≃τ (↦-L a↦a′) = ↦τ-heap α≃τ a↦a′
   ↦τ-heap () ↦-fork
   ↦τ-heap () (↦-atomic e↦⋆m)
 ↠τ-heap {h} (._ ∧ α≃τ ∧ ↠-↣ t↣t′) = ↣τ-heap (M⁺≃τ-inj α≃τ) t↣t′ where
-  ↣τ-heap : ∀ {h′ t t′ α} → α ≃τ → h ∧ t ↣‹ α › h′ ∧ t′ → h ≡ h′
+  ↣τ-heap : ∀ {h′ t t′ α} → α ≃τ → h ∧ t ↣‹ α › h′ ∧ t′ → h′ ≡ h
   ↣τ-heap α≃τ ↣-PUSH = ≡.refl
   ↣τ-heap α≃τ ↣-ADD = ≡.refl
   ↣τ-heap () ↣-FORK
@@ -61,6 +61,11 @@ open RawFunctor Action.rawFunctor
   ↣τ-heap () (↣-COMMIT (yes _))
 ↠τ-heap (._ ∧ is-… α≃τ ∧ ↠-preempt s↠s′) = ↠τ-heap (_ ∧ α≃τ ∧ s↠s′)
 ↠τ-heap (.τ ∧ α≃τ ∧ ↠-switch) = ≡.refl
+
+postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′ → h′ ≡ h
+-- ↠τ⋆-heap foo = Star.fold _≡_ ≡.trans ≡.refl {! Star.map ↠τ-heap foo !}
+-- ↠τ⋆-heap ε = ≡.refl
+-- ↠τ⋆-heap (x ◅ xs) = {!≡.trans (↠τ-heap x) !}
 
 ↣τ⋆→↠τ⋆ : ∀ {s h h′ t t′} → h ∧ t ↣τ⋆ h′ ∧ t′ → h ∧ ⟨ t ⟩ ∷ s ↠τ⋆ h′ ∧ ⟨ t′ ⟩ ∷ s
 ↣τ⋆→↠τ⋆ = Star.gmap liftMachine ↣τ→↠τ where

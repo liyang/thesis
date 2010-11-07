@@ -19,17 +19,18 @@ module verified where
 open import Verified.Heap as Heap
 open import Verified.Action as Action
 open import Verified.Language as Language
+open import Verified.Commit as Commit
 open import Verified.Bisimilarity as Bisimilarity
 open import Verified.Lemmas as Lemmas
 open import Verified.Completeness as Completeness
--- open import Verified.Misc as Misc
+open import Verified.Misc as Misc
 
 -- Rethink this: same heap for both? Surely not…
 -- r and s are bisimilar iff : ∀ h → h ∧ r ≈ h ∧ s
 -- i.e. both soups should do the same thing to the heap
 
 -- was: ∀ {rˡ rʳ sˡ sʳ h} → h ∧ rˡ ≈ h ∧ sˡ → h ∧ rʳ ≈ h ∧ sʳ → h ∧ rˡ ++ rʳ ≈ h ∧ sˡ ++ sʳ
-abstract postulate ≈-cong₂ : _++_ Preserves₂ _≈_ ⟶ _≈_ ⟶ _≈_
+-- abstract postulate ≈-cong₂ : _++_ Preserves₂ _≈_ ⟶ _≈_ ⟶ _≈_
 abstract postulate elide-τ : ∀ {r r′} → r ↠τ r′ → r ≈ r′
 elide-τ⋆ : ∀ {r r′} → r ↠τ⋆ r′ → r ≈ r′
 elide-τ⋆ = Star.fold _≈_ ≈-trans ≈-refl ∘ Star.map elide-τ
@@ -101,7 +102,7 @@ correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
   ... | e↣⋆m ∧ hρω≗h′ ∧ h⊇ρ
         = _ ∧ ⤇-↠ ((τ ∧ is-τ ∧ ↠-↣ ↣-BEGIN) ◅ ↣τ⋆→↠τ⋆ e↣⋆m) (_ ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h⊇ρ))) ε
         ∧ ≈′-≈ (≈-trans (≈-sym (elide-τ⋆ s₁↠τ⋆s′)) h′∧m≈hω∧m∷σ) where
-    ρ∧ω = rwLog e↦⋆m (newLog ∧ newLog); ρ = proj₁ ρ∧ω; ω = proj₂ ρ∧ω
+    ω = (proj₂ ∘ rwLog e↦⋆m) (newLog ∧ newLog)
     h′∧m≈hω∧m∷σ : h′ ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≈ update h ω ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     h′∧m≈hω∧m∷σ rewrite hω≡h′ hρω≗h′ h⊇ρ = elide-τ ↠τ-switch
 \end{code}
@@ -109,7 +110,11 @@ correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
 \restorecolumns
 \begin{code}
   COMMIT≼atomic : h ∧ ⟨ ⟨ compile (atomic e) c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
-  COMMIT≼atomic h′∧m foo = {!foo!}
+  COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↣ ↣-BEGIN) s₁↠τ⋆s′) = ⊥-elim (α≄τ is-τ)
+  COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) s₁↠τ⋆s′)
+  COMMIT≼atomic h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↣ ↣-BEGIN) ◅ h∧e↣⋆h∧m) s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}
+  COMMIT≼atomic h′∧m (⤇-↠ ((… α ∧ is-… α≃τ ∧ ↠-preempt ()) ◅ xs) s₀↠≄τs₁ s₁↠τ⋆s′)
+-- rewrite ↠τ⋆-heap s↠τ⋆s₀ = {!!}
 \end{code}
 
 % correctness for #, fork and ⊕
@@ -117,14 +122,14 @@ correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
 
 %if False
 \begin{code}
-correctness h (# m) c σ = foo where postulate foo : _
---   begin
---     h ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
---   ≈⟨ elide-τ ↠τ-switch ⟩
---     h ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
---   ≈⟨ ≈-sym (elide-τ ↠τ-PUSH) ⟩
---     h ∧ ⟨ ⟨ PUSH m ∷ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
---   ∎
+correctness h (# m) c σ =
+  begin
+    h ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ≈⟪ elide-τ ↠τ-switch ⟫
+    h ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ≈⟪ elide-τ ↠τ-PUSH ⁻¹⟫
+    h ∧ ⟨ ⟨ PUSH m ∷ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ∎ where open ≈-Reasoning
 
 correctness h (fork e) c σ = foo where postulate foo : _
 --  ♯ fork≼FORK & ♯ FORK≼fork where

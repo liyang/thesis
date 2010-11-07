@@ -235,7 +235,7 @@ complete the proof of equivalence.
 
 Moving on to the proof of consistency, we repeat the familiar outline of
 inspecting the read log followed by the write log. When entries exist for
-|v| in either of the logs, the updated read log |ρ′| reduces to just |ρ|, so
+|v| in either log, the updated |ρ′| reduces to just |ρ|, so
 the existing consistency witness |h₀⊇ρ| for |ρ| suffices:
 %format v≡v′ = "v{\equiv}v\Prime{}"
 \restorecolumns

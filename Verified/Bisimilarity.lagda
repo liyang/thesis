@@ -63,7 +63,7 @@ mutual
   infix 4 _≈′_
   data _≈′_ : Rel (Heap × List Combined) Level.zero where
     ≈′-≈ : _≈_ ⇒ _≈′_
-    ≈′-cong₂ : _++_ Preserves₂ _≈′_ ⟶ _≈′_ ⟶ _≈′_
+--    ≈′-cong₂ : _++_ Preserves₂ _≈′_ ⟶ _≈′_ ⟶ _≈′_
     ≈′-sym : Symmetric _≈′_
     ≈′-trans : Transitive _≈′_
 \end{code}
