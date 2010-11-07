@@ -1,9 +1,18 @@
 % Agda Language
 %format data = "\keyw{data}\;"
-%format with = "\;\keyw{with}\;"
+%format record = "\keyw{data}\;"
+%format ; = "\keyw{;}\;"
+%format with = "\keyw{with}"
+%format let = "\;\keyw{let}\;"
+%format in = "\;\keyw{in}\;"
 %format where = "\;\keyw{where}\;"
 %format module = "\keyw{module}"
 %format open = "\keyw{open}"
+%format private = "\keyw{private}"
+%format renaming = "\keyw{renaming}"
+%format public = "\keyw{public}"
+%format postulate = "\keyw{postulate}"
+%format abstract = "\keyw{abstract}"
 %format import = "\keyw{import}"
 %format infixl = "\keyw{infixl}"
 %format infixr = "\keyw{infixr}"
@@ -11,9 +20,11 @@
 %format rewrite = "\keyw{rewrite}"
 %format mutual = "\keyw{mutual}"
 %format forall = "\prefix{\keyw{\forall}}"
+%format ._ = "{\texttt.}\!\keyw{\anonymous}"
+%format . = "{\texttt.}\!\!"
 %format _ = "\keyw{\anonymous}"
 %format ? = "{?}"
-%format shed (e) = "\hole{\{" e "\}}"
+%format shed (e) = "\shed{\{" e "\}}"
 
 %format = = "\mathrel{\keyw{=}}"
 %format ∀ = "\keyw{\forall}"
@@ -27,20 +38,88 @@
 %format ( = "\keyw{(}"
 %format ) = "\keyw{)}"
 %format Set = "\type{Set}"
-%format Set0 = "\type{Set_0}"
-%format Set1 = "\type{Set_1}"
-%format Set2 = "\type{Set_2}"
+%format Set₀ = "\type{Set_0}"
+%format Set₁ = "\type{Set_1}"
+%format Set₂ = "\type{Set_2}"
+
+% Greek
+%format α = "\alpha"
+%format α′ = "\alpha\Prime{}"
+%format β = "\beta"
+%format γ = "\gamma"
+%format Λ = "\Lambda"
+%format σ = "\sigma"
+%format ρ = "\rho"
+%format ρ′ = "\rho\Prime{}"
+%format ρ″ = "\rho\PPrime{}"
+%format ω = "\omega"
+%format ω′ = "\omega\Prime{}"
+%format ω″ = "\omega\PPrime{}"
+
+% Decorated letters
+%format a′ = "a\Prime{}"
+%format a″ = "a\PPrime{}"
+%format b′ = "b\Prime{}"
+%format b″ = "b\PPrime{}"
+%format c′ = "c\Prime{}"
+%format c″ = "c\PPrime{}"
+%format e′ = "e\Prime{}"
+%format e″ = "e\PPrime{}"
+%format h₀ = "h_0"
+%format h₁ = "h_1"
+%format h′ = "h\Prime{}"
+%format h″ = "h\PPrime{}"
+%format r₀ = "r_0"
+%format r₁ = "r_1"
+%format r′ = "r\Prime{}"
+%format r″ = "r\PPrime{}"
+%format s₀ = "s_0"
+%format s₁ = "s_1"
+%format s′ = "s\Prime{}"
+%format s″ = "s\PPrime{}"
+%format t′ = "t\Prime{}"
+%format t″ = "t\PPrime{}"
+%format u′ = "u\Prime{}"
+%format u″ = "u\PPrime{}"
+%format v′ = "v\Prime{}"
+%format v″ = "v\PPrime{}"
+%format x′ = "x\Prime{}"
+%format x″ = "x\PPrime{}"
+%format y′ = "y\Prime{}"
+%format y″ = "y\PPrime{}"
+%format z′ = "z\Prime{}"
+%format z″ = "z\PPrime{}"
 
 %if True
 %format Level.zero = "{\!\!}"
 %endif
 
+% Coinduction
+%format ∞ = "\type{\infty}"
+%format ♯ = "\dstr{\sharp}"
+%format ♯_ = "\dstr{\sharp\anonymous}"
+%format ♭ = "\func{\flat}"
+
+% Category.Functor
+%format <$> = "\func{{<}\!{\$}\!{>}}"
+
 % Function
 %format id = "\func{id}"
+%format ∘ = "\infix{\func{\circ}}"
+%format flip = "\func{flip}"
+%format ∶ = "\infix{\func{:}}"
+
+% Data.Empty
+%format ⊥-elim = "\func{\bot\text-elim}"
 
 % Data.Unit
 %format ⊤ = "\type{\top}"
 %format tt = "\cons{tt}"
+
+% Data.Bool
+%format if = "\prefix{\func{if}}"
+%format then = "\infix{\func{then}}"
+%format else = "\infix{\func{else}}"
 
 % Data.Sum
 %format ⊎ = "\infix{\type{\uplus}}"
@@ -48,13 +127,18 @@
 %format inj₁ = "\cons{in_L}"
 %format inj₂ = "\cons{in_R}"
 
-% Data.Product renaming (_,_ to _‚_) -- lhs2TeX doesn't like commas
+% Data.Product renaming (_,_ to _∧_) -- or _‚_? lhs2TeX doesn't like commas
 %format Σ = "\type{\Sigma}"
 %format × = "\infix{\func{\times}}"
 %format _×_ = "\func{\anonymous{\times}\anonymous}"
-%format ‚ = "\infix{\cons{,}}"
-%format _‚_ = "\cons{\anonymous,\anonymous}"
+% format ‚ = "\infix{\cons{,}}"
+% format _‚_ = "\cons{\anonymous,\anonymous}"
+%format ∧ = "\infix{\cons{{\wedge}}}"
+%format _∧_ = "\cons{\anonymous{\wedge}\anonymous}"
 %format ∃ = "\func{\exists}"
+%format ∃₂ = "\func{\exists_2}"
+%format proj₁ = "\func{proj_L}"
+%format proj₂ = "\func{proj_R}"
 
 % Data.Star
 %format Star = "\type{Star}"
@@ -63,31 +147,85 @@
 %format _◅_ = "\cons{\anonymous{\lhd}\anonymous}"
 %format ◅◅ = "\infix{\func{{\lhd}\!{\lhd}}}"
 %format _◅◅_ = "\func{\anonymous{\lhd}\!{\lhd}\anonymous}"
-%format gmap = "\func{gmap}"
-%format gfold = "\func{gfold}"
+%format Star.gmap = "\func{Star.gmap}"
+%format Star.gfold = "\func{Star.gfold}"
+%format Star.map = "\func{Star.map}"
+%format Star.fold = "\func{Star.fold}"
 
 % Data.Fin
 %format Fin = "\type{Fin}"
+%format _≟ℕ_ = "\func{\anonymous{\stackrel?=}_{Fin}\!\anonymous}"
+%format ≟Fin = "\infix{\func{{\stackrel?=}_{Fin}}}"
 
 % Data.Nat
 %format ℕ = "\type{\mathbb{N}}"
-%format 0 = "\cons{0}"
+%format 0 = "\name{0}"
 %format zero = "\cons{zero}"
 %format suc = "\cons{suc}"
 %format + = "\mathbin{\func{+}}"
 %format _+_ = "\func{\anonymous{+}\anonymous}"
+%format _≟ℕ_ = "\func{\anonymous{\stackrel?=}_{\mathbb{N}}\!\anonymous}"
+%format ≟ℕ = "\infix{\func{{\stackrel?=}_{\mathbb{N}}}}"
 
 % Data.List
 %format List = "\type{List}"
 %format ∷ = "\cons{::}"
+%format _∷_ = "\cons{\anonymous{::}\anonymous}"
 %format [ = "\cons{[}"
 %format ] = "\cons{]}"
+%format _++_ = "\func{\anonymous{+}\!\!{+}\anonymous}"
+%format ++ = "\infix{\func{{+}\!\!{+}}}"
+
+% Data.Vec
+%format Vec = "\type{Vec}"
+%format Vec.lookup = "\func{Vec.lookup}"
+%format Vec.replicate = "\func{Vec.replicate}"
+
+% Data.Maybe
+%format Maybe = "\type{Maybe}"
+%format just = "\cons{just}"
+%format nothing = "\cons{nothing}"
+
+% Relation.Nullary
+%format ¬ = "\func{\lnot}"
+%format yes = "\cons{yes}"
+%format no = "\cons{no}"
+%format Dec = "\type{Dec}"
+
+% Relation.Nullary.Decidable
+%format ⌊_⌋ = "\func{{\lfloor}\anonymous{\rfloor}}"
+%format ⌊ = "\prefix{\func{{\lfloor}}}"
+%format ⌋ = "\postfix{\func{{\rfloor}}}"
 
 % Relation.Binary
 %format Rel = "\func{Rel}"
 %format REL = "\func{REL}"
+%format Reflexive = "\func{Reflexive}"
+%format Symmetric = "\func{Symmetric}"
+%format Sym = "\func{Sym}"
+%format Transitive = "\func{Transitive}"
+%format _⇒_ = "\func{\anonymous{\Rightarrow}\anonymous}"
+%format ⇒ = "\infix{\func{{\Rightarrow}}}"
+%format _Preserves₂_⟶_⟶_ = "\func{\anonymous{}Preserves_2\anonymous{\longrightarrow}\anonymous{\longrightarrow}\anonymous}"
+%format Preserves₂ = "\infix{\func{Preserves_2}}"
 
 % Relation.Binary.PropositionalEquality
 %format ≡ = "\type{{\equiv}}"
 %format ≡.refl = "\cons{{\equiv}.refl}"
+%format ≡.trans = "\func{{\equiv}.trans}"
+%format ≡.sym = "\func{{\equiv}.sym}"
+%format ≢ = "\func{{\not\equiv}}"
+%format ≡.cong = "\func{{\equiv}.cong}"
+%format ≡.inspect = "\func{{\equiv}.inspect}"
+%format with-≡ = "\infix{\cons{with\text-{\equiv}}}"
+%format ≗ = "\infix{\func{{\circeq}}}"
+
+% Relation.Binary.PreorderReasoning
+%format begin = "\func{begin}"
+%format ⟪ = "\func{\langle}"
+%format ≈⟪ = "\func{{\approx}\langle}"
+%format ≡⟪ = "\func{{\equiv}\langle}"
+%format ⟫ = "\func{\rangle}"
+%format ⁻¹⟫ = "\func{{}^{\text-1}\rangle}"
+%format ∎ = "\func{\rule{1ex}{1ex}}"
 

@@ -1,8 +1,165 @@
 \chapter{Conclusion}
 
-\begin{itemize}
-\item further work too
-\end{itemize}
+To conclude, these final pages will comprise an overview of this thesis and
+an account of how it came to be, followed by some directions for further
+work.
+
+\section{Retrospection}%{{{%
+
+The quest for higher-level abstractions to manage the complexities of
+concurrent programming has been an especially apt topic in recent years, due
+to reasons outlined in the introductory chapter. With respect to software
+transactional memory (Chapter \ref{ch:stm}), I was fortunate enough to be in
+the right places at the right times to have attended two of Tim Harris's
+talks on the topic: the first in Cambridge during my undergraduate years, on
+the JVM-based implementation; and a second time at Imperial College during
+my MSc course in the early part of 2005, on the composability of STM
+Haskell.
+
+My work for this thesis began in 2006 under the guidance of Graham Hutton,
+with an initial goal of reasoning about concurrent programs, in particular
+those written using STM. To this end, we opted for a simple formal language
+based on Hutton's Razor, extended with a minimal set of transactional
+primitives, described in Chapter \S\ref{ch:model}. While this
+language---following the reference stop-the-world semantics given by Harris
+et al.~\cite{harris05-composable}---had a simple implementation, it was not
+immediately clear how STM Haskell dealt with conflicting transactions
+internally, consequently drawing our attention towards the correctness of
+the low-level concurrent implementation.
+
+To better understand the implementation issues behind software transactional
+memory, we began building a stack-based virtual machine and a compiler for
+our minimal language, of which the final version is given in
+\S\ref{sec:model-machine}. Using Haskell as a metalanguage, it was
+a straightforward task to transcribe the syntax and semantics of our model
+as an executable program. Combined with the use of QuickCheck and the
+Haskell Program Coverage toolkit (Chapter \ref{ch:qc+hpc}), this allowed us
+to take a `rapid prototyping' approach to the design of the virtual machine.
+Most notably, we were able to clarify the appropriate conditions needed for
+a transaction to commit successfully (\S\ref{sec:model-equality}), and to
+realise that writing to an as-yet unread variable within a transaction does
+not imply a dependency on the current state of the heap.
+
+Of course, regardless of how many times we run QuickCheck on our STM model,
+overwhelming evidence does not constitute a proof of compiler correctness
+for our interleaved semantics and log-based implementation of transactional
+memory. Due to the influence of numerous type-theorists at Nottingham, I had
+become interested in dependently-typed programming (Chapter \ref{ch:agda})
+and dually, the application of intuitionistic type theory as a framework for
+conducting formal proofs. Therefore, the goal of a mechanised compiler
+correctness proof for our model in a dependently-typed
+language/proof-assistant seemed a natural choice.
+
+Whereas compiler correctness theorems in a deterministic setting (Chapter
+\ref{ch:semantics}) are concerned only with the final results, with the
+introduction of non-determinism (of which concurrency is one form) we can no
+longer afford to ignore \emph{how} results are computed, in addition to what
+is being computed. Bisimilarity as a notion of behavioural equivalence is
+a standard tool in the field of process calculi, and
+Wand~\cite{wand95-parallel,wand95-denotational,gladstein96-concurrent} et
+al.~were the first to use it to tackle concurrent compiler correctness over
+a decade ago. Their work relied on giving denotational semantics to both
+source and target languages in an underlying process calculus, and showing
+that compilation preserved bisimilarity of denotations. In contrast, we
+defined our language and virtual machine in an operational manner, and
+sought a simpler and more direct approach.
+
+Thus, the idea of the combined machine was born, detailed in Chapter
+\ref{ch:nondet}. A key realisation was that certain kinds transitions
+preserve bisimilarity, giving rise to the $\func{elide\text-\tau}$ lemma.
+Having tested the waters with the non-deterministic Zap language, Chapter
+\ref{ch:fork} then demonstrates that our approach can indeed scale to handle
+concurrency, at least for that of the Fork language. As well as updating the
+$\func{elide\text-\tau}$ lemma for explicit concurrency, we also showed that
+combining bisimilar pairs of thread soups preserves bisimilarity.
+
+Finally, Chapter \ref{ch:verified} brings our object language up to par with
+our earlier STM model by introducing an $\cons{atomic}$ construct that
+follows a stop-the-world semantics, in contrast with its virtual machine's
+log-based implementation that allows concurrent transactions to interleave
+each other. The final compiler correctness proof makes essential use of
+a notion of equivalence between the heap of the high-level semantics and
+that of the virtual machine, overlaid with read and write logs.
+
+%}}}%
+
+\section{Summary of Contributions}%{{{%
+
+This thesis addresses the familiar question of compiler correctness in
+a current context, with a particular emphasis on the implementation of
+software transactional memory. We have identified a simplified subset of STM
+Haskell that is amenable to formal reasoning, which has a stop-the-world
+transactional semantics, together with a concurrent virtual machine for this
+language, using the notion of transaction logs. A compiler linking this
+simplified language to its virtual machine then allowed us to formulate
+a concrete statement of compiler correctness. We were able to implement the
+above semantics in a fairly direct manner using the high-level vocabulary
+provided by Haskell, enabling us to empirically test compiler correctness
+with the help of QuickCheck and HPC.
+
+Working towards a formal proof of the above hypothesis, we stripped down to
+a minimal language with trivial non-determinism, and moving to a labelled
+transition system. The core idea of a combined machine and semantics then
+allowed us to establish a direct bisimulation between this language and its
+virtual machine. This technique was put into practice using the Agda proof
+assistant, giving a machine-checked compiler correctness proof for
+a language with a simple notion of non-determinism. We then extended the
+above proof and our approach in the direction of the initially identified
+subset of STM Haskell, in an incremental manner: first introducing explicit
+concurrency in the form of a $\cons{fork}$ primitive, before finally
+extending this language with an $\cons{atomic}$ construct. We believe this
+to be the first machine-checked compiler correctness proof showing the
+equivalence of the log-based approach and the stop-the-world semantics for
+implementing transactions.
+
+%}}}%
+
+\section{Directions for Further Research}%{{{%
+
+Our simplified model of STM Haskell focuses on the essence of implementing
+transactions, and consequently omits many of the facilities expected of
+a realistic language. Namely, the lack of primitive recursion or even name
+binding limits the computational power of our model in a very tangible
+sense. We could be tackle this using a lightweight approach, by borrowing
+said facilities from the metalanguage and defining the high-level semantics
+as a functional specification. For example, Gordon's
+thesis~\cite{gordon92-fpio} presents such a specification of teletype IO for
+a subset of Haskell in terms of a low-level metalanguage, while
+Swierstra~\cite{swierstra08-funspec} advocates the use of Agda as the
+metalanguage, due to its enforcement of totality.
+
+Given the above as a basis, a machine-verified formalisation of the omitted
+parts of the STM Haskell specification---in particular
+$\func{retry}$/$\func{orElse}$ and the interaction with exceptions---becomes
+a much more tractable proposition. Open questions include: How will these
+additions affect the design of the corresponding virtual machine? Can we
+maintain the simplicity of our combined machine approach? Is the outline of
+our reasoning for transactions still valid in this richer language? Our
+current virtual machine immediately retries failed transactions, rather than
+waiting until some relevant transactional variable has changed. How can our
+virtual machine more faithfully model the implementation of STM in GHC?
+
+Going further, we could extend the set of side-effects that can be safely
+rolled back by the transactional machinery. One widely asserted advantage of
+STM Haskell over other STM implementations is that its type system restricts
+transactions---aside from modifying $\type{TVar}$s---to pure computations,
+guaranteeing that rollback is always possible. During my initial work on the
+model of STM Haskell, the notion of running multiple nested transactions
+concurrently arose quite naturally, when considering their r\^{o}le in the
+implementation of $\func{retry}$/$\func{orElse}$. While the $\func{forkIO}$
+primitive is considered impure, forking a nested transaction need not be, as
+its side-effects can only escape as part of that of its enclosing
+transaction. It could be interesting to flesh out the precise behaviour of
+such
+a $\func{forkSTM}\;\keyw{::}\;\type{STM\;()\;\rightarrow\;STM\;ThreadId}$
+primitive, and to evaluate its utility for concurrent programming in the
+real world.
+
+%}}}%
+
+%\section*{Closing Remarks}
+
+%Thanks for making it this far. It felt like I almost didn't.
 
 % vim: ft=tex:
 

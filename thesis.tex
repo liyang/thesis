@@ -5,18 +5,20 @@
 \usepackage[left=1.5in,right=1in,top=1in,bottom=1in]{geometry}
 
 % display date and time of when PDF was made
+\input{now}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhead{}
-\fancyfoot[RO,LE]{\scriptsize{\input{now}}}
+\fancyfoot[R]{\scriptsize\rightnow}
 \renewcommand{\headrulewidth}{0pt}
-
-\input{polycode.lhs}
 
 \usepackage{url}
 \usepackage{longtable}
 \usepackage{multirow}
 \usepackage{comment}
+\usepackage{marvosym}
+
+\input{polycode.lhs}
 
 %\def\TODO#1{\par\noindent{}TODO:~\ldots\emph{#1}\ldots\par}
 \def\TODO#1{\noindent{}TODO:~\ldots\emph{#1}\ldots}
@@ -36,6 +38,17 @@
 \usepackage{mathpartir}
 \def\TirName#1{\eqName{#1}}
 
+\usepackage[pdftex,matrix,arrow,curve,color]{xy}
+% for arrow labels in xymatrix
+\usepackage{rotating}
+\def\xyrot#1#2{\begin{turn}{#1}\parbox[c][1.5ex][c]{1.5ex}{\makebox[1.5ex][c]{$#2$}}\end{turn}}
+% agda-mode doesn't like {-
+\def\xyar{\ar@{->}}
+\def\xyarr{\ar@{->>}}
+
+% vector lookup for verified chapter
+\def\index[#1]{\!\texttt[#1\texttt]\!}
+
 % lhs2TeX
 %{{{%
 \usepackage[pdftex]{color}
@@ -46,18 +59,23 @@
 
 \newcommand\keyw[1]{\textcolor[rgb]{.75,.4,0}{\mathkw{#1}}}
 \newcommand\type[1]{\textcolor[rgb]{0,0,.75}{\mathsf{#1}}}
+\newxyColor{type}{0 0 0.75}{rgb}{}
 % \newcommand\tcls[1]{\textcolor[rgb]{.25,0,.75}{\mathsf{#1}}}
 \newcommand\cons[1]{\textcolor[rgb]{0,.5,0}{\mathsf{#1}}}
+\newcommand\dstr[1]{\textcolor[rgb]{.75,.75,0}{\mathsf{#1}}}
 \newcommand\func[1]{\textcolor[rgb]{.75,0,0}{\mathsf{#1}}}
-\newcommand\name[1]{\textcolor[rgb]{.75,0,.75}{\mathtt{#1}}}
+\newcommand\ltrl[1]{\textcolor[rgb]{.6,0,.6}{\mathtt{#1}}}
+\newcommand\name[1]{\textcolor[rgb]{.75,0,.75}{\mathsf{#1}}}
 \newcommand\commentstyle[1]{\textcolor[rgb]{0,.6,0.75}{#1}}
-\newcommand\hole[1]{\colorbox[rgb]{.6,1,.6}{#1}}
+\newcommand\shed[1]{\colorbox[rgb]{.6,1,.6}{#1}}
+
+\def\hide#1{}
 
 \newcommand\Prime{\ensuremath{'}}
 \newcommand\PPrime{\ensuremath{''}}
 
-\newcommand\prefix[1]{#1\!}
-\newcommand\postfix[1]{\!#1}
+\newcommand\prefix[1]{{\!}\mathbin{#1}}
+\newcommand\postfix[1]{\mathbin{#1}{\!}}
 
 \newcommand\infix[1]{\mathbin{#1}}
 \newcommand\infixL[1]{\infix{#1}\!}
@@ -90,7 +108,7 @@ School of Computer Science
 University of Nottingham
 \par
 \vspace{0.5in}
-June 2010
+October 2010
 \end{center}
 \end{titlepage}
 
@@ -123,20 +141,22 @@ formally verified compiler for software transactional memory.
 
 \chapter*{Acknowledgements and Thanks}
 
-\begin{itemize}
-\item GMH for his guidance and keeping me on track
-\item CTM for infecting me with DTP
-\item PGH for discussions on transactions
-\item NAD for Agda assistance and stdlib
-\item Ulf for developing Agda
-\item RKSD for figuratively\footnote{xkcd-figuratively} beating me into
-submission
-\item AJ for being my muse and therapist, particularly during the more
-emotionally difficult parts of the write-up
-\item TD's seemingly inexhaustible enthusiasm for inspiring me to get the
-hell on with it
-\item something about my parents (not forcing me to get a real job?)
-\end{itemize}
+\ldots
+
+%\begin{itemize}
+%\item GMH for his guidance and keeping me on track
+%\item CTM for infecting me with DTP
+%\item PGH for discussions on transactions
+%\item NAD for Agda assistance and stdlib
+%\item Ulf for developing Agda
+%\item RKSD for figuratively\footnote{xkcd-figuratively} beating me into
+%submission
+%\item AJ for being my muse and therapist, particularly during the more
+%emotionally difficult parts of the write-up
+%\item TD's seemingly inexhaustible enthusiasm for inspiring me to get the
+%hell on with it
+%\item something about my parents (not forcing me to get a real job?)
+%\end{itemize}
 
 \tableofcontents
 %\listoffigures
@@ -150,7 +170,7 @@ hell on with it
 {\include{model.lhs}}
 {\include{agda.lagda}}
 {\include{nondet.lagda}}
-{\include{concurrency.lagda}}
+{\include{fork.lagda}}
 {\include{verified.lagda}}
 {\include{conclusion}}
 

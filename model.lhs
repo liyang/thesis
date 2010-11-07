@@ -1,14 +1,10 @@
 %{{{%
-%include local.fmt
-%include haskell.fmt
-
 \def\Z{\mathbb Z}
 
 %\def\finmap{\hookrightarrow}
 %\def\finsert#1#2#3{#1{\left[ #2 \mapsto #3 \right]}}
 \def\finsert#1#2#3{#1 \uplus \{ #2 \mapsto #3 \}}
 \def\flookup#1#2{#1 \mathbin{?} #2}
-\def\hsinfix#1{\mathbin{\func{\texttt`#1\texttt`}}}
 
 \def\expr#1#2{#2\ensuremath{_\mathsf{\scriptscriptstyle#1}}}
 
@@ -36,14 +32,16 @@
 %{{{%
 %if False
 \begin{code}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, FlexibleInstances #-}
 #define NIL []
 
 module Main where
 
-import Prelude
+import Prelude hiding (sequence)
+import Control.Applicative
 import Control.Arrow (first, second)
 import Control.Monad (ap)
+import Data.Foldable
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.Set as Set
@@ -70,18 +68,27 @@ mupdate = flip Map.union
 %\item also contrast with Wouter's stop-the-world approach in his thesis
 %\end{itemize}
 
-In this chapter, we identify a simplified subset of STM Haskell and
-a stop-the-world semantics for this language, suitable for exploring design
-issues. We then specify a low-level virtual machine for this language, in
-which the transactions are executed concurrently. Finally we give a compiler
-correctness statement for the combination. Since the model is implemented as
-a Haskell program, we can test its correctness using QuickCheck and HPC.
+In this chapter, we identify a simplified subset of STM Haskell that is
+suitable for exploring design and implementation issues, and define
+a high-level stop-the-world semantics for this language. We then define
+a low-level virtual machine for the language in which transactions are made
+explicit, along with a semantics for this machine. Finally, we relate the
+two semantics using a compiler correctness theorem, and test the validity of
+this theorem using QuickCheck and HPC on an executable implementation this
+language.
 
-\TODO{this chapter is based on previous paper?}
+%In this chapter, we identify a simplified subset of STM Haskell and
+%a stop-the-world semantics for this language, suitable for exploring design
+%issues. We then specify a low-level virtual machine for this language, in
+%which the transactions are executed concurrently. Finally we give a compiler
+%correctness statement for the combination. Since the model is implemented as
+%a Haskell program, we can test its correctness using QuickCheck and HPC.
 
-\TODO{need to say something about the executable model in the introduction}
+%\TODO{this chapter is based on previous paper?}
 
-\section{A Simple Transactional Language}%{{{%
+%\TODO{need to say something about the executable model in the introduction}
+
+\section{A Simple Transactional Language}\label{sec:model-language}%{{{%
 
 % provide a consistent snapshot of the current state of the shared heap
 
@@ -98,12 +105,13 @@ for explicit concurrency:
 atomically  :: STM alpha ->  IO alpha
 forkIO      :: IO Unit ->    IO Unit
 \end{spec}
-The |STM| and |IO| types are monads (\S\ref{sec:haskell}), so we may
+The |STM| and |IO| types are monads (\S\ref{sec:stm-haskell}), so we may
 use \emph{bind} and |return| on both levels for sequencing effectful
 computations.
 
 \subsection{Syntax}%{{{%
 
+\def\sub#1{_{\scriptscriptstyle #1}}
 %format Var = "\type{Var}"
 %format Tran = "\type{Tran}"
 %format ValT = "\cons{Val\sub T}"
@@ -121,8 +129,6 @@ a simplified model of the above, without concerning ourselves with
 orthogonal issues. The language we consider has a two-level
 syntax---mirroring that of the STM Haskell primitives---which can be
 represented as the following |Tran| and |Proc| data types in Haskell:
-\def\sub#1{_{\scriptscriptstyle #1}}
-\def\hide#1{}
 \begin{code}
 data Tran  = ValT Integer  | Tran `AddT` Tran  | Read Var     | Write Var Tran{-"\hide{"-}deriving (Eq, Ord, Show){-"}"-}
 data Proc  = ValP Integer  | Proc `AddP` Proc  | Atomic Tran  | Fork Proc{-"\hide{"-}deriving (Eq, Ord, Show){-"}"-}
@@ -132,13 +138,13 @@ respectively. The language is intentionally minimal, since issues such as
 name binding and performing general-purpose computations are largely
 orthogonal to our stated goal of verifying an implementation of STM. Thus,
 we replace the \emph{bind} and |return| of both monads with the monoid of
-addition and integers, as motivated in section \S\ref{sec:degenerate} of the
-previous chapter. In our language, |ValT| and |ValP| correspond to |return|
-for the |STM| and |IO| monads, while |`AddT`| and |`AddP`| combine |Tran|
-and |Proc| computations in an analogous way to \emph{bind}. By enforcing
-a left-to-right reduction semantics for |`Add`|, we nevertheless retain the
-fundamental idea of using monads to sequence computations and combine their
-results~\cite{p1-11?}.
+addition and integers, as motivated in section
+\S\ref{sec:semantics-degenerate} of the previous chapter. In our language,
+|ValT| and |ValP| correspond to |return| for the |STM| and |IO| monads,
+while |`AddT`| and |`AddP`| combine |Tran| and |Proc| computations in an
+analogous way to \emph{bind}. By enforcing left-to-right reduction
+semantics for |`AddT`| and |`AddP`|, we nevertheless retain the fundamental
+idea of using monads to sequence computations and combine their results.
 
 The remaining constructs emulate the |STM| and |IO| primitives provided by
 STM Haskell: |Read| and |Write| correspond to |readTVar| and |writeTVar|,
@@ -189,13 +195,13 @@ incTwice c = Fork (Atomic (increment c)) `AddP` Fork (Atomic (increment c))
 \subsection{Transaction Semantics}%{{{%
 
 We specify the meaning of transactions in this language using a small-step
-operational semantics, following the approach of \cite{p1-9.3.2}. Formally,
-we give a reduction relation $\red T$ on pairs $\Hp<h, e>$ consisting of
-a heap |h :: Heap| and a transaction |e :: Tran|. In this section we explain
-each of the rules defining $\red T$, and simultaneously describe its
-implementation in order to highlight their similarity.
+operational semantics, following the approach of \cite{harris05-composable}.
+Formally, we give a reduction relation $\red T$ on pairs $\Hp<h, e>$
+consisting of a heap |h :: Heap| and a transaction |e :: Tran|. In this
+section we explain each of the rules defining $\red T$, and simultaneously
+describe its implementation in order to highlight their similarity.
 
-Firstly, we model the heap as a map from variable names to their
+First, we model the heap as a map from variable names to their
 values---initialised to zero---and write $\flookup h v$ to denote the value
 of variable $v$ in the heap $h$. This may be implemented in Haskell using
 the standard |Map| datatype:
@@ -499,7 +505,7 @@ directly implementable.
 
 %}}}%
 
-\section{A Simple Transactional Machine}\label{sec:machine}%{{{%
+\section{A Simple Transactional Machine}\label{sec:model-machine}%{{{%
 
 The \eqName{Atomic} rule of the previous section simply states that the
 evaluation sequence for a transaction may be seen as a single indivisible
@@ -609,7 +615,7 @@ example, it would not be appropriate to `launch
 missiles'~\cite{harris05-composable} during a transaction.
 
 
-\subsubsection*{Interference}
+\subsubsection{Interference}
 
 But what constitutes \emph{interference}? When a transaction succeeds and
 commits its log to the heap, all of its side-effects are then made visible
@@ -627,7 +633,7 @@ if the logged values of all the variables read are `equal' to their values
 in the heap at the end of the transaction.
 
 
-\subsubsection*{Equality}
+\subsubsection{Equality}\label{sec:model-equality}
 
 But what constitutes \emph{equality}? To see why this is an important
 question, and what the design choices are, let us return to our earlier
@@ -856,7 +862,7 @@ the heap and the read log updated accordingly:
 	&\text{where }\Hp<n, r'> = \begin{cases}
 		\Hp<w(v), r> & \text{if }v \in \text{dom}(w) \\
 		\Hp<r(v), r> & \text{if }v \in \text{dom}(r) \\
-		\Hp<h(v), \finsert r v {h ? v}> & \text{otherwise}
+		\Hp<h(v), \finsert r v {\flookup h v}> & \text{otherwise}
 	\end{cases}
 \end{align*}
 The transliteration of the \eqName{READ} rule to our implementation is as
@@ -1024,7 +1030,7 @@ the interleaved virtual machine semantics.
 
 We can generalise the above over a process soup rather than a single
 process, as well as an arbitrary initial heap:
-\begin{theorem}[Compiler Correctness]\label{thm:correct}%
+\begin{theorem}[Compiler Correctness]\label{thm:model-correct}%
 \begin{align*}
 	\forall ps \in |[Proc]|&, h, h' \in |Heap|, s \in |[Integer]|.\\
 	& \Hp<h, ps> \eval P \Hp<h', s>
@@ -1050,10 +1056,17 @@ prohibitively expensive.
 
 %}}}%
 
+%if False
 %{{{%
 \begin{code}
 arb :: Arbitrary a => Int -> Gen a
 arb s = resize (max 0 s) arbitrary
+
+vars :: [Var]
+vars = [ 'a', 'b', 'c' ]
+
+var :: Gen Var
+var = elements vars
 
 instance Arbitrary Tran where
 	arbitrary = sized $ \ size -> frequency
@@ -1061,7 +1074,7 @@ instance Arbitrary Tran where
 		, (4, AddT `fmap` arb (size - 1) `ap` arb (size - 1))
 		, (4, Read `fmap` var)
 		, (4, Write `fmap` var `ap` (resize (size - 1 `max` 0) arbitrary))
-		] where var = elements [ 'a', 'b' ]
+		]
 	shrink t = case t of
 		ValT _ -> []
 		a `AddT` b -> [a, b]
@@ -1081,59 +1094,73 @@ instance Arbitrary Proc where
 		Fork q -> [q]
 		Atomic t -> Atomic `fmap` shrink t
 
-one :: Proc -> Bool
-one p = reduceUntil isValS redS (Map.empty, [p])
-	== reduceUntil haltedM stepM (Map.empty, load [p])
-
-many :: [Proc] -> Bool
-many ps = reduceUntil isValS redS (Map.empty, ps)
-	== reduceUntil haltedM stepM (Map.empty, load ps)
+instance Arbitrary (Map Var Integer) where
+	arbitrary = do
+		let fromPositive (Positive n) = n
+		let pair = (,) <$> var <*> (fromPositive <$> arbitrary)
+		n <- choose (0, length vars)
+		Map.fromList <$> sequence (replicate n pair)
 \end{code}
 %}}}%
+%endif
 
 \subsection{Validation of Correctness}%{{{%
 
-\TODO{this section needs a rewrite after chapter \ref{ch:qc+hpc} is
-written!}
+%\TODO{this section needs a rewrite after chapter \ref{ch:qc+hpc} is
+%written!}
 
 Proving the correctness of programs in the presence of concurrency is
-notoriously difficult. Ultimately we would like to have a formal proof of
-theorem~\ref{thm:correct}, but to date we have adopted a mechanical approach
-to validating this result, using randomised testing.
+notoriously difficult. Ultimately we would like to have a formal proof, but
+the randomised testing approach---using QuickCheck and HPC, as described in
+Chapter \ref{ch:qc+hpc}---can provide a high level of assurance with
+relatively minimal effort. In the case of theorem~\ref{thm:model-correct},
+we can transcribe it as the following property:
+%format prop_Correctness = "\func{prop_Correctness}"
+\begin{code}
+prop_Correctness :: Heap -> [Proc] -> Bool
+prop_Correctness h ps = eval (h, ps) == exec (h, load ps)
+\end{code}
+In other words, from any initial heap |h| and process soup |ps|, the
+stop-the-world semantics produces the same set of possible outcomes as that
+from executing the compiled thread soup using a log-based implementation of
+transactions.
 
-QuickCheck~\cite{claessen00-quickcheck} is a system for testing properties
-of Haskell programs. It is straightforward to implement our semantics,
-virtual machine and compiler in Haskell, and to define a property
-|prop_Correctness :: Proc -> Bool| that corresponds to theorem
-\ref{thm:correct}. Non-deterministic transitions in our system are
-implemented as set-valued functions, which are used to build up a tree that
-captures all possible evaluation sequences, thus ensuring all possible
-interleavings are accounted for. QuickCheck can then be used to generate
-a large number of random test processes, and check that the theorem holds in
-each one of these cases:
+Given suitable |Arbitrary| instances for |Prop| and |Heap|, we can use
+QuickCheck to generate a large number of random test cases, and check that
+the theorem holds in each and every one:
+\begin{spec}
+hsPrompt quickCheck prop_Correctness
+{-"\texttt{OK, passed 100 tests.}"-}
+\end{spec}
+Having performed many thousands of tests in this manner, we can be highly
+confident in the validity of our compiler correctness theorem. However, as
+with any testing process, it is important to ensure that all the relevant
+parts of the program have been exercised in the process. Repeating the
+coverage checking procedure described in \S\ref{sec:testing-hpc}, we obtain
+the following report of unevaluated expressions\footnote{As before, unused
+expressions corresponding to compiler-generated instances have been
+omitted.}:
 \begin{verbatim}
-*Main> quickCheck prop_Correctness
-OK, passed 100 tests.
+module "Main" {
+  inside "reduceTran" {
+    tick "Set.empty" on line 303;
+  }
+}
 \end{verbatim}
-Having performed many thousands of tests in this manner, we gain a high
-degree of confidence in the validity of our compiler correctness theorem.
-However, as with any testing process, it is important to ensure that all the
-relevant parts of the program have been exercised during testing.
+The unused |Set.empty| corresponds to the |ValT| case of the |redT|
+function, which remains unused simply because we never ask it for the reduct
+of |ValT m| expressions.
 
-The Haskell Program Coverage (HPC) toolkit~\cite{gill07-hpc} supports just
-this kind of analysis, enabling us to quickly visualise and identify
-unexecuted code. Using HPC confirms that testing our compiler correctness
-result using QuickCheck does indeed give 100\% code coverage, in the sense
-that every part of our implementation is actually executed during the
-testing process:
-%\begin{center}
-%\includegraphics[width=\textwidth]{HPC}
-%\end{center}
+%if False
+\begin{code}
+prop_Correct :: Heap -> Proc -> Bool
+prop_Correct h p = eval (h, [p]) == exec (h, load [p])
 
-In combination, the use of QuickCheck for automated testing and HPC to
-confirm complete code coverage, as pioneered by the XMonad
-project~\cite{stewart07-xmonad}, provides high-assurance of the correctness
-of our implementation of transactions.
+main :: IO ()
+main = do
+	quickCheck prop_Correct
+\end{code}
+%endif
 
 %}}}%
 
@@ -1143,8 +1170,6 @@ of our implementation of transactions.
 % 1 page / 1 page
 %if True
 \section{Conclusion}%{{{%
-
-\TODO{cut down / rewrite}
 
 In this chapter we have shown how to implement software transactional memory
 correctly, for a simplified language inspired by STM Haskell. Using
@@ -1161,62 +1186,13 @@ refined many times during the development of this work, both as a result of
 correcting errors, and streamlining the presentation. Ensuring that our
 changes were sound was simply a matter of re-running QuickCheck and HPC.
 
-On the other hand, it is important to be aware of the limitations of this
+On the other hand, it is important to recognise the limitations of this
 approach. First of all, randomised testing does not constitute a formal
 proof, and the reliability of QuickCheck depends heavily on the quality of
 the test-case generators. Secondly, achieving 100\% code coverage with HPC
 does not guarantee that all possible interactions between parts of the
 program have been tested. Nonetheless, we have found the use of these tools
 to be invaluable in our work.
-
-In terms of expanding on the work presented in this article, we have
-identified a number of possible directions for further work:
-
-\medskip\noindent\emph{Proof.} The most important step now is to consider
-how our correctness result can be formally proved. The standard
-approach~\cite{wand95-parallel} to compiler correctness for concurrent
-languages involves translating both the source and target languages into
-a common process language such as the $\pi$-calculus, where compiler
-correctness then amounts to establishing a bisimulation. We are in the
-process of developing a new, simpler approach that avoids the introduction
-of an intermediate language, by establishing a bisimulation directly between
-the source and target languages.
-
-\medskip\noindent\emph{Generalisation.} Our simplified language focuses on
-the essence of implementing transactions. However, it is important to take
-into account other features in the core language of STM Haskell, namely
-binding, input / output, exceptions and |retry| / |orElse|. Previous work by
-Huch and Kupke \cite{huch05-highlevel} describes a full implementation of
-the STM Haskell semantics given in \cite{harris05-composable}, using
-existing Concurrent Haskell primitives, but they do not address the
-correctness of their implementation.
-
-We could go further, and consider the implications of allowing limited
-effects within transactions, such as the creation of nested transactions or
-concurrent processes, with a view to investigate a more liberal variant of
-STM in Haskell.
-
-\medskip\noindent\emph{Mechanisation.} Just as QuickCheck and HPC were of
-great benefit for testing our compiler correctness theorem, we may similarly
-expect to benefit from the use of mechanical support when proving this
-result. Indeed, in the presence of concurrency it would not be surprising if
-the complexity of the resulting bisimulation proof necessitated some form of
-tool support. We are particularly interested in the use of automated
-proof-checkers such as Epigram~\cite{mcbride04-left} or
-Agda~\cite{norell07-thesis}, in which the provision of dependent types
-allows proof to be conducted directly on the program terms, which helps to
-shift some of the work from the user to the type-checker
-\cite{mckinna08-correct}. Work on proving our correctness theorem in Agda is
-currently under way.
-
-\medskip\noindent\emph{Other approaches.} We have verified the basic
-log-based implementation of transactions, but it would also be interesting
-to consider more sophisticated techniques, such as suspending a transaction
-that has retried until a relevant part of the heap has changed. Finally, it
-is also important to explore the relationship to other semantic approaches
-to transactions, such as the use of functions~\cite{swierstra08-iospec} and
-processes~\cite{acciai07-atccs}, as well as relevant semantic properties,
-such as linearisability~\cite{herlihy90-linear}.
 
 %\note{refinements: nested atomic / fork, delayed IO}
 

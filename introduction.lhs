@@ -1,5 +1,3 @@
-%include local.fmt
-
 %let showMiscCode = False
 
 %if False -- %{{{%
@@ -16,11 +14,18 @@ import Test.QuickCheck.Monadic
 \end{code}
 %endif -- %}}}%
 
-\chapter{Introduction}\label{chapter:introduction}
+\chapter{Introduction}\label{ch:introduction}
 
 % \TODO{Race conditions break sequential assumptions about program behaviour}
 
-\TODO{\ldots}
+In this chapter we set the scene for this thesis. We begin with a brief
+background on the history of concurrent computing, and the concepts and
+issues involved in developing software that takes advantage of the
+additional computational capability. We then describe a number of mainstream
+approaches to constructing concurrent software, along with the transactional
+memory approach that is the focus of this thesis, illustrated with some
+simple examples. We conclude with a synopsis of each chapter and a summary
+of our primary contributions.
 
 \section{Background}%{{{%
 
@@ -76,7 +81,7 @@ be dissipated in the form of waste heat, limiting the extent to which we can
 simply increase the clock speed. Indeed, some recent desktop processors
 expend up to a third~\cite{lal-shimpi08-atom} of their power solely to
 ensure accurate clock signal distribution to outlying areas of the silicon
-die, and produced as much as $150\text{W}$ of heat in an area less than
+die, and expel as much as $150\text{W}$ of excess heat in an area less than
 $15\text{mm}^2$.~\cite{?}
 
 Given the restriction that we cannot reasonably clock individual processors
@@ -182,7 +187,7 @@ of concurrency.
 % main interest: tapping in to the power of concurrency for personal
 % computing
 
-\subsection{Concurrency versus Parallelism}\label{sec:parallelism}%{{{%
+\subsection{Concurrency versus Parallelism}\label{sec:introduction-parallelism}%{{{%
 
 In general computing literature, the terms `concurrency' and `parallelism'
 are often taken as synonyms and used interchangeably by many, while others
@@ -204,27 +209,31 @@ concurrency.
 
 Consider the problem of incrementing a counter, represented in Haskell using
 a mutable reference:
+%format Counter_IORef = "\type{Counter_{IORef}}"
+%format makeCounter_IORef = "\func{makeCounter_{IORef}}"
 \begin{code}
-type Counter = IORef Integer
+type Counter_IORef = IORef Integer
 
-makeCounter :: IO Counter
-makeCounter = newIORef 0
+makeCounter_IORef :: IO Counter_IORef
+makeCounter_IORef = newIORef 0
 \end{code}
-The |increment| program could then be implemented as follows:
-%format readIORef = read_IORef
-%format writeIORef = write_IORef
+%format increment_IORef = "\func{increment_{IORef}}"
+The |increment_IORef| program could then be implemented as follows:
+%format readIORef = "\func{read_{IORef}}"
+%format writeIORef = "\func{write_{IORef}}"
 \begin{code}
-increment :: Counter -> IO ()
-increment counter = do
+increment_IORef :: Counter_IORef -> IO ()
+increment_IORef counter = do
 	n <- readIORef counter
 	writeIORef counter (n + 1)
 \end{code}
-When only a single instance of |increment| is executing, the above code
-behaves as expected. Suppose however, that two instances of |increment| were
-executing at the same time. This results in four possible interleavings of
-the two |readIORef| and |writeIORef| operations, not all of which would have
-the intended effect of incrementing the counter twice. For example, the
-following interleaving would only increment the counter by one:
+When only a single instance of |increment_IORef| is executing, the above
+code behaves as expected. Suppose however, that two instances of
+|increment_IORef| were executing at the same time. This results in four
+possible interleavings of the two |readIORef| and |writeIORef| operations,
+not all of which would have the intended effect of incrementing the counter
+twice. For example, the following interleaving would only increment the
+counter by one:
 %format n_A
 %format n_B
 \begin{longtable}{l||l||c}%{{{%
@@ -246,9 +255,10 @@ Thread A & Thread B & |counter| \\
 relatively fast primitive operations. When they occur in immediate
 succession, the probability of Thread A being interleaved by Thread B in the
 above manner is very small, and can easily slip through seemingly thorough
-empirical testing. Such errors are termed \emph{race conditions}~\cite{?},
+empirical testing. Such errors are termed \emph{race conditions},
 and can occur whenever there is the possibility of concurrent access to any
 shared resource.
+%FIXME: citation for `race condition' ??? ~\cite{?}
 
 %}}}%
 
@@ -267,8 +277,10 @@ variable; if the variable is already locked, |lock| waits until it becomes
 available before proceeding. Its counterpart |release| relinquishes the
 exclusivity previously obtained.
 
-%format Counter_lock = Counter
-%format increment_lock' = increment
+%format Counter_lock = "\type{Counter_{lock}}"
+%format increment_lock' = "\func{increment_{lock}}"
+%format lock = "\func{lock}"
+%format release = "\func{release}"
 %if showMiscCode -- %{{{%
 \begin{code}
 type Counter_lock = (Counter, MVar ())
@@ -302,7 +314,7 @@ query_lock counter = do
 %endif -- %}}}%
 
 We can now eliminate the earlier race condition as follows:
-%format increment_lock
+%format increment_lock = "\func{increment_{lock}}"
 \begin{code}
 increment_lock :: Counter_lock -> IO ()
 increment_lock counter = do
@@ -327,7 +339,7 @@ Thread A & Thread B & |counter| \\
 |writeIORef counter (n_A + 1)|
 	& \multirow{2}{*}{\parbox[c]{19ex}{\emph{%
 		\vdots\\[-1.5ex]
-		blocked on |counter|\\[-1.5ex]
+		\textup{blocked on |counter|}\\[-1.5ex]
 		\vdots%
 	}}}
         & 1 \\
@@ -372,10 +384,10 @@ place.
 Let us consider a slightly more interesting example: we are required to
 implement a procedure to increment two given counters in lock-step. A first
 attempt may be as follows:
-%format increment_pair
-%format increment_pair'
-%format c_0
-%format c_1
+%format increment_pair = "\func{increment_{pair}}"
+%format increment_pair' = "\func{increment_{pair}\Prime}"
+%format c_0 = "c_0"
+%format c_1 = "c_1"
 \begin{code}
 increment_pair' :: Counter_lock -> Counter_lock -> IO ()
 increment_pair' c_0 c_1 = do
@@ -406,9 +418,9 @@ A: |increment_pair c_0 c_1| & B: |increment_pair c_1 c_0| \\
 |lock c_0| & |lock c_1| \\
 |lock c_1| & |lock c_0| \\
 \multirow{2}{*}{\parbox[c]{14ex}{%
-	\emph{\vdots\\[-1.5ex]blocked on |c_1|\\[-1.5ex]\vdots}}}
+	\emph{\vdots\\[-1.5ex]\textup{blocked on |c_1|}\\[-1.5ex]\vdots}}}
 	& \multirow{2}{*}{\parbox[c]{14ex}{%
-		\emph{\vdots\\[-1.5ex]blocked on |c_0|\\[-1.5ex]\vdots}}} \\
+		\emph{\vdots\\[-1.5ex]\textup{blocked on |c_0|}\\[-1.5ex]\vdots}}} \\
 	& \\
 	&
 \end{longtable}%}}}%
@@ -452,11 +464,15 @@ approach have the potential to scale from single processors to distributed
 networks of multiprocessor computers.
 
 Established languages and frameworks supporting message passing concurrency
-include Erlang~\cite{erlang}, the Parallel Virtual Machine (PVM)~\cite{pvm}
-and the Message Passing Interface (MPI)~\cite{mpi}. In Haskell, we can
-implement our previous counter example using channels, where |Chan alpha| is
-the polymorphic type of channels carrying messages of type |alpha|:
-%format Counter_chan
+include Erlang~\cite{armstrong96-erlang}, the Parallel Virtual Machine
+(PVM)~\cite{geist94-pvm} and the Message Passing Interface
+(MPI)~\cite{gropp99-mpi}. In Haskell, we can implement our previous counter
+example using channels, where |Chan alpha| is the polymorphic type of
+channels carrying messages of type |alpha|:
+%format Action = "\type{Action}"
+%format Increment = "\cons{Increment}"
+%format Get = "\cons{Get}"
+%format Counter_chan = "\type{Counter_{Chan}}"
 \begin{code}
 data Action = Increment | Get (Chan Integer)
 type Counter_chan = Chan Action
@@ -468,21 +484,21 @@ channel on which to return the current count via the |Get| command.
 
 % \url{http://www.kirit.com/Blog:/2007-08-09/Erlang%20as%20an%20OO%20language}
 
-The |makeCounter| function returns a channel, to which other threads may
+%format makeCounter_chan = "\func{makeCounter_{Chan}}"
+%format increment_chan = "\func{increment_{Chan}}"
+The |makeCounter_chan| function returns a channel, to which other threads may
 send |Action|s to increment or query the counter:
-%format makeCounter_chan
-%format increment_chan
 \begin{code}
 makeCounter_chan :: IO Counter_chan
 makeCounter_chan = do
 	counter <- newChan
 	value <- newIORef 0
-	forkIO $ forever $ do
+	forkIO . forever $ do
 		action <- readChan counter
 		n <- readIORef value
 		case action of
-			Increment <- writeIORef value (n + 1)
-			Get result <- writeChan result n
+			Increment -> writeIORef value (n + 1)
+			Get result -> writeChan result n
 	return counter
 \end{code}
 Even though we make use of an |IORef| to store the current count, we have
@@ -533,22 +549,21 @@ the transaction hadn't taken place at all.
 STM implements the same concept, but with shared memory being the `database'
 and individual program threads taking the r\^ole of the `clients'. STM takes
 an optimistic approach to concurrency: transactions are allowed to overlap
-each other, making the most of the available hardware. Conflicts between
-transactions arise only when an earlier transaction commits a change to
-a shared variable which a later transaction depended on. Should this happen,
-the later one is aborted and retried. In particular, a transaction is only
-aborted when another one has successfully committed, thereby ensuring
-overall progress and the absence of deadlocks.
+in their execution, making the most of the available hardware. Conflicts
+between transactions arise only when an earlier transaction commits a change
+to a shared variable which a later transaction depended on. Should this
+happen, the later one is aborted and retried. In particular, a transaction
+is only aborted when another one has successfully committed, thereby
+ensuring overall progress and the absence of deadlocks.
 
-%format Counter_STM
-%format increment_STM
-%format readTVar = read_TVar
-%format writeTVar = write_TVar
+%format Counter_STM = "\type{Counter_{STM}}"
+%format increment_STM = "\func{increment_{STM}}"
 Under the Haskell implementation of STM, transactional computations
 returning a value of type |alpha| have the type |STM alpha|. We can give an
 almost identical implementation of |increment_STM| as that of
-|increment_IORef|, but uses |TVar|s (\emph{transactional variables}) instead of |IORef|s, and results in an
-|STM| action rather than an arbitrary |IO| action:
+|increment_IORef|, but uses |TVar|s (\emph{transactional variables}) instead
+of |IORef|s, and results in an |STM| action rather than an arbitrary |IO|
+action:
 \begin{code}
 type Counter_STM = TVar Integer
 
@@ -572,11 +587,12 @@ of |increment_STM| do not interleave each other in any way of consequence.
 STM makes it straightforward to reuse existing code: simply sequencing two
 transactions one after another creates a larger composite transaction that
 increments both counters atomically when executed:
+%format incrementBoth = "\func{incrementBoth}"
 \begin{code}
 incrementBoth :: Counter_STM -> Counter_STM -> STM ()
-incrementBoth c0 c1 = do
-	increment_STM c0
-	increment_STM c1
+incrementBoth c_0 c_1 = do
+	increment_STM c_0
+	increment_STM c_1
 \end{code}
 %%Furthermore, STM Haskell provides an innovative |`orElse`| primitive which
 %%provides a form of left-biased choice:
@@ -588,14 +604,15 @@ incrementBoth c0 c1 = do
 %%increment the second counter instead of immediately retrying, doing so only
 %%if the alternative also failed.
 
-This section presents but a brief overview of STM. We will examine and
-discuss its implementation in more depth in Chapter \ref{ch:stm}.
+\noindent This section presented but a brief overview of STM. We will
+examine and discuss it in more depth in Chapter \ref{ch:stm}.
 % TODO: doesn't read well
 
 %}}}%
 
 %}}}%
 
+%if False
 \section{Approaches to Program Correctness}%{{{%
 
 Software ought to behave how we intend it to. To this end, we would like to
@@ -716,13 +733,116 @@ monad)
 \end{itemize}
 
 %}}}%
+%endif
 
-\section{Conclusion}%{{{%
+\section{Thesis Overview}%{{{%
+
+The remaining chapters of this thesis comprise of the following:
+\begin{description}
+
+\item[Chapter 2] provides additional background on the use and
+implementation of transactional memory, followed by a brief primer on
+STM Haskell.
+
+\item[Chapter 3] reviews the notions of denotational, big- and small-step
+operational semantics along with some reasoning techniques, illustrated
+using a small language. We then present a compiler for this language and its
+corresponding virtual machine, to show the essence of a compiler correctness
+proof.
+
+\item[Chapter 4] implements executable semantics for the above language as
+a Haskell program. We demonstrate the use of QuickCheck in conjunction with
+the Haskell Program Coverage toolkit for randomised testing of the results
+established in the previous chapter.
+
+\item[Chapter 5] puts the above empirical approach into practice, on
+a simplified subset of STM Haskell with a high-level stop-the-world
+semantics, linked by a compiler to a virtual machine with a log-based
+implementation of transactions.
+
+\item[Chapter 6] gently introduces the Agda proof assistant, for the purpose
+of constructing formal machine-checked proofs, and culminates in a verified
+formalisation of the results of chapter 3.
+
+\item[Chapter 7] extends the notion of compiler correctness to
+non-deterministic languages using our new notion of combined machines,
+illustrated using the simple Zap language, for which a complete compiler
+correctness result is produced and discussed.
+
+\item[Chapter 8] scales our new technique to include explicit concurrency,
+by introducing a `fork' primitive and threads. We replay the compiler
+correctness proof of the previous chapter in this new setting with the help
+of a few extra concurrency lemmas.
+
+\item[Chapter 9] builds upon the previous two chapters with results relating
+to transactions, culminating in a formally verified compiler correctness
+proof for the simplified subset of STM Haskell identified in chapter 5, and
+its associated virtual machine.
+
+\item[Chapter 10] concludes with a summary of this thesis, and a list of
+various future research directions.
+
+\end{description}
+
+\noindent The reader is assumed to be familiar with functional programming
+and their type systems; knowledge of Haskell would be a bonus. Relevant
+ideas are introduced when appropriate, with references for further reading.
 
 %}}}%
 
-%\cite{hu08-verified}
-%\cite{hu09-concurrency}
+\section{Contributions}%{{{%
+
+The contributions of this thesis are as follows:
+\begin{itemize}
+
+\item Identification of a simplified subset of STM Haskell with a high-level
+stop-the-world semantics for transactions.
+
+\item A virtual machine for this language, in which transactions are
+implemented following a low-level log-based approach, along with a semantics
+for this machine.
+
+\item A compiler linking the language to the virtual machine with
+a statement of compiler correctness, empirically tested using QuickCheck and
+HPC.
+
+\item The core idea of a combined machine and semantics, that allows us to
+establish a direct bisimulation between the high-level language and the
+low-level virtual machine.
+
+\item Putting the above technique into practice using the Agda proof
+assistant, giving a formal compiler correctness proof for a language with
+a simple notion of non-determinism.
+
+\item Showing that our technique scales to a language with explicit
+concurrency, complete with a formal proof.
+
+\item Extension of this language to match the simplified subset of STM
+Haskell, with a formal compiler correctness proof that shows the equivalence
+of the log-based approach and the stop-the-world semantics for transactions.
+
+\end{itemize}
+Earlier accounts of some of these have been published in the following
+papers,
+\begin{itemize}
+
+\item Liyang HU and Graham Hutton~\cite{hu08-verified}. ``Towards a Verified
+Implementation of Software Transactional Memory''. In \emph{Proceedings of
+the Symposium on Trends in Functional Programming}. Nijmegen, The
+Netherlands, May 2008.
+
+\item Liyang HU and Graham Hutton~\cite{hu09-concurrency}. ``Compiling
+Concurrency Correctly: Cutting Out the Middle Man''. In \emph{Proceedings of
+the Symposium on Trends in Functional Programming}. Kom\'arno, Slovakia,
+June 2009.
+
+\end{itemize}
+but have since been refined and expanded upon in this thesis.
+
+The complete source code to this thesis, in the form of literate Haskell and
+Agda documents, may be found online at \url{http://liyang.hu/#thesis}~.
+
+%}}}%
 
 % vim: ft=tex:
 

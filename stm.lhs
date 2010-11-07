@@ -1,7 +1,3 @@
-%include local.fmt
-%include haskell.fmt
-
-
 %if False
 \begin{code}
 {-# LANGUAGE NoImplicitPrelude, EmptyDataDecls, TypeSynonymInstances #-}
@@ -60,7 +56,7 @@ A client starts a transaction by issuing a \emph{begin} command to the
 server. Thereafter, all subsequent operations until the final \emph{commit}
 command are considered part of the transaction. The intended behaviour of
 such transactions is informally captured by the following four properties,
-abbreviated by the term `ACID'~\cite{acid?,yacht-accident-and-other-WTF?}:
+abbreviated by the term `ACID'~\cite{gray81-concept}:
 \begin{description}
 
 \item[Atomicity] The sequence of operations take place as if they were
@@ -128,14 +124,15 @@ to concurrent software.
 
 While it is possible to implement synchronisation between multiple parties
 using only primitive read and write operations, for example with Lamport's
-bakery algorithm~\cite{lamport?}, such software-only techniques do not scale
-well with the addition of further participants. Rather, most modern
-architectures feature in one form or another a \emph{compare-and-swap} (CAS)
-instruction that compares a given value to a word in memory and
-conditionally swaps in a new value if the comparison yields true. The key
-property of a CAS instruction is that it does so in an atomic and isolated
-manner, enforced at the hardware level. This is a powerful primitive on
-which more sophisticated synchronisation constructs can be readily built.
+bakery algorithm~\cite{lamport74-bakery}, such software-only techniques do
+not scale well with the addition of further participants. Rather, most
+modern architectures feature in one form or another
+a \emph{compare-and-swap} (CAS) instruction that compares a given value to
+a word in memory and conditionally swaps in a new value if the comparison
+yields true. The key property of a CAS instruction is that it does so in an
+atomic and isolated manner, enforced at the hardware level. This is
+a powerful primitive on which more sophisticated synchronisation constructs
+can be readily built.
 
 %\TODO{Hang on a minute: did Herlihy show that CAS can *strictly* implement
 %more synchronisation primitives than R/W? Or is only at similar levels of
@@ -155,18 +152,18 @@ only when no writes to the address has occurred in the meantime. Of course,
 the programmer must still check for its success, and either manually retry
 the operation, or attempt an alternative route.
 
-Herlihy and Moss~\cite{herlihy93-hardware} later extended this approach to
+Herlihy and Moss~\cite{herlihy93-arch} later extended this approach to
 explicitly support multi-word transactions, building upon existing
-cache-coherency~\cite{?} protocols for multiprocessor architectures. In
-effect, a \emph{transactional cache} local to the processor buffers any
-tentative writes, which are only propagated to the rest of the system after
+cache-coherency protocols for multiprocessor architectures. In effect,
+a \emph{transactional cache} local to the processor buffers any tentative
+writes, which are only propagated to the rest of the system after
 a successfully commit. They leverage existing cache-coherency protocols to
 efficiently guard against potential interference. As the size of the
 transactional cache is limited by hardware, this sets an upper bound on the
 size of the transactions that can occur. To this end, Herlihy and Moss
 suggest virtualisation as a potential solution, transparently falling back
-to a software-based handler in much the same way as virtual memory~\cite{?}
-gives the illusion of a practically infinite memory space.
+to a software-based handler in much the same way as virtual memory gives the
+illusion of a practically infinite memory space.
 
 %\TODO{Any more recent work? Was it IBM who had something recently? Couldn't
 %find concrete details back then though.}
@@ -183,11 +180,11 @@ architectures that support CAS or LL/SC instructions. In purely pragmatic
 terms, it does not require the level of initial investment required by
 a hardware-assisted solution.
 
-In his thesis, Fraser~\cite{fraser03-freedom} demonstrated that non-trivial
-data structures based on his implementation of STM had comparable
-performance to other lock-based or intricately crafted lock-free designs,
-running on a selection of existing modern hardware. In this sense, STM could
-be considered practical for everyday use.
+In his thesis, Fraser~\cite{fraser03-practical} demonstrated that
+non-trivial data structures based on his implementation of STM had
+comparable performance to other lock-based or intricately crafted lock-free
+designs, running on a selection of existing modern hardware. In this sense,
+STM could be considered practical for everyday use.
 
 However, even though transactional algorithms can be derived from existing
 sequential ones by simply replacing memory accesses with calls to the STM
@@ -221,7 +218,8 @@ methods within a transaction would raise run-time exceptions as these have
 the potential to void any atomicity or isolation guarantees of the system.
 At present, transactional memory has yet to be accepted by the wider Java
 community, although there is much pioneering work in both
-commercial~\cite{azul-systems} and academic contexts~\cite{deuce-stm}.
+commercial~\cite{goetz06-optimistic} and academic
+contexts~\cite{herlihy06-dstm2,korland10-deuce}.
 
 Following on from this work, Harris et al.~\cite{harris05-composable}
 presented an implementation of software transactional memory for the Glasgow
@@ -233,8 +231,9 @@ pairs of alternative transactions. In later work, they introduce `data
 invariants'~\cite{harris06-invariants} for enforcing consistency.
 
 More recent work has brought transactional memory to other programming
-languages~\cite{?}, as well as more efficient or alternative low-level
-implementations~\cite{?}.
+languages~\cite{tang05-pugs,noel10-xstm}, as well as more
+efficient~\cite{ennals05-obstruction} or alternative low-level
+implementations~\cite{adl-tabatabai09-constructs}.
 
 %}}}%
 
@@ -245,7 +244,7 @@ implementations~\cite{?}.
 
 %}}}%
 
-\section{Implementing Transactions}\label{sec:implementing-transactions}%{{{%
+\section{Implementing Transactions}\label{sec:stm-implementing}%{{{%
 
 The high-level view of transactions is that each one is executed atomically
 and in isolation from other concurrent threads, as if the entire transaction
@@ -259,7 +258,7 @@ mutual-exclusion lock. While this approach would be easy to implement, it
 prevents transactions from proceeding concurrently, and would not be make
 good use of multi-core hardware.
 
-\subsection{Log-Based Transactions}\label{sec:log-based}%{{{%
+\subsection{Log-Based Transactions}\label{sec:stm-log}%{{{%
 
 A concurrent implementation of transactions might make use of the notion of
 a \emph{transaction log}. During the execution of a transaction, its
@@ -279,10 +278,10 @@ the transaction, since no globally-visible changes have been made. Therefore
 it would be only be appropriate to allow operations that can be buffered in
 some suitable manner to be recorded in the transaction log, such as changes
 to shared mutable variables; external side-effects---such as launching
-missiles~\cite{launch-missiles}---cannot be undone, and should be prevented.
-As long as the transaction log corresponds to a consistent state of the
-current shared heap on the other hand, the new values recorded in the log
-can then be applied to the global heap in an atomic manner.
+missiles~\cite{harris05-composable}---cannot be undone, and should be
+prevented. As long as the transaction log corresponds to a consistent state
+of the current shared heap on the other hand, the new values recorded in the
+log can then be applied to the global heap in an atomic manner.
 
 A simple implementation of the commit operation need only ensure that
 globally, only one commit is taking place at any time, say using a global
@@ -302,32 +301,33 @@ reusable manner in the face of the challenges posed by concurrency. As well
 as using the notion of a transaction log, there are a number of alternative
 approaches for creating an illusion of atomicity:
 
-\emph{Compensating transactions}~\cite{?} may be thought of as
-a conflict-detection framework, in which the programmer manually specifies
-how the whole system can be returned to its initial state, should
-a transaction need to be retried. A transactions could abort for a variety
-of reasons, and the roll-back code must be able to deal with any failure
-mode. The as the roll-back operation is manually defined on a case-by-case
-basis, there is the additional challenge of ascertaining its correctness.
-The advantage on the other hand is that we may perform arbitrary I/O,
-provided we can undo them in an undetectable way.
+\emph{Compensating transactions}~\cite{gray81-concept,korth90-compensating}
+may be thought of as a conflict-detection framework, in which the programmer
+manually specifies how the whole system can be returned to its initial
+state, should a transaction need to be retried. A transactions could abort
+for a variety of reasons, and the roll-back code must be able to deal with
+any failure mode. The as the roll-back operation is manually defined on
+a case-by-case basis, there is the additional challenge of ascertaining its
+correctness. The advantage on the other hand is that we may perform
+arbitrary I/O, provided we can undo them in an undetectable way.
 
-\emph{Lock inference}~\cite{cf-dr-cunningham} on the other hand attempts to
-automatically insert the fine-grained locks that a programmer might have
-used, via various code analysis techniques. For reasons of safety, the
-inference of such locks must necessarily be conservative, and does not
-always allow for optimal concurrency. Additionally, as code analysis
-techniques are generally ideally performed on whole programs, we might lose
-modularity on the level of object files and/or require the use of
-sophisticated type-systems~\cite{ownership}. Since roll-back is no longer
-necessary in this approach, we can allow arbitrary I/O side-effects, but
-isolation would only be afforded to mutable variables.
+\emph{Lock inference}~\cite{flanagan05-inference,cunningham08-grass} on the
+other hand attempts to automatically insert the fine-grained locks that
+a programmer might have used, via various code analysis techniques. For
+reasons of safety, the inference of such locks must necessarily be
+conservative, and does not always allow for optimal concurrency.
+Additionally, as code analysis techniques are generally ideally performed on
+whole programs, we might lose modularity on the level of object files and/or
+require the use of sophisticated type-systems~\cite{clarke98-ownership}.
+Since roll-back is no longer necessary in this approach, we can allow
+arbitrary I/O side-effects, but isolation would only be afforded to mutable
+variables.
 
 %}}}%
 
 %}}}%
 
-\section{Haskell}\label{sec:haskell}%{{{%
+\section{Haskell and Sequential Computation}\label{sec:stm-haskell}%{{{%
 
 In this section we will revisit some basic aspects of Haskell required for
 the understanding of the implementation of STM given by Harris et
@@ -345,36 +345,39 @@ Constructors & |False|, |True|, |Just|, |Nothing|\ldots \\
 Functions & |return|, |getChar|, |readTVar|\ldots \\
 Literals & |0|, |1|, |"hello world"|\ldots
 \end{longtable}
-\TODO{finish colouring this chapter in!}
+% \TODO{finish colouring this chapter in!}
 
-\subsection{Monads for Sequential Computation}%{{{%
+\subsection{Monads for Sequential Computation}\label{sec:stm-monads}%{{{%
 
-The Haskell programming language~\cite{haskell98-report}---named after the
-logician Haskell B.\ Curry---can be characterised by its three key
+The Haskell programming
+language~\cite{peyton-jones03-haskell98,marlow10-haskell2010}---named after
+the logician Haskell B.\ Curry---can be characterised by its three key
 attributes: functional, pure, and lazy. Functional programming languages are
-rooted in Church's $\lambda$-calculus~\cite{church}, and emphasise the
-evaluation of mathematical functions rather than the manipulation of state.
-The core $\lambda$-calculus ideas of abstraction and application are
-typically given prominent status in such languages. In turn, purity means
-functions depend only on their arguments, eschewing state or mutable
-variables, akin to the mathematical notion of functions. The same program
-expression will always evaluate to the same result regardless of its
+rooted in Church's
+$\lambda$-calculus~\cite{church36-unsolvable,barendregt84-lambda}, and
+emphasise the evaluation of mathematical functions rather than the
+manipulation of state. The core $\lambda$-calculus ideas of abstraction and
+application are typically given prominent status in such languages. In turn,
+purity means functions depend only on their arguments, eschewing state or
+mutable variables, akin to the mathematical notion of functions. The same
+program expression will always evaluate to the same result regardless of its
 context, and replacing an expression with its value leaves the meaning of
 the program unchanged. In other words, the language is \emph{referentially
-transparent}~\cite{amr-sabry-purely-functional}. The laziness aspect of
-Haskell means that expressions are only evaluated when their values are
-required, thus the evaluation order---or even whether something is evaluated
-at all---is not necessarily immediately apparent from the program text.
-Together, these properties meant that for some time, it was not clear how to
-write programs that are more naturally expressed in an imperative,
-sequential style, or to deal with input and output.
+transparent}~\cite{sabry98-pure}. The laziness aspect of Haskell means that
+expressions are only evaluated when their values are required, thus the
+evaluation order---or even whether something is evaluated at all---is not
+necessarily immediately apparent from the program text. Together, these
+properties meant that for some time, it was not clear how to write programs
+that are more naturally expressed in an imperative, sequential style, or to
+deal with input and output.
 
-A solution was found in the form of \emph{monads}, which Moggi~\cite{?} and
-Wadler~\cite{?} adopted from category theory~\cite{maclane?}. In the context
-of computer science, a monad could be viewed as a `container' for some
-general notion of computation, together with an operation for combining such
-computations. As it turns out, sequential computation is just one instance
-of a monad, as we shall see in the following section.
+A solution was found in the form of \emph{monads}, which
+Moggi~\cite{moggi89-monads} and Wadler~\cite{wadler92-monads} adopted from
+category theory~\cite{mac-lane98-working}. In the context of computer
+science, a monad could be viewed as a `container' for some general notion of
+computation, together with an operation for combining such computations. As
+it turns out, sequential computation is just one instance of a monad, as we
+shall see in the following section.
 
 %}}}%
 
@@ -390,6 +393,7 @@ which cannot access any mutable state, we instead write one of type |alpha
 variable as an extra argument and returns a new value of the variable,
 together with the original result of type |beta|.
 
+%format State = "\type{State}"
 As we will frequently make use of similar types that mutate some given
 state, it is convenient to define the following |State| synonym:
 \begin{spec}
@@ -402,6 +406,8 @@ newtype State sigma alpha = St { runSt :: sigma -> (sigma, alpha) }
 %endif
 %format St (a) = a
 %format runSt (a) = a
+%format read = "\func{read}"
+%format write = "\func{write}"
 A value of type |State sigma alpha| can be regarded as a computation
 involving some mutable |sigma| state that delivers an |alpha| result. Thus
 we can write the following definitions of |read| and |write|, corresponding
@@ -418,6 +424,7 @@ changing it in any way. On the other hand, the |write| computation replaces
 the current state |s| with the supplied |s'|, giving an information-free
 result of the singleton |()| type.
 
+%format increment = "\func{increment}"
 With these two primitives, we can implement an |increment| operation as
 follows:
 \begin{code}
@@ -436,6 +443,7 @@ general any |State sigma alpha| computation could, therefore we must
 carefully thread it through each computation in order to maintain the
 illusion of mutable state. The following definition increments the counter
 twice:
+%format twice = "\func{twice}"
 \begin{code}
 twice :: State Integer ()
 twice = St (\ s ->
@@ -464,6 +472,8 @@ result of its left argument---along with the modified state |s'|---and
 threads both through its right argument, delivering a stateful computation
 of type |beta|. Using this operation, we can rewrite |increment| and |twice|
 as follows:
+%format increment' = "\func{increment\Prime}"
+%format twice' = "\func{twice\Prime}"
 \begin{code}
 increment' :: State Integer ()
 increment' =
@@ -481,6 +491,8 @@ resulting code has a much more imperative appearance. In fact, Haskell
 provides a few helper functions as well as some lightweight syntactic sugar
 to support exactly this style of programming, allowing the following
 succinct definition:
+%format increment'' = "\func{increment\PPrime}"
+%format twice'' = "\func{twice\PPrime}"
 \begin{code}
 increment'' :: State Integer ()
 increment'' = do
@@ -515,14 +527,14 @@ instance Monad (State sigma) where
 
 %}}}%
 
-\subsection{Monadic Properties}%{{{%
+\subsection{Monadic Properties}\label{sec:stm-monad-prop}%{{{%
 
 So far in this section we have deliberately avoided using the mathematical
 term `monad'. In fact, some members of the Haskell community have jokingly
 remarked that they would rather have used the phrase `warm fuzzy
-thing'~\cite{spj} instead. The |>>=| operator above already constitutes the
-primary component of the definition of the |State sigma| monad, and we need
-only one further function to complete it.
+thing'~\cite{peyton-jones03-retrospective} instead. The |>>=| operator above
+already constitutes the primary component of the definition of the |State
+sigma| monad, and we need only one further function to complete it.
 %format return_State = return
 \begin{code}
 return_State :: alpha -> State sigma alpha
@@ -548,16 +560,16 @@ relevant definitions. For example, the \eqName{ident-left} property can be
 shown as follows:
 \begin{spec}
     return a >>= fmb
-=={ defn >>= }
+{-"{\equiv}\{\quad \textup{definition of}\;"-}>>={-" \quad\}"-}
     \ s -> let (s', a') = return a s in fmb a' s'
-=={ defn return }
+{-"{\equiv}\{\quad \textup{definition of}\;\func{return} \quad\}"-}
     \ s -> let (s', a') = (s, a) in fmb a' s'
-=={ subst a', s' }
+{-"{\equiv}\{\quad \textup{substitute for $a'$ and $s'$} \quad\}"-}
     \ s -> fmb a s
-=={ eta-contract }
+{-"{\equiv}\{\quad \textup{$\eta$-contract} \quad\}"-}
     fmb a
 \end{spec}
-\TODO{typeset nicely! Using |==| as |=| means definitional equality}
+% \TODO{typeset nicely! Using |==| as |=| means definitional equality}
 
 %}}}%
 
@@ -570,6 +582,8 @@ By threading a token representing the state of the real world through
 a program in a similar way to the |State sigma| monad, we ensure that
 real-world side-effects occur in a deterministic order. For example, the
 |IO| type in Haskell could be defined as follows,
+%format RealWorld = "\type{RealWorld}"
+%format echo = "\func{echo}"
 \begin{spec}
 type IO alpha = State RealWorld alpha
 \end{spec}
@@ -595,6 +609,7 @@ Being able to manipulate monadic actions is a very powerful concept, and
 allows us to create high-level control structures within the language
 itself. For example, there's no need for Haskell to have a built-in
 \emph{for-loop} construct, because we can implement it ourselves:
+%format for = "\func{for}"
 \begin{code}
 for :: Integer -> Integer -> (Integer -> State sigma ()) -> State sigma ()
 for m n body = case m < n of
@@ -624,8 +639,8 @@ echoes $10$ characters entered by the user.
 Haskell's typeclasses permits a form of ad-hoc polymorphism, which allows us
 to give type-specific instances of |>>=| and |return|, so the above
 definition of |for| works in any monad we care to define. However
-a discussion of the topic~\cite{typeclasses?} is beyond the scope of and not
-required for this thesis.
+a discussion of the topic~\cite{wadler89-typeclass} is beyond the scope
+of---and not required for---this thesis.
 
 %}}}%
 
@@ -634,23 +649,17 @@ required for this thesis.
 \section{Haskell and Concurrent Computation}\label{sec:haskell-concurrency}%{{{%
 
 While the Haskell language is pure and lazy, occasionally we still need to
-make use of certain imperative features~\cite{awkward-squad}. By keeping
-such features within the |IO| monad---where a token of the external world
-state is implicitly threaded through each |IO| action---not only can we then
-guarantee a particular execution order, we also preserve the purity of the
-rest of the language.
+make use of certain imperative features~\cite{peyton-jones01-awkward}. By
+keeping such features within the |IO| monad---where a token of the external
+world state is implicitly threaded through each |IO| action---not only can
+we then guarantee a particular execution order, we also preserve the purity
+of the rest of the language.
 
 For example, in those cases where the only known efficient solution to
 a problem is explicitly imperative, Haskell's standard library provides true
 mutable variables in the form of the |IORef| datatype, where |IORef alpha|
 is a reference to values of type |alpha|. Its basic interface is given
 below:
-%format new_IORef
-%format read_IORef
-%format write_IORef
-%format newIORef = new_IORef
-%format readIORef = read_IORef
-%format writeIORef = write_IORef
 \begin{spec}
 newIORef    :: alpha -> IO (IORef alpha)
 readIORef   :: IORef alpha -> IO alpha
@@ -661,29 +670,31 @@ writeIORef  :: IORef alpha -> alpha -> IO ()
 %problematic''~\cite{stdlib?}, a point we had explored back in Chapter
 %\ref{chapter:introduction}.
 
-\noindent For multiprocessor programming, Parallel Haskell~\cite{mph?}
-provides the |par :: alpha -> beta -> beta| combinator, which instructs to
-the run-time system that it may be worth evaluating its first argument in
-parallel (cf.~section \ref{sec:parallel}), and otherwise acting as the
-identity function on its second argument. As is evident from its type, the
-|par| combinator is pure and cannot perform any side-effects, nor can there
-be any interaction between its arguments even if they are evaluated in
-parallel. In fact, it would be perfectly sound for an implementation of
-|par| to simply ignore its first argument.
+%format par = "\func{par}"
+\noindent For multiprocessor programming, Parallel
+Haskell~\cite{trinder98-parallelism} provides the |par :: alpha -> beta ->
+beta| combinator, which instructs to the run-time system that it may be
+worth evaluating its first argument in parallel (cf.~section
+\ref{sec:introduction-parallelism}), and otherwise acting as the identity
+function on its second argument. As is evident from its type, the |par|
+combinator is pure and cannot perform any side-effects, nor can there be any
+interaction between its arguments even if they are evaluated in parallel. In
+fact, it would be perfectly sound for an implementation of |par| to simply
+ignore its first argument.
 
+%format main_Char = "\func{main_{Char}}"
 However, explicit concurrency is a necessity as well as a convenience when
 used as a mechanism for structuring many real-world programs. Concurrent
-Haskell~\cite{pj96-concurrent} introduced the |forkIO :: IO () -> IO ()|
-primitive, which provides a mechanism analogous to the Unix \texttt{fork()}
-system call, sparking a separate thread to run its argument |IO ()| action.
-Forking is considered impure as threads can interact with each other via
-a variety of mechanisms, and this fact is correspondingly reflected in the
-return type of |forkIO|. With the mutability provided by |IORef|s, we can
-create concurrent applications in the same imperative manner as other
-lower-level programming languages. For example, the following program
-launches a secondary thread to repeatedly print the letter `\texttt{y}',
-while |main_Char| carries on to print `\texttt{n}'s:
-%format main_Char
+Haskell~\cite{peyton-jones96-concurrent} introduced the |forkIO :: IO () ->
+IO ()| primitive, which provides a mechanism analogous to the Unix
+\texttt{fork()} system call, sparking a separate thread to run its argument
+|IO ()| action. Forking is considered impure as threads can interact with
+each other via a variety of mechanisms, and this fact is correspondingly
+reflected in the return type of |forkIO|. With the mutability provided by
+|IORef|s, we can create concurrent applications in the same imperative
+manner as other lower-level programming languages. For example, the
+following program launches a secondary thread to repeatedly print the letter
+`\texttt{y}', while |main_Char| carries on to print `\texttt{n}'s:
 \begin{code}
 main_Char :: IO ()
 main_Char = do
@@ -698,11 +709,10 @@ The user would observe an unending stream of `\texttt{y}'s and
 %format n_b
 %format n_c
 %format n_sum
-%format Counter_IORef
-%format increment_IORef
-%format incBoth_IORef
-%format main_IORef
-%format Counter_IORef
+%format Counter_IORef = "\type{Counter_{IORef}}"
+%format increment_IORef = "\func{increment_{IORef}}"
+%format incBoth_IORef = "\func{incBoth_{IORef}}"
+%format main_IORef = "\func{main_{IORef}}"
 
 To demonstrate concurrency with interaction, the following program launches
 two threads, both repeatedly incrementing a shared counter, as well as an
@@ -772,12 +782,6 @@ Haskell, which makes use of explicit threading and mutable variables via
 |forkIO| and |IORef|s within the |IO| monad. In an analogous fashion, STM
 Haskell provides mutable \emph{transactional variables} of type |TVar
 alpha|, with the following interface:
-%format new_TVar
-%format read_TVar
-%format write_TVar
-%format newTVar = new_TVar
-%format readTVar = read_TVar
-%format writeTVar = write_TVar
 \begin{spec}
 newTVar    :: alpha -> STM (TVar alpha)
 readTVar   :: TVar alpha -> STM alpha
@@ -813,7 +817,7 @@ guarantee that each composite transaction takes place in an atomic and
 isolated manner.
 
 STM Haskell makes use of the notion of a transaction log (as we mentioned
-previously in section \ref{sec:log-based}) and may automatically re-run
+previously in section \ref{sec:stm-log}) and may automatically re-run
 transactions when conflicts are detected. Therefore it is important that
 |STM| actions only make changes to transactional variables---which can be
 encapsulated within its corresponding log---rather than arbitrary and
@@ -835,10 +839,10 @@ Let us now revisit the example of the previous section, with two threads
 competing to incrementing a shared counter. Using STM, we can make the
 previous program behave in the intended manner as follows, with only minor
 changes to its structure:
-%format Counter_TVar
-%format increment_TVar
-%format incBoth_TVar
-%format main_TVar
+%format Counter_TVar = "\type{Counter_{TVar}}"
+%format increment_TVar = "\func{increment_{TVar}}"
+%format incBoth_TVar = "\func{incBoth_{TVar}}"
+%format main_TVar = "\func{main_{TVar}}"
 \begin{code}
 type Counter_TVar = TVar Integer
 
@@ -902,15 +906,15 @@ forces the current transaction to fail and retry. This gives a flexible,
 programmatic way to signal that the transaction is not yet ready to proceed,
 unlike traditional approaches in which the requisite conditions must be
 specified upfront using only a restricted subset of the language, such as
-e.g.~Hoare's \emph{conditional critical regions} (CCRs)~\cite{?}.
+e.g.~Hoare's \emph{conditional critical regions}~\cite{hoare02-theory}.
 
+%format decrement_TVar = "\func{decrement_{TVar}}"
 Armed with the |retry| primitive, we can demonstrate how a |Counter_TVar|
-could be used as a counting semaphore~\cite{?}. The |decrement_TVar|
-function below behaves as the \texttt{wait} primitive, decrementing the
-counter only when its value is strictly positive, and blocking otherwise.
-Correspondingly the earlier |increment_TVar| defined above behaves as
-\texttt{signal}, incrementing the count.
-%format decrement_TVar
+could be used as a counting semaphore~\cite{counting-semaphore?}. The
+|decrement_TVar| function below behaves as the \texttt{wait} primitive,
+decrementing the counter only when its value is strictly positive, and
+blocking otherwise. Correspondingly the earlier |increment_TVar| defined
+above behaves as \texttt{signal}, incrementing the count.
 \begin{code}
 decrement_TVar :: Counter_TVar -> STM ()
 decrement_TVar c = do
@@ -944,7 +948,7 @@ orElse :: STM alpha -> STM alpha -> STM alpha
 \end{code}
 for composing alternative transactions. With this we may implement the
 function described above:
-%format decEither_TVar
+%format decEither_TVar = "\func{decEither_{TVar}}"
 \begin{code}
 decEither_TVar :: Counter_TVar -> Counter_TVar -> Counter_TVar -> STM ()
 decEither_TVar sum a b = do
@@ -965,7 +969,7 @@ respective transaction logs by the run-time system.
 
 Using |orElse| for composing alternative transactions also allow us to
 elegantly turn blocking operations into non-blocking ones, for example:
-%format decrement_TVar'
+%format decrement_TVar' = "\func{decrement_{TVar}\Prime}"
 \begin{code}
 decrement_TVar' :: Counter_TVar -> STM Bool
 decrement_TVar' c = (do decrement_TVar c; return True) `orElse` return False
@@ -996,14 +1000,14 @@ In this chapter, we have reviewed the concept of transactions in the context
 of databases, followed by an overview of the development of transactional
 memory in both hardware and software, together with how transactions can be
 used as a high-level concurrency primitive. In section
-\ref{sec:implementing-transactions}, we examined a log-based approach to
+\ref{sec:stm-implementing}, we examined a log-based approach to
 implementing transactions, contrasted with some alternatives. Section
-\ref{sec:haskell} introduces the Haskell language, in particular how monads
+\ref{sec:stm-haskell} introduced the Haskell language, in particular how monads
 are used to model mutable state in a purely functional context. The
-penultimate section (\S\ref{sec:haskell-concurrency}) presents primitives
-for (real) mutable state and concurrency in Haskell, and we finish with
-a primer on STM Haskell---in particular a novel form of composing
-alternative transactions---in order to motivate the study of STM.
+penultimate section (\S\ref{sec:haskell-concurrency}) presented primitives
+for mutable state and concurrency in Haskell, and we finished with a primer
+on STM Haskell---in particular a novel form of composing alternative
+transactions---in order to motivate the study of STM.
 
 %}}}%
 

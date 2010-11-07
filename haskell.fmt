@@ -1,0 +1,142 @@
+%include greek.fmt
+
+% Haskell Language
+%subst string a  = "\ltrl{\text{\char34 " a "\char34}}"
+%subst backquoted a = "\mathbin{\func{\texttt{`}}" a "\func{\texttt{`}}}"
+%format data = "\keyw{data}"
+%format instance = "\keyw{instance}"
+%format type = "\keyw{type}"
+%format where = "\keyw{where}"
+%format case = "\keyw{case}"
+%format of = "\keyw{of}"
+%format \ = "\keyw{\lambda}"
+%format let = "\keyw{let}"
+%format in = "\keyw{in}"
+%format do = "\keyw{do}"
+%format = = "\mathrel{\keyw{=}}"
+%format :: = "\mathrel{\keyw{::}}"
+%format _ = "\keyw{\anonymous}"
+%format | = "\mathrel{\keyw{|}}"
+%format -> = "\mathrel{\type{\rightarrow}}"
+%format hsPrompt = "\texttt*\name{Main}\texttt>"
+
+% Prelude
+%format Unit = "\type{()}"
+%format Integer = "\type{Integer}"
+%format Float = "\type{Float}"
+%format + = "\mathbin{\func{+}}"
+%format Eq = "\type{Eq}"
+%format Ord = "\type{Ord}"
+%format 0 = "\ltrl{0}"
+%format 1 = "\ltrl{1}"
+%format 2 = "\ltrl{2}"
+%format * = "\mathbin{\func{\times}}"
+%format / = "\mathbin{\func{\div}}"
+%format == = "\mathrel{\func{\equiv}}"
+%format `div` = "\infix{\func{\texttt`div\texttt`}}"
+
+% Data.Function
+%format . = "\mathbin{\func{\circ}}"
+
+% Data.Bool
+%format Bool = "\type{Bool}"
+%format False = "\cons{False}"
+%format True = "\cons{True}"
+
+% Data.Maybe
+%format Maybe = "\type{Maybe}"
+%format Just = "\cons{Just}"
+%format Nothing = "\cons{Nothing}"
+
+% Data.List
+%format List a = "\type{[}" a "\type{]}"
+%format NIL = "\cons{\texttt{[]}}"
+%format map = "\func{map}"
+%format : = "\mathbin{\cons{:}}"
+
+% Data.Set
+%format Set = "\type{Set}"
+% format Set.empty = "\func{Set.empty}"
+%format Set.empty = "\func{\{\}}"
+%format Set.singleton (a) = "\func{\{}" a "\func{\}}"
+%format `Set.map` = "\mathbin{\func{\texttt`Set.map\texttt`}}"
+%format Set.map = "\func{Set.map}"
+%format Set.fold = "\func{Set.fold}"
+%format `Set.union` = "\mathbin{\func{\cup}}"
+%format Set.union = "(\func{\cup})"
+%format Set.insert = "\func{Set.insert}"
+%format Set.null = "\func{Set.null}"
+
+% Data.Map
+%format Map = "\type{Map}"
+%format Map.empty = "\func{\{\}}"
+%format Map.singleton k (v) = "\func{\{}" k "\mathbin{\func{\mapsto}}" v "\func{\}}"
+%format Map.insert k (v) m = m "\mathbin{\func{\uplus}}\func{\{}" k "\mathbin{\func{\mapsto}}" v "\func{\}}"
+%format Map.findWithDefault = "\func{Map.findWithDefault}"
+%format Map.lookup = "\func{Map.lookup}"
+%format `Map.isSubmapOf` = "\mathbin{\func{\subseteq}}"
+%format `Map.intersection` = "\mathbin{\func{\cap}}"
+
+% Data.Char
+%format Char = "\type{Char}"
+
+% Data.Traversable
+%format traverse = "\func{traverse}"
+
+% Control.Arrow
+%format first = "\func{first}"
+%format second = "\func{second}"
+
+% Control.Applicative
+%format `fmap` = "\mathbin{\func{\langle\$\rangle}}"
+%format <$> = "\mathbin{\func{\langle\$\rangle}}"
+%format <*> = "\mathbin{\func{\langle\ast\rangle}}"
+
+% Control.Concurrent.Chan
+%format Chan = "\type{Chan}"
+%format newChan = "\func{new_{Chan}}"
+%format readChan = "\func{read_{Chan}}"
+%format writeChan = "\func{write_{Chan}}"
+
+% Control.Concurrent.STM
+%format STM = "\type{STM}"
+%format TVar = "\type{TVar}"
+%format newTVar = "\func{new_{TVar}}"
+%format readTVar = "\func{read_{TVar}}"
+%format writeTVar = "\func{write_{TVar}}"
+%format retry = "\func{retry}"
+%format orElse = "\func{orElse}"
+%format `orElse` = "\infix{\func{`orElse`}}"
+%format atomically = "\func{atomically}"
+
+% Control.Monad
+%format >>= = "\infix{\func{{>}\!\!{>}\!{=}}}"
+%format return = "\func{return}"
+%format forever = "\func{forever}"
+%format when = "\func{when}"
+%format unless = "\func{unless}"
+
+% System.IO
+%format IO = "\type{IO}"
+%format getChar = "\func{get_{Char}}"
+%format putChar = "\func{put_{Char}}"
+%format forkIO = "\func{fork_{IO}}"
+
+% Data.IORef
+%format IORef = "\type{IORef}"
+%format newIORef = "\func{new_{IORef}}"
+%format readIORef = "\func{read_{IORef}}"
+%format writeIORef = "\func{write_{IORef}}"
+
+% Test.QuickCheck
+%format Arbitrary = "\name{Arbitrary}"
+%format Gen = "\type{Gen}"
+%format arbitrary = "\func{arbitrary}"
+%format frequency = "\func{frequency}"
+%format oneof = "\func{oneof}"
+%format quickCheck = "\func{quickCheck}"
+%format sample = "\func{sample}"
+%format shrink = "\func{shrink}"
+%format shrinkIntegral = "\func{shrinkIntegral}"
+%format sized = "\func{sized}"
+

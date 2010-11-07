@@ -1,17 +1,16 @@
-%include local.fmt
-%include agda.fmt
+\chapter{Machine-Assisted Proofs in Agda}\label{ch:agda}
 
-\chapter{Machine-Assisted Proofs in Agda}
-
-Agda~\cite{norell07-agda} is a dependently-typed functional programming
-language based on Martin-L\"of intuitionistic type
-theory~\cite{per-martin-lof}. Via the Curry-Howard correspondence---that is,
-viewing types as propositions and programs as proofs---it is also used as
-a proof assistant for constructive mathematics. In this chapter, we shall
-provide a gentle introduction to the language, and demonstrate how we can
-formalise statements of compiler correctness into machine-checked proofs,
-culminating in a verified formalisation of the proofs of chapter
-\ref{ch:semantics}.
+To give a formal proof of the correctness property posited in the previous
+chapter, we may make use of a mechanised proof assistant.
+Agda~\cite{norell07-thesis,theagdateam10-wiki} is a dependently-typed
+functional programming language based on Martin-L\"{o}f intuitionistic type
+theory~\cite{martin-lof80-itt,nordstrom90-program}. Via the Curry-Howard
+correspondence---that is, viewing types as propositions and programs as
+proofs---it is also used as a proof assistant for constructive mathematics.
+In this chapter, we shall provide a gentle introduction to the language, and
+demonstrate how we can formalise statements of compiler correctness into
+machine-checked proofs, culminating in a verified formalisation of the
+proofs of chapter \ref{ch:semantics}.
 
 \section{Introduction to Agda}%{{{%
 
@@ -29,32 +28,34 @@ private
 %{{{%
 
 The current incarnation of Agda has a syntax similar to that of Haskell, and
-should look familiar to readers versed in the latter. As we have done in
-previous chapters, we will adopt a colouring convention for ease of
-readability:
+should look familiar to readers versed in the latter. As in previous
+chapters, we will adopt a colouring convention for ease of readability:
 \begin{longtable}{l||l}
 Syntactic Class & Examples \\
 \hline
 Keywords & |data|, |where|, |with|\ldots \\
 Types & |ℕ|, |List|, |Set|\ldots \\
 Constructors & |zero|, |suc|, |tt|, |[]|\ldots \\
-Functions & |id|, |_+_|, |gmap|\ldots
+Functions & |id|, |_+_|, |Star.gmap|\ldots
 %\\
 %Literals & |0|, |1|, |"hello world"|\ldots
 \end{longtable}
 
 \noindent Semantically, Agda is distinguished by its foundation on
 \emph{dependent types}, and is closely related to systems such as
-Epigram~\cite{conor-thesis-and-papers} and Coq~\cite{coq?}. Dependent types
-systems are so-called because they allow for types depend on---or
-\emph{indexed} by values---as well as other types. In an informal sense,
-generalised abstract data types (GADTs)~\cite{gadts} in recent
-implementations of Haskell allow data types to be indexed on their argument
-types, in a similar fashion. This provides us with a rich vocabulary of
-discourse for not only stating the properties of our programs, but also to
-be able to prove such properties within the same system. We will begin to
-explore how this is facilitated by dependent types from section
-\ref{sec:curry-howard}.
+Epigram~\cite{mcbride08-epigram,mcbride05-epigram-notes} and
+Coq~\cite{the-coq-development-team08-website}. Dependent types systems are
+so-called because they allow for types to depend on values, in addition to
+the usual parametrisation by other types as seen in languages like Haskell.
+This provides us with a much richer vocabulary of discourse for not only
+stating the properties of our programs, but also to be able to prove such
+properties within the same system. We will begin to explore how this is
+facilitated by dependent types from section \ref{sec:agda-curryhoward}
+onwards.
+
+%In an informal sense, generalised abstract data types (GADTs)
+%in recent implementations of Haskell allow data types to be indexed on their
+%argument types, in a similar fashion.
 
 %}}}%
 
@@ -63,30 +64,32 @@ explore how this is facilitated by dependent types from section
 We start our introduction to Agda with some simple data and function
 definitions. The language itself does not specify any primitive data types,
 and it serves as a good introduction to see how some of these may be defined
-in its standard library~\cite{nad-stdlib}. For example, we may define the
-Peano numbers as follows:
+in its standard library~\cite{danielsson10-stdlib}. For example, we may
+define the Peano numbers as follows:
 \begin{code}
     data ℕ : Set where
       zero  : ℕ
       suc   : ℕ → ℕ
 \end{code}
-This ought to be syntactically reminiscent of Haskell's GADT declarations,
-but with a few minor differences. Firstly, arbitrary Unicode~\cite{unicode?}
-characters may be used in identifiers, and we do not use upper and lower
-case letters to distinguish between values and constructors\footnote{The
-implication here is that the processes of syntax highlighting and
-type-checking are inextricably linked, and that the colouring provides more
-information to the reader.}. Secondly, we write |:| to mean
-\emph{has-type-of}, and write |Set| for the \emph{type of
+This is syntactically similar to Haskell's generalised abstract data type
+(GADT) declarations~\cite{peyton-jones04-gadt} with a few minor differences.
+Firstly, arbitrary Unicode characters may be used in identifiers, and we do
+not use upper and lower case letters to distinguish between values and
+constructors\footnote{The implication here is that the processes of syntax
+highlighting and type-checking are inextricably linked, and that syntax
+colours provides more information for the reader.}. Secondly, we write |:|
+to mean \emph{has-type-of}, and write |Set| for the \emph{type of
 types}\footnote{Agda in fact has countably infinite levels of |Set|s, with
-$|Set : Set1 : Set2 : |\ldots$. This stratification prevents the formation
-of say, \emph{Russel's paradox}, that would lead to inconsistencies in the
+$|Set : Set₁ : Set₂ : |\ldots$. This stratification prevents the formation
+of say, \emph{Russell's paradox}, that would lead to inconsistencies in the
 system.}.
+% FIXME: cite Russell?
 
 Thus, the above defines |ℕ| as a new data type inhabiting |Set|, with
 a nullary constructor |zero| as the base case and an unary constructor |suc|
-as the inductive case, corresponding to Peano's two axioms: |zero| is
-a natural number, and every number |n| has a successor |suc n|.
+as the inductive case. These correspond to two of the Peano axioms that
+define the natural numbers: |zero| is a natural number, and every number |n|
+has a successor |suc n|.
 
 We may define addition on the natural numbers as follows, by induction on
 its first argument:
@@ -103,11 +106,12 @@ rather than a warning as in Haskell. Additionally, only structural recursion
 is permitted. In the definition of |_+_| above, we recurse on the definition
 of |ℕ|: the first argument is strictly smaller on the right hand side,
 i.e.~|m| rather than |suc m|. While more general forms of recursion are
-possible, Agda requires us to give a proof of their totality.
+possible, Agda requires us to explicitly prove that the resulting
+definitions are total.
 
 %}}}%
 
-\subsection{Programs as Proofs and Types as Predicates}\label{sec:curry-howard}%{{{%
+\subsection{Programs as Proofs and Types as Predicates}\label{sec:agda-curryhoward}%{{{%
 
 The Curry-Howard correspondence refers to the initial observation by Curry
 that types---in the sense familiar to functional programmers---correspond to
@@ -116,44 +120,45 @@ in formal systems such as natural deduction can be directly interpreted as
 terms in a model of computation such as the typed lambda calculus.
 
 The intuitionistic approach to logic only relies on constructive methods,
-disallowing notions from classical logic such as the law of excluded middle
-or double-negation elimination. For example, intuitionist reject the former
-statement of $P \vee \lnot P$, since there exists a statement $P$ in any
-sufficiently powerful logic that can neither be proved nor disproved within
-the system, by G\"odel's incompleteness theorems. In other words,
-intuitionism equates the truth of a statement $P$ with the possibility of
-constructing a proof object that satisfies $P$. A proof refuting the
-non-existence of such an object---that is, proving $\lnot \lnot
-P$---provides strictly less information than constructing a proof object
-satisfying $P$ itself.
+disallowing notions from classical logic such as the law of the excluded middle
+($P \vee \lnot P$) or double-negation elimination ($\lnot \lnot
+P \rightarrow P$). For example, intuitionist reject $P \vee \lnot P$ since
+there exists a statement $P$ in any sufficiently powerful logic that can
+neither be proved nor disproved within the system, by G\"odel's
+incompleteness theorems~\cite{godel?}. In other words, intuitionism equates
+the truth of a statement $P$ with the possibility of constructing a proof
+object that satisfies $P$, therefore a proof of $\lnot \lnot P$, refuting
+the non-existence of $P$, does not imply $P$ itself.
 
 What does this mean for the proletarian programmer? Under the Curry-Howard
 correspondence, the type |A -> B| is interpreted as the logical statement
-`\emph{|A| implies |B|}' and vice-versa. Accordingly, a program |p : A -> B|
-corresponds to the proof of `\emph{|A| implies |B|}', in that executing |p|
-constructs a witness of |B|, given a witness of |A| as input. Thus in
-a suitable type system, programming is the same as constructing proofs in
-a very concrete sense.
+`\emph{|A| implies |B|}', and vice-versa. Accordingly, a program |p : A ->
+B| corresponds to the proof of `\emph{|A| implies |B|}', in that executing
+|p| constructs a witness of |B| as output, given a witness of |A| as input.
+Thus in a suitable type system, programming is the same as constructing
+proofs in a very concrete sense.
 
-In a traditional strictly typed programming language such as Haskell, the
+In a traditional strongly typed programming language such as Haskell, the
 type system exists to segregate values of different types. On the other
 hand, distinct values of the same type all look the same to the
 type-checker, which means we are unable to form types corresponding to
 propositions about particular values. Haskell's GADTs break down this
 barrier in a limited sense, by allowing the constructors of a parametric
 type to target particular instantiations of the return type. While this
-allows us to abuse a Haskell type checker that supports GADTs as
-a proof-checker in some simple cases, it comes at the cost of requiring
+allows us to exploit a Haskell type checker that supports GADTs as
+a proof-checker in some very simple cases, it comes at the cost of requiring
 `counterfeit type-level copies of data'.~\cite{mcbride02-faking}
 
 %}}}%
 
-\subsection{Dependent Types}%{{{%
+\subsection{Dependent Types}\label{sec:agda-dependent}%{{{%
 
+%FIXME: martin-lof-1971
 Dependent type systems follow a more principled approach, being founded on
-Martin-L\"of intuitionistic type theory~\cite{martin-lof-1971}. These have
-been studied over several decades, eventually evolving to its current form
-in the second incarnation of Agda~\cite{ulf}.
+Martin-L\"of intuitionistic type theory~\cite{nordstrom90-program}. These
+have been studied over several decades, and the current incarnation of
+Agda~\cite{norell07-thesis,theagdateam10-wiki} is one example of such
+a system.
 
 Coming from a Hindley-Milner background, the key distinction of dependent
 types is that values can influence the types of other, subsequent values.
@@ -166,29 +171,68 @@ Let us introduce the notion by considering an example of a dependent type:
       fs  : {n : ℕ} → Fin n  → Fin (suc n)
 \end{code}
 This defines a data type |Fin|---similar to |ℕ| above---that is additionally
-parametrised---or \emph{indexed}---by a natural number. Its two constructor
-are analogues of the |zero| and |suc| of |ℕ|. The |fz| constructor takes an
-parameter of type |ℕ| named |n|, that is referred to in its resultant type
-of |Fin (suc n)|. The braces |{| and |}| indicate that |n| is an implicit
-parameter, which we may omit at applications of |fz|, provided that the
-value of |n| can be automatically inferred. We can see how this might be
-possible in the case of the |fs| constructor: its explicit argument has type
-|Fin n|, from which we may deduce |n|.
+\emph{indexed} by a natural number. Its two constructor are analogues of the
+|zero| and |suc| of |ℕ|. The |fz| constructor takes an argument of type |ℕ|
+named |n|, that is referred to in its resultant type of |Fin (suc n)|. The
+braces |{| and |}| indicate that |n| is an implicit parameter, which we may
+omit at occurrences of |fz|, provided that the value of |n| can be
+automatically inferred. We can see how this might be possible in the case of
+the |fs| constructor: its explicit argument has type |Fin n|, from which we
+may deduce |n|.
 
 The above |Fin| represents a family of types, where each type |Fin n| has
 exactly |n| distinct values. This is apparent in the resultant types of the
 constructors, for example: neither |fz| and |fs| can inhabit |Fin zero|, as
-they both target |Fin (suc n)| for some value of |n|. The only inhabitant of
-|Fin (suc zero)| is |fz|, since |fs| requires an argument of type |Fin
-zero|, which would correspond to a proof that |Fin zero| is inhabited.
-Applications of the |Fin| family include for example, type-safe lookup of
-vectors or arrays, where we wish to have a static guarantee on the size of
-the index is required.
+they both target |Fin (suc n)| for some |n|. The only inhabitant of |Fin
+(suc zero)| is |fz|, since |fs| requires an argument of type |Fin zero|,
+which would correspond to a proof that |Fin zero| is inhabited.
+
+A routine application of the |Fin| family is in the safe lookup of lists or
+vectors, where a static guarantee on the bounds of the given position is
+required. The following definition defines the type of vectors, indexed by
+their length:
+\begin{code}
+    data Vec (X : Set) : ℕ → Set where
+      []   :                          Vec X zero
+      _∷_  : {n : ℕ} → X → Vec X n →  Vec X (suc n)
+\end{code}
+Unsurprisingly the empty list |[]| corresponds to a |Vec X| of length
+|zero|, while the |_∷_| constructor prepends an element of |X| to an
+existing |Vec X| of length |n|, to give a |Vec X| of length |suc n|.
+
+%format lookup = "\func{lookup}"
+%format n′ = "n\Prime{}"
+A |lookup| function can then be defined as follows:
+\savecolumns
+\begin{code}
+    lookup : {X : Set} {n : ℕ} → Fin n → Vec X n → X
+    lookup fz      (x ∷ xs) = x
+    lookup (fs i)  (x ∷ xs) = lookup i xs
+\end{code}
+The first argument gives the position in the vector where we wish to extract
+an element, with the second argument being the vector itself.
+
+Earlier we mentioned that all definitions in Agda must be total, yet the
+|lookup| function seemingly does not consider the case of the empty vector
+|[]|. This is because in a dependently-typed language, pattern matching on
+one argument can potentially influence the types of other arguments:
+matching on either |fz| or |fs i| forces |n| to |suc n′| for some |n′|, and
+in both cases the type of the vector is refined to |Vec X (suc n′)|. As |[]|
+can only inhabit |Vec X zero|, we needn't explicitly list this case. Had we
+pattern matched the vector with |[]| first on the other hand, the type of
+the position then becomes |Fin zero|, which is uninhabited. In this case, we
+may use the `impossible' pattern |()| for the first argument, to indicate
+that the case is unreachable:
+\restorecolumns
+\begin{code}
+    lookup ()      []
+\end{code}
+In such cases, the right hand side of the definition is simply omitted.
 
 This is only an elementary demonstration of the power of dependent types.
 Being able to form any proposition in intuitionistic logic as a type gives
 us a powerful vocabulary with which to state and verify the properties of
-our programs. Conversely, by interpreting a type as its correspond
+our programs. Conversely, by interpreting a type as its corresponding
 proposition, we have mapped the activity of constructing mathematical proofs
 to `just' programming, albeit in a more rigorous fashion than usual.
 
@@ -198,7 +242,7 @@ to `just' programming, albeit in a more rigorous fashion than usual.
 %takes just the set as as the parameter; "Paulin-Mohring equality" takes the
 %set and one of the elements as parameter.
 
-\subsection{Equality and Its Properties}%{{{%
+\subsection{Equality and its Properties}%{{{%
 
 The previous section introduced dependent types from a programming and data
 types point-of-view. We shall now take a look at how we can use dependent
@@ -215,20 +259,20 @@ equality relation:
     data _≡_ {X : Set} : X → X → Set where
       refl : {x : X} → x ≡ x
 \end{code}
-Agda does not share Haskell's Hindley-Milner polymorphism, although we can
-simply take an additional parameter of the type we wish to be polymorphic
-over. In the above definition of equality, the variable |X| corresponds to
-the type of the underlying values, which can often be inferred from the
-surrounding context. By marking this parameter as implicit, we effectively
-achieve the same end result.
+Agda does not provide the kind of Hindley-Milner polymorphism as seen in
+Haskell, although we can simply take an additional parameter of the type we
+wish to be polymorphic over. In the above definition of equality, the
+variable |X| corresponds to the type of the underlying values, which can
+often be inferred from the surrounding context. By marking this parameter as
+implicit, we effectively achieve the same end result in its usage.
 
 The above definition of |_≡_| is indexed by two explicit parameters of type
 |X|. Its sole constructor is |refl|, that inhabits the type |x ≡ x| given an
-argument of |x : X|. Logically, |refl| corresponds to the axiom of
-reflexivity $\forall x.\ x \equiv x$. In cases where the type of the
-argument---such as |x| here---can be inferred form the surrounding context,
-the |∀| keyword allows us to write the type in a way that better resembles
-the corresponding logical notation, for example:
+argument |x : X|. Logically, |refl| corresponds to the axiom of reflexivity
+$\forall x.\ x \equiv x$. In cases where the type of the argument---such as
+|x| here---can be inferred form the surrounding context, the |∀| keyword
+allows us to write the type in a way that better resembles the corresponding
+logical notation, for example:
 \restorecolumns
 \begin{spec}
       refl : ∀ {x} → x ≡ x
@@ -240,18 +284,19 @@ above is in fact syntactic sugar for the following:
 \begin{spec}
       refl : {x : _} → x ≡ x
 \end{spec}
-Agda includes an interactive user interface for the Emacs~\cite{stallman}
-operating system, which supports incremental development by the placement of
-`holes' where arbitrary expressions are expected. Incomplete programs with
-holes can be passed to the type checker, which then informs the user of the
-expected type. Thus, writing proofs in Agda is typically a two-way dialogue
-between the user and the type checker.
+
+Agda includes an interactive user interface running under the
+Emacs~\cite{stallman} operating system that supports incremental development
+by the placement of `holes' where arbitrary expressions are expected.
+Incomplete programs with holes can be passed to the type checker, which then
+informs the user of the expected type. Thus, writing proofs in Agda
+typically involves a two-way dialogue between the user and the type checker.
 
 %format sym = "\func{sym}"
 %format x≡y = "x{\equiv}y"
 Given the above definition of reflexivity as an axiom, we may go on to prove
 that |≡| is also symmetric and transitive. The former is the proposition
-that given any |x|, |y|, a proof of |x ≡ y| implies that |y ≡ x|. This is
+that given any |x| and |y|, a proof of |x ≡ y| implies that |y ≡ x|. This is
 implemented as the following |sym| function,
 \def\symHole{|sym x y x≡y = ?|}
 \begin{code}
@@ -264,24 +309,23 @@ between pairs of named arguments can be omitted, since there cannot be any
 ambiguity.
 
 Successfully type-checking the above turns the `|?|' into a \emph{hole}
-$\hole{\{~\}}$, inside which we may further refine the proof. The expected
-type of the hole is also displayed, and we can ask the type-checker to
-enumerate any local names that are in scope. In this case, the hole is
-expected to be of type |y ≡ x|, and the arguments |x y : X| and |x≡y
-: x ≡ y| are in scope.
+$\shed{\{~\}}$, inside which we may further refine the proof. The expected
+type of the hole is displayed, and we can ask the type-checker to enumerate
+any local names that are in scope. In this case, the hole is expected to be
+of type |y ≡ x|, with the arguments |x y : X| and |x≡y : x ≡ y| in scope.
 
 At this point, we can ask the system to perform case-analysis on |x≡y|.
-Being an instance of |_≡_|, we expect this argument can only be |refl|
-constructor. But something magical also happens during the case analysis:
+Being an equality proof, this argument must be the |refl| constructor. But
+something magical also happens during the case-split operation:
 \begin{spec}
-    sym x .x refl = {-"\hole{\{~\}}"-}
+    sym x .x refl = {-"\shed{\{~\}}"-}
 \end{spec}
 Since |refl| only inhabits the type |x ≡ x|, the type checker concludes that
 the first two arguments |x| and |y| must be the same, and rewrites the
 second as |.x| to reflect this fact. Whereas pattern matching in Haskell is
-an isolated affair, in a dependently typed context the same can potentially
-cause interactions with other arguments, revealing more information about
-the arguments that can be checked and enforced by the system.
+an isolated affair, in a dependently typed context it can potentially cause
+interactions with other arguments, revealing more information about the them
+that can be checked and enforced by the system.
 
 Accordingly, |y| is no longer in-scope, and the goal type becomes |x ≡ x|,
 which is satisfied by |refl|:
@@ -293,7 +337,7 @@ As we do not explicitly refer to |x| on the right hand side, we could have
 made the |x| and |y| arguments implicit too, leading to a more succinct
 definition:
 \begin{code}
-    sym' : {X : Set} → {x y : X} → x ≡ y → y ≡ x
+    sym' : {X : Set} {x y : X} → x ≡ y → y ≡ x
     sym' refl = refl
 \end{code}
 We prove transitivity in a similar fashion,
@@ -302,10 +346,10 @@ We prove transitivity in a similar fashion,
     trans : ∀ {X : Set} {x y z : X} → x ≡ y → y ≡ z → x ≡ z
     trans refl refl = refl
 \end{code}
-where pattern-matching the first explicit argument with |refl| unifies |x|
-and |y|, while repeating this with the second argument unifies |x| and |z|.
-The resulting goal of |x ≡ x| is then met on the right hand side with
-|refl|.
+where pattern-matching the first explicit argument with |refl| unifies |y|
+with |x|, refining the type of the second argument to |x ≡ z|; in turn,
+matching this with |refl| then unifies |z| with |x|. The resulting goal of
+|x ≡ x| is met on the right hand side with simply |refl|.
 
 %}}}%
 
@@ -315,21 +359,23 @@ In the previous section, we had already surreptitiously modelled the
 universal quantifier $\forall$ as dependent functions---that is, functions
 where values of earlier arguments may influence later types. Dually, we can
 model the existential quantifier $\exists$ using \emph{dependent pairs}.
-This is typically defined in terms of the |Σ| type:
+This is typically defined in terms of the |Σ| type\footnote{In this thesis,
+I deviate from the Agda standard library by writing |_∧_| instead of
+$\cons{\anonymous{,}\anonymous}$, to avoid excessive visual overloading.}:
 \begin{code}
     data Σ (X : Set) (P : X → Set) : Set where
-      _‚_ : (x : X) → (p : P x) → Σ X P
+      _∧_ : (x : X) → (p : P x) → Σ X P
 \end{code}
 We can interpret the type |Σ X (λ x → P x)| as the existentially quantified
 statement that $\exists x \in X.\ P(x)$. Correspondingly, a proof of this
-comprises a pair |x| and |p|, where the latter is a proof of the proposition
-|P x|. Unlike classical proofs of existence which may not necessarily be
+comprises a pair |x ∧ p|, where the latter is a proof of the proposition |P
+x|. Unlike classical proofs of existence which may not necessarily be
 constructive, a proof of the existence of some |x| satisfying |P|
 necessarily requires us to supply such an |x|. Conversely, we can always
-extract an |x| from such a proof.
+extract an |x| given such a proof.
 
 As |X| can often be inferred from the type of the predicate |P|, we may
-define a convenience function |∃| that accepts |X| as an implicit argument:
+define a shorthand |∃| that accepts |X| as an implicit argument:
 \begin{code}
     ∃ : {X : Set} (P : X → Set) → Set
     ∃ {X} = Σ X
@@ -355,27 +401,59 @@ of the first type:
 %      inj₂  : (y : Y) → X ⊎ Y
 %\end{code}
 
+%format splitAt = "\func{splitAt}"
+\noindent Putting the above into practice, we present below a definition of
+|splitAt| that splits a vector of length |m + n| at position |m| into left
+and right vectors of length |m| and |n| respectively. Unlike the eponymous
+Haskell function, we can also witness that the contatenation of the
+resulting vectors coincides with the input:
+\begin{code}
+    splitAt : (m : ℕ) {n : ℕ} {X : Set} (xs : Vec X (m + n)) →
+      Σ (Vec A m) λ ys → Σ (Vec A n) λ zs → xs ≡ ys ++ zs
+    splitAt zero     xs                 = [] ∧ xs ∧ ≡.refl
+\end{code}
+For the base case where the position is |zero|, we simply return the empty
+list as the left part and the entirety of |xs| as the right. Since |[] ++
+xs| reduces to just |xs|, a simple appeal to reflexivity completes this
+clause.
+
+In the inductive case of |suc m|, the input vector must contain at least one
+element, followed by |xs|. We wish to split |xs| recursively at |m| and
+prepend |x| to the left result. In Agda, we can pattern match on
+intermediate results using the magic `|with|' keyword, which could be
+thought of as the dependently-typed analogue to Haskell's $\keyw{case}$:
+\begin{code}
+    splitAt (suc m)  (x ∷ xs)           with splitAt m xs
+    splitAt (suc m)  (x ∷ .(ys ++ zs))  | ys ∧ zs ∧ ≡.refl = x ∷ ys ∧ zs ∧ ≡.refl
+\end{code}
+When we case-split on the proof of |xs ≡ ys ++ zs|, Agda sees that |≡.refl|
+is the only possible constructor, and correspondingly rewrites the tail of
+the input vector to the dotted pattern |.(ys ++ zs)|. This is simply a more
+sophisticated instance of what we saw when case-splitting |sym| in the
+previous section.
+
 %}}}%
 
-\subsection{Relations and Reflexive Transitive Closures}%{{{%
+\subsection{Reflexive Transitive Closure}%{{{%
 
 % \cite{McBride/Norell/Jansson}
 
-Before we conclude this very brief introduction to Agda, we shall introduce
-the \emph{reflexive transitive closure} of McBride, Norell and
-Jansson~\cite{fita-2007-nov}, which generalises the notion of sequences in
+Before we conclude this brief introduction to Agda, we shall introduce the
+\emph{reflexive transitive closure} of McBride, Norell and
+Jansson~\cite{mcbride07-star}, which generalises the notion of sequences in
 a dependently-typed context. This general construct will prove useful later
 when working with sequences of small-step reductions.
 
 We begin by defining binary relations parametrised on their underlying
 types:
 \begin{code}
-    Rel : Set → Set1
+    Rel : Set → Set₁
     Rel X = X → X → Set
 \end{code}
-|Rel X| corresponds to the type of binary relations on |X|. In fact, our
-earlier definition of propositional equality could equivalently have been
-written as follows:
+|Rel| has |Set₁| as its codomain in order to avoid the |Set : Set|
+inconsistency. We use the |Rel X| shorthand to denote the type of binary
+relations on |X|. In fact, our earlier definition of propositional equality
+could equivalently have been written as follows:
 \begin{spec}
     data _≡_ {X : Set} : Rel X where
       refl : {x : X} → x ≡ x
@@ -409,23 +487,27 @@ adjacent elements |x : R i j| and |y : R j k| must share a common index |j|.
 \end{code}
 %endif
 
-In the degenerate case of a constant relation |(λ _ _ → X) : Rel I| that
-ignores its indices, we recover the usual definition of lists of |X|:
+%format List′ = "\func{List}"
+In the degenerate case of a constant relation |(λ _ _ → X) : Rel ⊤| whose
+indices provide no extra information, we recover the usual definition of
+lists of elements of type |X|:
 \begin{code}
-    List : Set → Set
-    List X = Star (λ _ _ → X) tt tt
+    List′ : Set → Set
+    List′ X = Star (λ _ _ → X) tt tt
 \end{code}
 Here |tt| is the unique constructor of the unit type |⊤|, with |ε| and |_◅_|
 taking the r\^oles of \emph{nil} and \emph{cons} respectively. For example,
 we could write the two-element list of 0 and 1 as follows:
+%format two = "\func{two}"
 \begin{code}
-    two : List ℕ
+    two : List′ ℕ
     two = zero ◅ suc zero ◅ ε
 \end{code}
-Given its similarities to lists, |Star| admits many of the usual list-like
-functions. For example, while the |_◅◅_| function below provides a proof of
-transitivity for |Star R|, it could equally be considered the generalisation
-of \emph{append} on lists, as suggested by the structure of its definition:
+As it is a generalisation of lists, |Star| admits many of the usual
+list-like functions. For example, while the |_◅◅_| function below provides
+a proof of transitivity for |Star R|, it could equally be considered the
+generalisation of \emph{append} on lists, as suggested by the structure of
+its definition:
 \begin{code}
     _◅◅_ :  {I : Set} {R : Rel I} {i j k : I} →
             Star R i j → Star R j k → Star R i k
@@ -434,6 +516,7 @@ of \emph{append} on lists, as suggested by the structure of its definition:
 \end{code}
 Similarly, we can define an analogue of \emph{map} on lists:
 %format I′ = "I\Prime{}"
+%format gmap = "\func{gmap}"
 \begin{code}
     gmap :  {I I′ : Set} {R : Rel I} {S : Rel I′} (f : I → I′) →
             (  {x y : I}  →       R x y  →       S (f x)  (f y)) →
@@ -441,7 +524,7 @@ Similarly, we can define an analogue of \emph{map} on lists:
     gmap f g ε         = ε
     gmap f g (x ◅ xs)  = g x ◅ gmap f g xs
 \end{code}
-As well a function |g| that is mapped over the individual elements of the
+As well as a function |g| that is mapped over the individual elements of the
 sequence, |gmap| also takes a function |f| that allows for the indices to
 change.
 
@@ -456,21 +539,21 @@ To conclude, let us consider a simple use case for |Star|. Take the
 \end{code}
 Here, |lt₁ n| witnesses |n| as the predecessor of |suc n|. We can then
 conveniently define the reflexive transitive closure of |_<₁_| as follows:
-%format ≤ = "\infix{\type{\le}}"
-%format _≤_ = "\type{\anonymous{\le}\anonymous}"
+%format _≤_ = "\func{\anonymous{\le}\anonymous}"
+%format ≤ = "\infix{\func{\le}}"
 \begin{code}
     _≤_ : Rel ℕ
     _≤_ = Star _<₁_
 \end{code}
 Of course, this is just the familiar \emph{less than or equal} relation, for
-which we can easily prove some trivial properties:
-%format 0≤n = "\func{0{\le}n}"
+which we can easily prove some familiar properties, such as the following:
+%format z≤n = "\func{0{\le}n}"
 \begin{code}
-    0≤n : (n : ℕ) → zero ≤ n
-    0≤n zero     = ε
-    0≤n (suc n)  = 0≤n n ◅◅ (lt₁ n ◅ ε)
+    z≤n : (n : ℕ) → zero ≤ n
+    z≤n zero     = ε
+    z≤n (suc n)  = z≤n n ◅◅ (lt₁ n ◅ ε)
 \end{code}
-Note that a proof of |zero ≤ n| as produced by the above |0≤n| function
+Note that a proof of |zero ≤ n| as produced by the above |z≤n| function
 actually consists of a \emph{sequence} of proofs in the style of ``\emph{0
 is succeeded by 1, which is succeeded by 2, \ldots{} which is succeeded by
 |n|}'' that can be taken apart and inspected one by one. We will be doing
@@ -484,21 +567,7 @@ exactly this when considering reduction sequences in our later proofs.
 %if False
 \begin{code}
 import Level
-open import Data.Sum
-import Data.Product as Σ
-open Σ renaming (_,_ to _&_)
-import Data.Star as Star
-open Star
-
-open import Data.Nat
-open import Data.List
-open import Data.List.Properties
-
-open import Function
-
-open import Relation.Binary
-import Relation.Binary.PropositionalEquality as ≡
-open ≡ using (_≡_; _≢_; _with-≡_)
+open import Common
 \end{code}
 %endif
 %}}}%
@@ -506,8 +575,8 @@ open ≡ using (_≡_; _≢_; _with-≡_)
 \section{Agda for Compiler Correctness}%{{{%
 
 In this section, we shall revisit the language of numbers and addition from
-chapter \ref{ch:semantics}, and demonstrate how this might be formalised
-using Agda.
+chapter \ref{ch:semantics}, and demonstrate how the previous compiler
+correctness result can be formalised using Agda.
 
 \subsection{Syntax and Semantics}%{{{%
 
@@ -515,7 +584,7 @@ Just like we had done in chapter \ref{ch:model}, we can encode the syntax of
 our language as a basic algebraic data type:
 %if False
 \begin{code}
-infixl 4 _⊕_
+infix l4 _⊕_
 infix 5 #_
 \end{code}
 %endif
@@ -530,11 +599,8 @@ data Expression : Set where
   _⊕_  : (a b : Expression)  → Expression
 \end{code}
 The two constructors |#_| and |_⊕_| correspond to the
-\eqName{Exp-$\mathbb{N}$} and \eqName{Exp-$\oplus$} rules of in our original
+\eqName{Exp-$\mathbb{N}$} and \eqName{Exp-$\oplus$} rules in our original
 definition of the |Expression| language in chapter \ref{ch:semantics}.
-
-\TODO{what else do I say here?}
-
 %format ⟦_⟧ = "\func{[\![\anonymous]\!]}"
 %format ⟦ = "\prefix{\func{[\![}}"
 %format ⟧ = "\postfix{\func{]\!]}}"
@@ -557,7 +623,7 @@ natural numbers.
 We had previously modelled the big-step semantics of our language as
 a binary relation $\Downarrow$ between expressions and numbers. In Agda,
 such a relation can be implemented as a dependent data type, indexed on
-|Expression|s and natural numbers |ℕ|:
+|Expression| and |ℕ|:
 %if False
 \begin{code}
 infix 4 _⇓_
@@ -611,10 +677,10 @@ The small-step semantics for |Expression|s is implemented in the same
 fashion,
 %format _↦_ = "\type{\anonymous{\mapsto}\anonymous}"
 %format ↦ = "\type{{\mapsto}}"
-%format _↦⋆_ = "\type{\anonymous{\mapsto}^\star\anonymous}"
-%format ↦⋆ = "\type{{\mapsto}^\star}"
-%format _↦⋆#_ = "\type{\anonymous{\mapsto}^\star\;" # "\anonymous}"
-%format ↦⋆# = "\type{{\mapsto}^\star}\;" #
+%format _↦⋆_ = "\func{\anonymous{\mapsto}^\star\anonymous}"
+%format ↦⋆ = "\func{{\mapsto}^\star}"
+%format _↦⋆#_ = "\func{\anonymous{\mapsto}^\star\;" # "\anonymous}"
+%format ↦⋆# = "\func{{\mapsto}^\star}\;" #
 %format ↦-ℕ = "\cons{{\mapsto}\text-\mathbb{N}}"
 %format ↦-L = "\cons{{\mapsto}\text-L}"
 %format ↦-R = "\cons{{\mapsto}\text-R}"
@@ -625,9 +691,9 @@ data _↦_ : Rel Expression Level.zero where
   ↦-R  : ∀ {m b  b′ }  → b ↦ b′ →  #  m  ⊕ b    ↦ #  m   ⊕ b′
 \end{code}
 with \eqName{small-val}, \eqName{small-left} and \eqName{small-right}
-represented as the |↦-ℕ|, |↦-L| and |↦-R| constructors. Using |Star| which
-we had defined earlier in this chapter, we obtain the reflexive transitive
-closure of |_↦_|, along with proofs of the usual properties, for free:
+represented as the |↦-ℕ|, |↦-L| and |↦-R| constructors. Using |Star| defined
+earlier in this chapter, we obtain the reflexive transitive closure of
+|_↦_|, along with proofs of the usual properties, for free:
 \begin{code}
 _↦⋆_ : Rel Expression Level.zero
 _↦⋆_ = Star _↦_
@@ -642,8 +708,6 @@ e ↦⋆# m = e ↦⋆ # m
 
 %}}}%
 
-
-
 \subsection{Semantics Equivalence}%{{{%
 
 %format denote→big = "\func{denote{\rightarrow}big}"
@@ -656,9 +720,10 @@ Let us move swiftly on to the semantic equivalence theorems of section
 essentially boils down to induction on the structure of inductively-defined
 data types.
 
-The proof for the forward direction of theorem \ref{thm:denote-big} is
-implemented as |denote→big|, which proceeds by case analysis on its argument
-|e : Expression|:
+The proof for the forward direction of theorem \ref{thm:denote-big}---which
+captures the equivalence of the denotational and big-step semantics---is
+implemented as |denote→big|, proceeding by case analysis on its argument |e
+: Expression|:
 \begin{code}
 denote→big : ∀ {e m} → ⟦ e ⟧ ≡ m → e ⇓ m
 denote→big {# n}    ≡.refl = ⇓-ℕ
@@ -690,12 +755,11 @@ via the induction hypothesis. The goal of |⟦ a ⟧ + ⟦ b ⟧ ≡ m + n| afte
 $\beta$-reduction is then trivially satisfied, thus completing the proof of
 theorem \ref{thm:denote-big}.
 
-The \!\!|with|\!\! keyword provides an analogue of Haskell's
+The |with| keyword provides an analogue of Haskell's
 $\keyw{case}\;\ldots\;\keyw{of}$ construct that allows us to pattern match
 on intermediate results. Agda requires us to repeat the left hand side of
-the function definition when using a \!\!|with|\!\!-clause, since dependent
-pattern matching may affect the other arguments, as noted earlier in this
-chapter.
+the function definition when using a |with|-clause, since dependent pattern
+matching may affect the other arguments, as noted earlier in this chapter.
 
 We go on to prove theorem \ref{thm:big-small}---the equivalence between the
 big-step and small-step semantics---in a similar manner:
@@ -706,8 +770,8 @@ big-step and small-step semantics---in a similar manner:
 big→small : ∀ {e m} → e ⇓ m → e ↦⋆# m
 big→small ⇓-ℕ = ε
 big→small (⇓-⊕ {a} {b} {m} {n} a⇓m b⇓n) =
-  gmap (λ a′ →    a′  ⊕ b)   ↦-L (big→small a⇓m) ◅◅
-  gmap (λ b′ → #  m   ⊕ b′)  ↦-R (big→small b⇓n) ◅◅
+  Star.gmap (λ a′ →    a′  ⊕ b)   ↦-L (big→small a⇓m) ◅◅
+  Star.gmap (λ b′ → #  m   ⊕ b′)  ↦-R (big→small b⇓n) ◅◅
   ↦-ℕ ◅ ε
 \end{code}
 The goal in the case of |⇓-ℕ| is trivially satisfied by the empty reduction
@@ -716,8 +780,8 @@ sequence, since |e ≡ # m|. In the |⇓-⊕| case, recursively invoking
 |b ↦⋆# n| respectively. We can map over the former using |↦-L| over the
 witnesses and |λ a′ → a′ ⊕ b| over the indices to obtain the reduction
 sequence |a ⊕ b ↦⋆# m ⊕ b|, and likewise for the second to obtain |#
-m ⊕ b ↦⋆ # m ⊕ # n|. By appending these two resulting sequences followed by
-a final application of the |↦-ℕ| rule---equivalently, invoking
+m ⊕ b ↦⋆ # m ⊕ # n|. By appending these two resulting sequences, followed by
+a final application of the |↦-ℕ| rule---or equivalently invoking
 transitivity---we obtain the desired goal of |a ⊕ b ↦⋆# m + n|.
 
 %format small→big = "\func{small{\rightarrow}big}"
@@ -732,10 +796,10 @@ transitivity---we obtain the desired goal of |a ⊕ b ↦⋆# m + n|.
 %format b′⇓n = "b\Prime{\Downarrow}n"
 %format m⇓m = "m{\Downarrow}m"
 The proof for the reverse direction of \ref{thm:big-small} proceeds by
-`folding'\footnote{Unfortunately we cannot use |gfold| from Agda's standard
-library, as |_⇓_ : REL Expression ℕ| is not a homogeneous relation.} lemma
-\ref{lem:small-sound}---implemented as the |sound| helper function
-below---over the |e ↦⋆# m| reduction sequence:
+`folding'\footnote{Unfortunately we cannot use |Star.gfold| from Agda's
+standard library, as |_⇓_ : REL Expression ℕ| is not a homogeneous
+relation.} lemma \ref{lem:small-sound}---implemented as the |sound| helper
+function below---over the |e ↦⋆# m| reduction sequence:
 \begin{code}
 small→big : ∀ {e m} → e ↦⋆# m → e ⇓ m
 small→big ε               = ⇓-ℕ
@@ -758,75 +822,130 @@ recursively obtain a proof of |a ⇓ m| or |b ⇓ n|.
 
 %}}}%
 
-\subsection{Stack Machines and Their Semantics}%{{{%
+\subsection{Stack Machine, Compiler, and Correctness}%{{{%
 
-%{{{%
+%if False
+\begin{code}
+mutual
+\end{code}
+%endif
+
+In section \ref{sec:stack-machine} we used a stack machine as our low-level
+semantics, with the machine modelled as a pair of a list of instructions and
+a stack of values. This translates to the following Agda data declaration:
+%format Machine = "\type{Machine}"
+%format ⟨_‚_⟩ = "\cons{\langle\anonymous{,}\anonymous\rangle}"
+%format ⟨ = "\prefix{\cons{\langle}}"
+%format ‚ = "\cons{,}"
+%format ⟩ = "\postfix{\cons{\rangle}}"
+%format σ = "\sigma"
+%format σ′ = "\sigma\Prime{}"
 %format Instruction = "\type{Instruction}"
 %format PUSH = "\cons{PUSH}"
 %format ADD = "\cons{ADD}"
 \begin{code}
-data Instruction : Set where
-  PUSH : ℕ → Instruction
-  ADD : Instruction
+  data Machine : Set where
+    ⟨_‚_⟩ : (c : List Instruction) → (σ : List ℕ) → Machine
+\end{code}
+The |List| type from in Agda's standard library implements the familiar
+\emph{nil} and \emph{cons} lists as found in Haskell. In turn, the virtual
+machine's instruction set comprises the standard |PUSH| and |ADD| for stack
+machines:
+\begin{code}
+  data Instruction : Set where
+    PUSH  : ℕ → Instruction
+    ADD   : Instruction
 \end{code}
 
+%if False
+\begin{code}
+infix 3 _↣_
+\end{code}
+%endif
+
+%format _↣_ = "\type{\anonymous{\rightarrowtail}\anonymous}"
+%format ↣ = "\type{{\rightarrowtail}}"
+%format _↣⋆_ = "\func{\anonymous{\rightarrowtail}^\star\anonymous}"
+%format ↣⋆ = "\func{{\rightarrowtail}^\star}"
+%format _↣⋆#_ = "\func{\anonymous{\rightarrowtail}^\star\texttt{\#}\anonymous}"
+%format ↣⋆# = "\func{{\rightarrowtail}^\star\texttt{\#}}"
+%format ↣-PUSH = "\cons{{\rightarrowtail}\text-PUSH}"
+%format ↣-ADD = "\cons{{\rightarrowtail}\text-ADD}"
+\noindent The two reduction rules \eqName{vm-push} \eqName{vm-add} for the
+virtual machine are realised as the |↣-PUSH| and |↣-ADD| constructors of the
+|_↣_| relation:
+\begin{code}
+data _↣_ : Rel Machine Level.zero where
+  ↣-PUSH  : ∀ {m    c σ} → ⟨ PUSH m ∷ c ‚          σ ⟩ ↣ ⟨ c ‚ m      ∷ σ ⟩
+  ↣-ADD   : ∀ {m n  c σ} → ⟨ ADD    ∷ c ‚ n ∷ m ∷  σ ⟩ ↣ ⟨ c ‚ m + n  ∷ σ ⟩
+
+_↣⋆_ : Rel Machine Level.zero
+_↣⋆_ = Star _↣_
+\end{code}
+Again, we define |_↣⋆_| as |Star _↣_|, and receive the usual properties of
+a reflexive transitive closure absolutely free.
+
+%if False
+\begin{code}
+infix 3 _↣⋆_ _↣⋆#_
+\end{code}
+%endif
+
+The compiler is defined identically to that of section \ref{sec:compiler},
 %format compile = "\func{compile}"
 \begin{code}
 compile : Expression → List Instruction → List Instruction
 compile (# m)    c = PUSH m ∷ c
 compile (a ⊕ b)  c = compile a (compile b (ADD ∷ c))
 \end{code}
+which compiles a number |# m| to |PUSH m|, and a sum |a ⊕ b| to the
+concatenation of code that computes the value of |a| and |b|, followed by an
+|ADD| instruction.
 
-%format Machine = "\type{Machine}"
-%format ⟨_‚_⟩ = "\cons{\langle\anonymous{,}\anonymous\rangle}"
-%format ⟨ = "\prefix{\cons{\langle}}"
-%format ‚ = "\cons{,}"
-%format ⟩ = "\postfix{\cons{\rangle}}"
+The following definition of |_↣⋆#_| provides a convenient synonym for what
+it means when we say that executing the compiled code for an expression |e|
+computes the result |m|:
 \begin{code}
-data Machine : Set where
-  ⟨_‚_⟩ : List Instruction → List ℕ → Machine
+_↣⋆#_ : REL Expression ℕ Level.zero
+e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩
 \end{code}
-
-%format _↣_ = "\type{\anonymous{\rightarrowtail}\anonymous}"
-%format ↣ = "\type{{\rightarrowtail}}"
-%format _↣⋆_ = "\type{\anonymous{\rightarrowtail}^\star\anonymous}"
-%format ↣⋆ = "\type{{\rightarrowtail}^\star}"
-%format _↣⋆#_ = "\type{\anonymous{\rightarrowtail}^\star\;" # "\anonymous}"
-%format ↣⋆# = "\type{{\rightarrowtail}^\star}\;" #
-%format σ = "\sigma"
-%format ↣-PUSH = "\cons{{\rightarrowtail}\text-PUSH}"
-%format ↣-ADD = "\cons{{\rightarrowtail}\text-ADD}"
-\begin{code}
-infix 3 _↣_
-data _↣_ : Rel Machine _ where
-  ↣-PUSH : ∀ {m c σ} → ⟨ PUSH m ∷ c ‚ σ ⟩ ↣ ⟨ c ‚ m ∷ σ ⟩
-  ↣-ADD : ∀ {m n c σ} → ⟨ ADD ∷ c ‚ n ∷ m ∷ σ ⟩ ↣ ⟨ c ‚ m + n ∷ σ ⟩
-\end{code}
-
-%if False
-\begin{code}
-infix 3 _↣⋆_
-_↣⋆_ : Rel Machine _
-_↣⋆_ = Star _↣_
-
-infix 3 _↣⋆#_
-\end{code}
-%endif
-
-%}}}%
-
-%{{{%
+Note that the above proposition is quantified over any code continuation |c|
+and initial stack |σ|, and a proof of compiler correctness (theorem
+\ref{thm:compiler-correct}) amounts to functions in both directions between
+|e ⇓ m| and |e ↣⋆# m|. In the forward direction---that is, from the
+high-level/big-step semantics to the low-level/virtual machine
+semantics---this is implemented by induction on the structure of |e ⇓ m|:
 %format big→machine = "\func{big{\rightarrow}machine}"
 \begin{code}
-_↣⋆#_ : REL Expression ℕ _
-e ↣⋆# m = ∀ {c σ} → ⟨ compile e c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩
-
 big→machine : ∀ {e m} → e ⇓ m → e ↣⋆# m
 big→machine ⇓-ℕ = ↣-PUSH ◅ ε
 big→machine (⇓-⊕ a⇓m b⇓n) =
   big→machine a⇓m ◅◅ big→machine b⇓n ◅◅ ↣-ADD ◅ ε
 \end{code}
+%format c_a
+%format σ_a
+%format c_b
+%format σ_b
+In the case of |⇓-ℕ| we have |e ≡ # m|, and so |↣-PUSH ◅ ε| witnesses the
+reduction sequence |∀ {c σ} → ⟨ compile (# m) c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩|. In
+the second case, the recursive terms |big→machine a⇓m| and |big→machine b⇓n|
+are of the following types:
+\begin{spec}
+big→machine a⇓m  : ∀ {c_a  σ_a} →  ⟨ compile a  c_a  ‚ σ_a  ⟩ ↣⋆ ⟨ c_a  ‚ m  ∷ σ_a  ⟩
+big→machine b⇓n  : ∀ {c_b  σ_b} →  ⟨ compile b  c_b  ‚ σ_b  ⟩ ↣⋆ ⟨ c_b  ‚ n  ∷ σ_b  ⟩
+\end{spec}
+The right hand side requires a proof of:
+\begin{gather*}
+|∀ {c σ} → ⟨ compile (a ⊕ b) c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m + n ∷ σ ⟩|
+\end{gather*}
+which can be obtained by instantiating |c_a = compile b (ADD ∷ c)|, |c_b
+= ADD ∷ c|, |σ_a = σ|, |σ_b = m ∷ σ|, and concatenating the resulting
+reduction sequences, followed by a final application of the |↣-ADD| rule. As
+these values can be automatically inferred by Agda, we do not need to make
+them explicit in the definition of |big→machine|.
 
+%{{{%
+%if False
 \begin{spec}
 small→machine : ∀ {e m} → e ↦⋆# m → e ↣⋆# m
 small→machine ε = ↣-PUSH ◅ ε
@@ -835,19 +954,31 @@ small→machine (↦-ℕ ◅ () ◅ xs)
 small→machine (↦-L a↦a′ ◅ a′⊕b↦m) = {!small→machine a′⊕b↦m!}
 small→machine (↦-R b↦b′ ◅ na⊕b′↦m) = {!!}
 \end{spec}
+%endif
+%}}}%
 
+The backwards direction of the compiler correctness proof requires us to
+compute a witness of |e ⇓ m| from one of |e ↣⋆# m|. We first need to
+implement a pair of lemmas, however.
 %format exec = "\func{exec}"
 %format na = "n_a"
-%format a↣⋆#na = a "{\rightarrowtail^\star}" na
 %format nb = "n_b"
-%format b↣⋆#nb = b "{\rightarrowtail^\star}" nb
+%format a↣⋆#na = a "{\rightarrowtail^\star}\texttt{\#}" na
+%format b↣⋆#nb = b "{\rightarrowtail^\star}\texttt{\#}" nb
+The |exec| lemma simply states that that for any expression |e|, there
+exists a number |m| for which executing |compile e| computes |m|:
 \begin{code}
 exec : ∀ e → ∃ λ m → e ↣⋆# m
-exec (# m) = m & λ {c} {σ} → ↣-PUSH ◅ ε
+exec (# m) = m ∧ λ {c} {σ} → ↣-PUSH ◅ ε
 exec (a ⊕ b) with exec a | exec b
-exec (a ⊕ b) | na & a↣⋆#na | nb & b↣⋆#nb = na + nb &
+exec (a ⊕ b) | na ∧ a↣⋆#na | nb ∧ b↣⋆#nb = na + nb ∧
   λ {c} {σ} → a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
 \end{code}
+When |e ≡ # m|, this number clearly has to be |m|, with |↣-PUSH ◅ ε| serving
+as the witness. Note that due to Agda's handling of implicit arguments, we
+must explicitly generalise over |c| and |σ|. In the |e ≡ a ⊕ b| case, we
+simply recurse on the |a| and |b| subexpressions and concatenate the
+resulting reduction sequences with an |↣-ADD|.
 
 %format unique = "\func{unique}"
 %format σ′ = σ "\Prime{}"
@@ -857,43 +988,142 @@ exec (a ⊕ b) | na & a↣⋆#na | nb & b↣⋆#nb = na + nb &
 %format c′↣⋆σ″ = c′ "{\rightarrowtail^\star}" σ″
 %format c′↣⋆σ′ = c′ "{\rightarrowtail^\star}" σ′
 %format c↣⋆σ″ = c "{\rightarrowtail^\star}" σ″
+The |unique| lemma states that given two reduction sequences from the same
+initial state, the resulting stacks must coincide:
+\savecolumns
 \begin{code}
 unique : ∀ {c σ σ′ σ″} →  ⟨ c ‚ σ ⟩ ↣⋆ ⟨ [] ‚ σ′ ⟩ →
                           ⟨ c ‚ σ ⟩ ↣⋆ ⟨ [] ‚ σ″ ⟩ → σ′ ≡ σ″
-unique {[]} ε ε = ≡.refl
-unique {[]} ε              (() ◅ c′↣⋆σ″)
-unique {[]} (() ◅ c′↣⋆σ′)  c↣⋆σ″
-unique {PUSH m ∷ c′} (↣-PUSH ◅ c′↣⋆σ′) (↣-PUSH ◅ c′↣⋆σ″) = unique c′↣⋆σ′ c′↣⋆σ″
-unique {ADD ∷ c′} {          []  } (() ◅ c′↣⋆σ′) c↣⋆σ″
-unique {ADD ∷ c′} {     m ∷  []  } (() ◅ c′↣⋆σ′) c′↣⋆σ″
-unique {ADD ∷ c′} {n ∷  m ∷  σ   } (↣-ADD ◅ c′↣⋆σ′) (↣-ADD ◅ c′↣⋆σ″) = unique c′↣⋆σ′ c′↣⋆σ″
+unique {[]}                         (() ◅ c′↣⋆σ′)  c↣⋆σ″          {-""-}
+unique {[]}                         ε              (() ◅ c′↣⋆σ″)  {-""-}
+unique {[]}                         ε              ε              = ≡.refl
 \end{code}
+We proceed by recursion on the code |c|: the first group of cases above deal
+with an empty |c|. Both sequences must be |ε|, since there no reduction is
+possible from the machine state |⟨ [] ‚ σ ⟩|. In Agda, we identify such
+cases with the `\emph{impossible}' pattern---written as |()|---and
+accordingly the first two cases do not have a corresponding right hand side.
+In the third case, the proof of |σ′ ≡ σ″| is trivial, since matching on the
+two |ε| constructors for reflexivity has already unified the |σ|, |σ′| and
+|σ″| variables.
+
+The next two cases deal with the |PUSH| and |ADD| instructions. In the first
+instance, we obtain the proof of |σ′ ≡ σ″| by recursion on |c′↣⋆σ′| and
+|c′↣⋆σ″|, both starting from the machine state |⟨ c′ ‚ m ∷ σ ⟩|:
+\restorecolumns
+\begin{code}
+unique {PUSH m ∷ c′}                (↣-PUSH  ◅ c′↣⋆σ′)
+                                    (↣-PUSH  ◅ c′↣⋆σ″)  = unique c′↣⋆σ′ c′↣⋆σ″
+
+unique {ADD ∷ c′} {          []  }  (()      ◅ c′↣⋆σ′)   c↣⋆σ″
+unique {ADD ∷ c′} {     m ∷  []  }  (()      ◅ c′↣⋆σ′)   c′↣⋆σ″
+unique {ADD ∷ c′} {n ∷  m ∷  σ   }  (↣-ADD   ◅ c′↣⋆σ′)
+                                    (↣-ADD   ◅ c′↣⋆σ″)  = unique c′↣⋆σ′ c′↣⋆σ″
+\end{code}
+The reduction rule for |ADD| requires at least two numbers on top of the
+stack, which is ruled out by the first two cases in the latter group. The
+final case proceeds by recursion on the remainder of the reduction sequence,
+both of which start from the same |⟨ c′ ‚ m + n ∷ σ ⟩| machine state.
 
 %format machine→big = "\func{machine{\rightarrow}big}"
-%format m↣⋆#m = m "{\rightarrowtail^\star}" m
-%format m′↣⋆#m = m "\Prime{}{\rightarrowtail^\star}" m
-%format a⊕b↣⋆#m = a "{\oplus}" b "{\rightarrowtail^\star}" m
+%format n↣⋆#m = "n{\rightarrowtail^\star}\texttt{\#}m"
+%format n′↣⋆#m = "n\Prime{}{\rightarrowtail^\star}\texttt{\#}m"
+Returning to the second half of our compiler correctness theorem, it remains
+for us to show that |e ↣⋆# m| implies |e ⇓ m|. The following definition of
+|machine→big| provides the proof, which proceeds by case analysis on the
+expression |e|:
+\savecolumns
 \begin{code}
 machine→big : ∀ {e m} → e ↣⋆# m → e ⇓ m
-machine→big {# m} m↣⋆#m with m↣⋆#m {[]} {[]}
-machine→big {# m} m↣⋆#m | ↣-PUSH ◅ ε = ⇓-ℕ
-machine→big {# m} m↣⋆#m | ↣-PUSH ◅ () ◅ m′↣⋆#m
-machine→big {a ⊕ b} a⊕b↣⋆#m with exec a | exec b
-machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
-  with unique {σ = []} a⊕b↣⋆#m a⊕b↣⋆#na+nb where
-    a⊕b↣⋆#na+nb : a ⊕ b ↣⋆# na + nb
-    a⊕b↣⋆#na+nb = a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε
-machine→big {a ⊕ b} a⊕b↣⋆#m | na & a↣⋆#na | nb & b↣⋆#nb
+machine→big {# n} n↣⋆#m with n↣⋆#m {[]} {[]}
+machine→big {# n} n↣⋆#m | ↣-PUSH ◅ ε = ⇓-ℕ
+machine→big {# n} n↣⋆#m | ↣-PUSH ◅ () ◅ n′↣⋆#m
+\end{code}
+The |n↣⋆#m| argument is in fact a function that takes two implicit
+arguments, having the type:
+\begin{gather*}
+	|∀ {c σ} → ⟨ compile (# n) c ‚ σ ⟩ ↣⋆ ⟨ c ‚ m ∷ σ ⟩|
+\end{gather*}
+To this we apply an empty code continuation and stack, then pattern match
+the resulting reduction sequence against |↣-PUSH ◅ ε|. This unifies |n| and
+the implicit argument |m|, allowing |⇓-ℕ| to witness the goal type of |#
+m ⇓ m|. The second case handles the case of longer reduction sequences,
+which is impossible, since |compile (# n)| outputs only a single |PUSH|
+instruction.
+
+For expressions of the form |e ≡ a ⊕ b|, we first use the |exec| helper to
+obtain the two reduction sequences |a ↣⋆# na| and |b ↣⋆# nb|, making use of
+a |with| clause:
+%format a⊕b↣⋆#m = "a{\oplus}b{\rightarrowtail^\star}\texttt{\#}m"
+% format a⊕b↣⋆#na+nb = "a{\oplus}b{\rightarrowtail^\star}\texttt{\#}" na "{+}" nb
+\restorecolumns
+\begin{code}
+machine→big {a ⊕ b} a⊕b↣⋆#m with exec a    | exec b
+machine→big {a ⊕ b} a⊕b↣⋆#m | na ∧ a↣⋆#na  | nb ∧ b↣⋆#nb
+  with unique {σ = []} a⊕b↣⋆#m (a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε)
+machine→big {a ⊕ b} a⊕b↣⋆#m | na ∧ a↣⋆#na  | nb ∧ b↣⋆#nb
   | ≡.refl = ⇓-⊕ (machine→big a↣⋆#na) (machine→big b↣⋆#nb)
 \end{code}
-%}}}%
+The concatenation |a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε| produces a reduction
+sequence of |a ⊕ b ↣⋆# na + nb|. Using the previously defined |unique|
+lemma, we compare this with |a⊕b↣⋆#m| to yield a proof of |na + nb ≡ m|.
+Examining this proof using a second |with| clause, the goal becomes |a
+⊕ b ⇓ na + nb|. This calls for an instance of |⇓-⊕|, whose two premises of
+|a ⇓ na| and |b ⇓ nb| are obtained by recursion.
 
 %}}}%
 
 %}}}%
 
+%if False
+\section{Coinductive Proofs and Data}\label{sec:agda-coinduction}%{{{%
 
-% ignore me
+* I CAN SEE FOREVER LOL
+
+* Recent versions of Agda provides coinductive data. \cite{danielsson10-productivity}
+
+* productive instead of terminating
+
+* analysis necessarily conservative
+
+* requires corecursive calls to be constructor guarded
+
+\begin{code}
+fib : Stream N
+fib = 0 ∷ zipWith _+_ (1 ∷ fib)
+\end{code}
+
+%}}}%
+%endif
+
+\section{Conclusion}%{{{%
+
+In this chapter we have given a tutorial of some basic Agda suitable for our
+needs, and have produced a fully machine-verified version of the results of
+chapter \ref{ch:semantics} as an example. Finally we concluded with a brief
+to using coinductive data types in Agda.
+
+On reflection, formalising such results in Agda has provided a number of
+advantages: firstly, it clarifies thinking by forcing us to be very explicit
+with regards to numerous low-level details that are often elided in
+pen-and-paper proofs. Testing out new hypotheses also becomes easier, using
+the type checker to guide proof development; in case of any invalid
+assumptions, Agda helps to pinpoint precisely where these occur.
+
+A final benefit of using a mechanised proof system such as Agda is that it
+aids the incremental evolution of this work: often we would prove
+a simplified form of a theorem to gain some insight. At this point, we may
+then change, extend, or generalise some core definitions towards our target.
+Strictly-speaking, all the proofs leading up to the final result would need
+to be proved again, but in the majority of cases only minor tweaks to the
+simplified proofs are required. Agda helps out by pointing out where these
+changes need to be made. This process would not be as straightforward using
+a script-based theorem prover, or even possible in a pen-and-paper-based
+approach.
+
+%}}}%
+
+% ignore me from here on\ldots
 %{{{%
 
 %{{{%
