@@ -83,8 +83,19 @@ direction of the bisimulation. For completeness---that is, the compiled
 program can always follow the expression language---we proceed as follows:
 \savecolumns
 \begin{code}
-correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
-  atomic≼COMMIT : h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≼ h ∧ ⟨ ⟨ compile (atomic e) c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+correctness h (atomic e) c σ =
+  begin
+    h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ≈⟪ ♯ atomic≼COMMIT & ♯ {!!} ⟫
+    h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ≈⟪ elide-τ (τ ∧ is-τ ∧ ↠-↣ ↣-BEGIN) ⁻¹⟫
+    h ∧ ⟨ ⟨ compile (atomic e) c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  ∎
+  where
+  open ≈-Reasoning
+
+  atomic≼COMMIT : h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+    ≼ h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
   atomic≼COMMIT h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↦ e↦e′) ◅ xs) s₀↠≄τs₁ s₁↠τ⋆s′) with E⁺≃τ-inj α≃τ | e↦e′
   atomic≼COMMIT h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↦ e↦e′) ◅ xs) s₀↠≄τs₁ s₁↠τ⋆s′) | () | ↦-atomic e↦⋆m
 \end{code}
@@ -100,7 +111,7 @@ correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
   atomic≼COMMIT h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↦ {h′ = h′} (↦-atomic {m = m} e↦⋆m)) s₁↠τ⋆s′)
       with STM↦⋆→↣⋆ e↦⋆m {h} {COMMIT ∷ c} {σ} {compile e (COMMIT ∷ c)} Equivalent-refl consistent-newLog
   ... | e↣⋆m ∧ hρω≗h′ ∧ h⊇ρ
-        = _ ∧ ⤇-↠ ((τ ∧ is-τ ∧ ↠-↣ ↣-BEGIN) ◅ ↣τ⋆→↠τ⋆ e↣⋆m) (_ ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h⊇ρ))) ε
+        = _ ∧ ⤇-↠ (↣τ⋆→↠τ⋆ e↣⋆m) (_ ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h⊇ρ))) ε
         ∧ ≈′-≈ (≈-trans (≈-sym (elide-τ⋆ s₁↠τ⋆s′)) h′∧m≈hω∧m∷σ) where
     ω = (proj₂ ∘ rwLog e↦⋆m) (newLog ∧ newLog)
     h′∧m≈hω∧m∷σ : h′ ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≈ update h ω ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
@@ -109,11 +120,14 @@ correctness h (atomic e) c σ = ♯ atomic≼COMMIT & ♯ COMMIT≼atomic where
 
 \restorecolumns
 \begin{code}
-  COMMIT≼atomic : h ∧ ⟨ ⟨ compile (atomic e) c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
-  COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↣ ↣-BEGIN) s₁↠τ⋆s′) = ⊥-elim (α≄τ is-τ)
-  COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) s₁↠τ⋆s′)
-  COMMIT≼atomic h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↣ ↣-BEGIN) ◅ h∧e↣⋆h∧m) s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}
-  COMMIT≼atomic h′∧m (⤇-↠ ((… α ∧ is-… α≃τ ∧ ↠-preempt ()) ◅ xs) s₀↠≄τs₁ s₁↠τ⋆s′)
+  COMMIT≼atomic : h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+    ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  COMMIT≼atomic h′∧m (⤇-↠ s↠τ⋆s₀ s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}
+
+  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↣ ↣-BEGIN) s₁↠τ⋆s′) = ⊥-elim (α≄τ is-τ)
+  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) s₁↠τ⋆s′)
+  -- COMMIT≼atomic h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↣ ↣-BEGIN) ◅ h∧e↣⋆h∧m) s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}
+  -- COMMIT≼atomic h′∧m (⤇-↠ ((… α ∧ is-… α≃τ ∧ ↠-preempt ()) ◅ xs) s₀↠≄τs₁ s₁↠τ⋆s′)
 -- rewrite ↠τ⋆-heap s↠τ⋆s₀ = {!!}
 \end{code}
 
