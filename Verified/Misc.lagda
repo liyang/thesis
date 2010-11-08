@@ -66,7 +66,10 @@ postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′
 -- ↠τ⋆-heap foo = Star.fold _≡_ ≡.trans ≡.refl {! Star.map ↠τ-heap foo !}
 -- ↠τ⋆-heap ε = ≡.refl
 -- ↠τ⋆-heap (x ◅ xs) = {!≡.trans (↠τ-heap x) !}
+\end{code}
 
+%format ↣τ⋆→↠τ⋆ = "\func{{\rightarrowtail}\tau^\star{\rightarrow}{\twoheadrightarrow}\tau^\star}"
+\begin{code}
 ↣τ⋆→↠τ⋆ : ∀ {s h h′ t t′} → h ∧ t ↣τ⋆ h′ ∧ t′ → h ∧ ⟨ t ⟩ ∷ s ↠τ⋆ h′ ∧ ⟨ t′ ⟩ ∷ s
 ↣τ⋆→↠τ⋆ = Star.gmap liftMachine ↣τ→↠τ where
   liftMachine : ∀ {s} → Heap × Machine → Heap × List Combined

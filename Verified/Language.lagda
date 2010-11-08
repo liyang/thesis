@@ -192,7 +192,7 @@ a stop-the-world semantics for |atomic| blocks,
 \begin{code}
     ↦-fork : ∀ {e h} →
       IO ‣ h ∧ fork e ↦‹ ⁺ e › h ∧ # 0
-    ↦-atomic : ∀ {e m h h′} → (e↦⋆m : STM‣ h ∧ e ↦⋆ h′ ∧ # m) →
+    ↦-atomic : ∀ {m e h h′} → (e↦⋆m : STM‣ h ∧ e ↦⋆ h′ ∧ # m) →
       let ρ∧ω = rwLog e↦⋆m (newLog ∧ newLog) in
       IO ‣ h ∧ atomic e ↦‹ ☢ ρ∧ω › h′ ∧ # m
 \end{code}
@@ -625,6 +625,7 @@ visible {… α} …α≄τ = visible (…α≄τ ∘ is-…)
 \end{code}
 %endif
 
+%format ↠τ-switch = "\func{{\twoheadrightarrow}\tau\text-switch}"
 %if False
 \begin{code}
 ↠τ-switch : ∀ {m c σ γ ρ ω h s} → h ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ γ ‚ ρ ‚ ω ⟩ ⟩ ∷ s ↠τ h ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩ ⟩ ∷ s

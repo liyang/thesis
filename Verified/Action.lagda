@@ -87,5 +87,8 @@ _≄τ : ∀ {l} → Action l → Set
 The proposition |α ≃τ| is inhabited precisely when |α| is considered silent,
 with |α ≄τ| interpreted as its logical negation.
 
+%format α≃τ = "\alpha{\simeq}\tau"
+%format α≄τ = "\alpha{\not\simeq}\tau"
+
 % vim: ft=tex fo-=m fo-=M:
 
