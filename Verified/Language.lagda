@@ -406,6 +406,8 @@ The |↣-WRITE| rule on the other hand simply updates the write log entry for
 
 \input{Verified/Commit.lagda}
 
+% we may need to split this up into ↣-COMMIT and ↣-RETRY
+
 Finally, the transition rule for the |COMMIT| instruction includes a premise
 witnessing the consistency of |ρ| with |h|---or otherwise---and proceeds
 using the above definitions:
@@ -424,6 +426,7 @@ emit an |☢_| action, or silently discard the result |m| and restart the
 transaction by resetting the instruction sequence to |γ|.
 
 %format ↣τ = "\infix{\func{{\rightarrowtail}\tau}}"
+%format ↣≄τ = "\infix{\func{{\rightarrowtail}{\not\simeq}\tau}}"
 %format ↣τ⋆ = "\infix{\func{{\rightarrowtail}\tau^\star}}"
 %format ↣τ-PUSH = "\func{{\rightarrowtail}\tau\text-PUSH}"
 %format ↣τ-ADD = "\func{{\rightarrowtail}\tau\text-ADD}"
@@ -440,8 +443,13 @@ _↣⋆_ = Star _↣_
 _↣τ_ : Rel (Heap × Machine) Level.zero
 x ↣τ y = ∃ λ α → α ≃τ × x ↣‹ α › y
 
+_↣≄τ_ : Rel (Heap × Machine) Level.zero
+x ↣≄τ y = ∃ λ α → α ≄τ × x ↣‹ α › y
+
 _↣τ⋆_ : Rel (Heap × Machine) Level.zero
 _↣τ⋆_ = Star _↣τ_
+
+
 
 ↣τ-PUSH : ∀ {m c σ γ ρ ω h} →
   h ∧ ⟨ PUSH m ∷ c ‚ σ ‚ γ ‚ ρ ‚ ω ⟩ ↣τ h ∧ ⟨ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩

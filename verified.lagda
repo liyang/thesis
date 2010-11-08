@@ -116,7 +116,7 @@ the expression language---we first eliminate three impossible cases:
   atomic≼COMMIT h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) _)
 \end{code}
 The first of these correspond to the fact that the |↦-atomic| rule cannot be
-silent, while the remaining two handles the fact that the empty tail of the
+silent, while the remaining two handle the fact that the empty tail of the
 soup cannot make any transitions.
 
 %format h′∧m≈hω∧m∷σ = "\func{h\Prime{\wedge}m{\approx}h\omega{\wedge}m}"
@@ -139,9 +139,11 @@ soup cannot make any transitions.
 \begin{code}
   COMMIT≼atomic : h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
-  COMMIT≼atomic h′∧m (⤇-↠ s↠τ⋆s₀ s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}
-
+  COMMIT≼atomic h′∧m (⤇-↠ t↠τ⋆t₀ t₀↠≄τt₁ t₁↠τ⋆t′)
+      with ↠τ⋆→↣τ⋆ t↠τ⋆t₀
+  ... | t₀ ∧ ≡.refl ∧ t↣τ⋆t₀ = {!!}
 \end{code}
+
 %  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↣ ↣-BEGIN) s₁↠τ⋆s′) = ⊥-elim (α≄τ is-τ)
 %  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) s₁↠τ⋆s′)
 %  -- COMMIT≼atomic h′∧m (⤇-↠ ((._ ∧ α≃τ ∧ ↠-↣ ↣-BEGIN) ◅ h∧e↣⋆h∧m) s₀↠≄τs₁ s₁↠τ⋆s′) = {!!}

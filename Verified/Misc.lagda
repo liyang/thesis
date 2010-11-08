@@ -82,5 +82,18 @@ postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′
 \end{code}
 %endif
 
+\begin{code}
+postulate ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′∧s′ → ∃ λ t′ → h′∧s′ ≡ h ∧ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
+{-
+↠τ⋆→↣τ⋆ ε = _ ∧ ≡.refl ∧ ε
+↠τ⋆→↣τ⋆ ((._ ∧ () ∧ ↠-done) ◅ _)
+↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-preempt ()) ◅ _)
+↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) with M⁺≃τ-inj α≃τ
+↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) | is-… α′≃τ = {!t↣t₀!}
+↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) | is-τ with ↠τ⋆→↣τ⋆ t₀↠τ⋆t′
+↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) | is-τ | t′ ∧ ≡.refl ∧ t₀↣τ⋆t′ = t′ ∧ ≡.refl ∧ (_ ∧ is-τ ∧ t↣t₀) ◅ t₀↣τ⋆t′
+-}
+\end{code}
+
 % vim: ft=tex fo-=m fo-=M:
 

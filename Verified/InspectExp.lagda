@@ -179,7 +179,7 @@ inferred by Agda; we need only supply the empty reduction sequence |ε : STM‣
 h ∧ # m ↦⋆ h ∧ # m| and a trivial proof regarding the side-effects of the
 transition sequences.
 
-The final remaining rule is |↦-writeE|, covering expressions of the form
+The remaining rule is |↦-writeE|, covering expressions of the form
 |write v e|, where |e| has yet to reduce to a value. This is handled in
 a manner similar to the |↦-L| and |↦-R| rules, by induction on the remainder
 of the transition sequence:

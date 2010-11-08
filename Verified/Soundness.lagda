@@ -45,13 +45,16 @@ QED.
 \end{verbatim}
 
 \begin{code}
-foo : ∀ h (e : Expression STM) c σ {h₀∧s₀ h₁∧s₁} →
-  h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ↠τ⋆ h₀∧s₀ →
-  (h₀∧s₀↠≄τh₁∧s₁ : h₀∧s₀ ↠≄τ h₁∧s₁) →
-    ∃₂ λ h₀ m → ∃₂ λ ρ ω →
-      h₀∧s₀ ≡ h₀ ∧ ⟨ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ compile e (COMMIT ∷ c) ‚ ρ ‚ ω ⟩ ⟩ ∷ [] ×
-      Σ (Consistent (proj₁ h₀∧s₀) ρ) λ h₀⊆ρ →
-      h₀∧s₀↠≄τh₁∧s₁ ≡ ☢ (ρ ∧ ω) ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h₀⊆ρ))
+foo : ∀ h (e : Expression STM) c σ {t₀ h₁∧s₁} →
+  h ∧ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ →
+  (h₀∧t₀↠≄τh₁∧s₁ : h ∧ ⟨ t₀ ⟩ ∷ [] ↠≄τ h₁∧s₁) →
+    ∃ λ m → ∃₂ λ ρ ω →
+      t₀ ≡ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ compile e (COMMIT ∷ c) ‚ ρ ‚ ω ⟩ ×
+      Consistent h ρ
+{-
+ →
+      h₀∧t₀↠≄τh₁∧s₁ ≡ ☢ (ρ ∧ ω) ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h₀⊆ρ))
+-}
 foo h e c σ cow moo = {!!}
 \end{code}
 
