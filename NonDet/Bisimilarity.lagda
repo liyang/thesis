@@ -90,8 +90,10 @@ a conjunction of |x ≼ y| and |y ≼ x|:
 \end{code}
 The types of both |x≼y| and |y≼x| arguments are coinductive, as indicated by
 the use of the |∞| type, since bisimilarity is a coinductive
-notion~\cite{milner,sangiorgi09-origins}. The use of coinductive data in
-Agda was introduced in section \S\ref{sec:agda-coinduction}.
+notion~\cite{milner89-ccs,sangiorgi09-origins}.
+
+%FIXME: The use of coinductive data
+%in Agda was introduced in section \S\ref{sec:agda-coinduction}.
 
 %format ≈′-≈ = "\cons{{\approx}\Prime\text-{\approx}}"
 %format ≈′-sym = "\cons{{\approx}\Prime\text-sym}"

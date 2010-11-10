@@ -6,7 +6,6 @@
 %include Verified/Language.lagda
 %include Verified/Commit.lagda
 %include Verified/Lemmas.lagda
-% include Verified/InspectExp.lagda
 \end{comment}
 %endif
 
@@ -27,23 +26,12 @@ open import Verified.Lemmas as Lemmas
 
 \section{Soundness of Log-Based Transactions}
 
-Soundness follows a similar strategy.
+To be completed. Please refer to proof sketch at the end of
+\S\ref{sec:verified-correct} in the meantime.
 
-\begin{verbatim}
-We are given a visible transition by the VM, which must be due to
->->-COMMIT; silent transitions before non-silent >->-COMMIT imply
-bisimilarity to |compile e (COMMIT c), sigma| by elide-tau.
+% Soundness follows a similar strategy.
 
-Non-silent >->-COMMIT also implies consistency, and prior silent transitions
-cannot modify heap. Construct uninterrupted VM transition sequence from
-|compile e (COMMIT c), stack| to |COMMIT :: c, m :: stack|
-Then use STM>->*->|->* to derive corresponding expression
-sequence from |e| to matching |m|. Evaluate using |->-atomic to match
->->-COMMIT.
-
-QED.
-\end{verbatim}
-
+%if False
 \begin{code}
 foo : ∀ h (e : Expression STM) c σ {t₀ h₁∧s₁} →
   h ∧ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ →
@@ -57,8 +45,9 @@ foo : ∀ h (e : Expression STM) c σ {t₀ h₁∧s₁} →
 -}
 foo h e c σ cow moo = {!!}
 \end{code}
+%endif
 
-Given a sequence of silent virtual machine transitions, guarded at the end with a non-silent one...
+% Given a sequence of silent virtual machine transitions, guarded at the end with a non-silent one...
 
 %if False
 \begin{code}

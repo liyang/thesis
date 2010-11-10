@@ -21,7 +21,7 @@ mutual
 \end{code}
 %endif
 
-\section{Bisimilarity}
+\section{Bisimilarity}\label{sec:fork-bisimilarity}
 
 %format _≼_ = "\func{\anonymous{\preccurlyeq}\anonymous}"
 %format ≼ = "\infix{\func{{\preccurlyeq}}}"

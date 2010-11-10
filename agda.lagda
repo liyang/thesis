@@ -119,16 +119,18 @@ axiom-schemes for intuitionistic logic, while Howard later noted that proofs
 in formal systems such as natural deduction can be directly interpreted as
 terms in a model of computation such as the typed lambda calculus.
 
+%incompleteness theorems ~\cite{godel?}
+
 The intuitionistic approach to logic only relies on constructive methods,
-disallowing notions from classical logic such as the law of the excluded middle
-($P \vee \lnot P$) or double-negation elimination ($\lnot \lnot
+disallowing notions from classical logic such as the law of the excluded
+middle ($P \vee \lnot P$) or double-negation elimination ($\lnot \lnot
 P \rightarrow P$). For example, intuitionist reject $P \vee \lnot P$ since
 there exists a statement $P$ in any sufficiently powerful logic that can
-neither be proved nor disproved within the system, by G\"odel's
-incompleteness theorems~\cite{godel?}. In other words, intuitionism equates
-the truth of a statement $P$ with the possibility of constructing a proof
-object that satisfies $P$, therefore a proof of $\lnot \lnot P$, refuting
-the non-existence of $P$, does not imply $P$ itself.
+neither be proved nor disproved within the system, by G\"{o}del's
+incompleteness theorems. In other words, intuitionism equates the truth of
+a statement $P$ with the possibility of constructing a proof object that
+satisfies $P$, therefore a proof of $\lnot \lnot P$, refuting the
+non-existence of $P$, does not imply $P$ itself.
 
 What does this mean for the proletarian programmer? Under the Curry-Howard
 correspondence, the type |A -> B| is interpreted as the logical statement
@@ -286,11 +288,12 @@ above is in fact syntactic sugar for the following:
 \end{spec}
 
 Agda includes an interactive user interface running under the
-Emacs~\cite{stallman} operating system that supports incremental development
-by the placement of `holes' where arbitrary expressions are expected.
-Incomplete programs with holes can be passed to the type checker, which then
-informs the user of the expected type. Thus, writing proofs in Agda
-typically involves a two-way dialogue between the user and the type checker.
+Emacs~\cite{stallman10-emacs} operating system that supports incremental
+development by the placement of `holes' where arbitrary expressions are
+expected. Incomplete programs with holes can be passed to the type checker,
+which then informs the user of the expected type. Thus, writing proofs in
+Agda typically involves a two-way dialogue between the user and the type
+checker.
 
 %format sym = "\func{sym}"
 %format x≡y = "x{\equiv}y"

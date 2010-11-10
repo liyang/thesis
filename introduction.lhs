@@ -1,5 +1,7 @@
 %let showMiscCode = False
 
+\pagenumbering{arabic}
+
 %if False -- %{{{%
 \begin{code}
 module Main where
@@ -72,17 +74,22 @@ how many transistors can be economically placed on a single piece of
 silicon, they were also able to clock their processors at progressively
 higher frequencies due to reduced switching and signal propagation delays.
 
+% signal integrity ~\cite{?}
+
+
 Sadly, miniaturisation has some undesirable side-effects: on the sub-micron
 scales of a modern microprocessor, current leakage due to quantum tunnelling
 effects across the on-chip insulation is very much detrimental to signal
-integrity~\cite{?}: the smaller the features, the more power the integrated
+integrity: the smaller the features, the more power the integrated
 circuit needs to counteract these side-effects. This additional power must
 be dissipated in the form of waste heat, limiting the extent to which we can
 simply increase the clock speed. Indeed, some recent desktop processors
 expend up to a third~\cite{lal-shimpi08-atom} of their power solely to
 ensure accurate clock signal distribution to outlying areas of the silicon
 die, and expel as much as $150\text{W}$ of excess heat in an area less than
-$15\text{mm}^2$.~\cite{?}
+$15\text{mm}^2$.
+
+% area less than 15mm² ~\cite{?}
 
 Given the restriction that we cannot reasonably clock individual processors
 at increasingly higher speeds, how could we pack more computing power onto
@@ -97,7 +104,7 @@ the same die that share access to the same memory.
 
 The concept of SMP had been put to practice as early as the 1960s with the
 introduction of the Burroughs B5500
-mainframe~\cite{?}\source{https://wiki.cc.gatech.edu/folklore/index.php/Burroughs_Third-Generation_Computers}.
+mainframe~\footnote{\url{https://wiki.cc.gatech.edu/folklore/index.php/Burroughs_Third-Generation_Computers}}.
 In the decades that followed, the entire computing industry resorted one by
 one to some form of parallelism in order to achieve their stated
 performance. First steps in this dirction included the development of vector
@@ -108,10 +115,10 @@ architectures as \emph{single instruction multiple data} (SIMD).
 In contrast, a \emph{multiple instruction multiple data} (MIMD) architecture
 comprises a number of independent processing units, each concurrently
 executing its own sequence of instructions. However, programming for
-multiprocessing systems is a task fraught with pitfalls, as Seymour Cray
-once quipped: ``If you were ploughing a field, which would you rather use:
-two strong oxen or 1024 chickens?''~\cite{?} His remark alludes to the
-challenge of synchronising a large number of independent processors with
+multiprocessing systems is a task fraught with pitfalls, as Seymour Cray was
+alleged to have once quipped: ``If you were ploughing a field, which would
+you rather use: two strong oxen or 1024 chickens?'' His remark alludes to
+the challenge of synchronising a large number of independent processors with
 each one working on a small part of a larger problem while sharing the same
 working memory. It is much easier for people to work with a few oxen than to
 try and herd a large number of chickens.
@@ -528,10 +535,10 @@ Automatic garbage collection frees the programmer from having to manually
 manage memory allocation. Laziness in functional programming allows us to
 write efficient higher-level programs without having to manually schedule
 the order of computation. In a similar vein~\cite{grossman07-analogy},
-software transactional memory (STM)~\cite{stm?} allows us to write programs
-in a compositional style in the presence of concurrency, without requiring
-us to manually manage undesired interleavings of operations in a shared
-memory environment.
+software transactional memory (STM)~\cite{shavit97-stm} allows us to write
+programs in a compositional style in the presence of concurrency, without
+requiring us to manually manage undesired interleavings of operations in
+a shared memory environment.
 
 The idea of using \emph{transactions} to tackle concurrency originated in
 the context of concurrent databases\source{Date?}, which face similar

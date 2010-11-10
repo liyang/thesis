@@ -29,7 +29,7 @@ open import Verified.Commit as Commit
 %\end{spec}
 %PS: why do we emit the read log at all?
 
-\section{Reasoning Transactionally}
+\section{Reasoning Transactionally}\label{sec:verified-lemmas}
 
 In this section, we will cover some useful lemmas concerning heaps and
 transaction logs that are used to show that the stop-the-world transaction
@@ -206,7 +206,7 @@ update-get′ (_ ∷ h)  (nothing  ∷ ω)  (suc v)  ω[v]≡ = update-get′ h 
 
 %}}}%
 
-\subsection{Equality of Heaps}%{{{%
+\subsection{Equality of Heaps}\label{sec:verified-heapeq}%{{{%
 
 %format ≗→≡ = "\func{h{\circeq}h\Prime{\rightarrow}h{\equiv}h\Prime}"
 % format h≗h′ = "h{\circeq}h\Prime"

@@ -447,7 +447,7 @@ denotational, big-step and small-step semantics in the previous chapter, we
 shall illustrate how we could have informally asserted our theorems using
 QuickCheck with a much smaller investment of effort.
 
-Let us recall theorem \label{thm:denote-big}, which states that our
+Let us recall theorem \ref{thm:denote-big}, which states that our
 denotational and big-step semantics are equivalent:
 \[
 	\forall e \in \Expression,\ m \in \Nat.\quad

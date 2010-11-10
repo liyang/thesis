@@ -82,6 +82,7 @@ postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′
 \end{code}
 %endif
 
+%format ↠τ⋆→↣τ⋆ = "\func{{\twoheadrightarrow}\tau^\star{\rightarrow}{\rightarrowtail}\tau^\star}"
 \begin{code}
 postulate ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′∧s′ → ∃ λ t′ → h′∧s′ ≡ h ∧ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
 {-

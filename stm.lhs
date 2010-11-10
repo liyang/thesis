@@ -381,7 +381,7 @@ shall see in the following section.
 
 %}}}%
 
-\subsection{Modelling Mutable State}%{{{%
+\subsection{Modelling Mutable State}\label{sec:stm-state}%{{{%
 
 Since Haskell is referentially transparent, we cannot directly work with
 mutable variables, but we can model them. Let us consider the case of
@@ -910,7 +910,7 @@ e.g.~Hoare's \emph{conditional critical regions}~\cite{hoare02-theory}.
 
 %format decrement_TVar = "\func{decrement_{TVar}}"
 Armed with the |retry| primitive, we can demonstrate how a |Counter_TVar|
-could be used as a counting semaphore~\cite{counting-semaphore?}. The
+could be used as a counting semaphore~\cite{dijkstra65-semaphore}. The
 |decrement_TVar| function below behaves as the \texttt{wait} primitive,
 decrementing the counter only when its value is strictly positive, and
 blocking otherwise. Correspondingly the earlier |increment_TVar| defined

@@ -331,7 +331,7 @@ correctness (a ⊕ b) c σ =
 %that this technique is scalable, by extending the language with a simple
 %|fork| primitive in order to introduce explicit concurrency into our system.
 
-We have shown that our previously introduced technique of showing
+We have demonstrated that our previously introduced technique of showing
 bisimilarity between combined machines does indeed scale to the explicitly
 concurrent Fork language, modelled as a simple `thread soup' of combined
 machines. The |elide-τ| lemma was updated for this context using our arsenal

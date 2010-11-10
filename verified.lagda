@@ -67,7 +67,7 @@ chapter \ref{ch:stm}.
 
 \input{Verified/Soundness.lagda}
 
-\section{Compiler Correctness}
+\section{Compiler Correctness}\label{sec:verified-correct}
 
 Being based on the Fork language, the compiler correctness property for this
 Atomic language takes the same form as that of \S\ref{sec:fork-correct},
@@ -119,30 +119,80 @@ The first of these correspond to the fact that the |↦-atomic| rule cannot be
 silent, while the remaining two handle the fact that the empty tail of the
 soup cannot make any transitions.
 
+The salient part of the completeness proof proceeds by simply running the
+transaction uninterrupted on the virtual machine when we encounter the
+|↦-atomic| rule. Invoking our earlier |STM↦⋆→↣⋆| lemma
+(\S\ref{sec:verified-complete}) on the |e↦⋆m| premise of |↦-atomic| gives
+back a matching sequence of virtual machine transitions that computes the
+same |m|,
+\begin{spec}
+e↣⋆m : h ∧ ⟨ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ↣τ⋆
+  h ∧ ⟨ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩ ⟩ ∷ []
+\end{spec}
+along with the proofs |hρω≗h′ : Equivalent h′ h ρ ω| and |h⊇ρ : Consistent
+h ρ|:
 %format h′∧m≈hω∧m∷σ = "\func{h\Prime{\wedge}m{\approx}h\omega{\wedge}m}"
 \restorecolumns
 \begin{code}
-  atomic≼COMMIT h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↦ {h′ = h′}
-        (↦-atomic {m = m} e↦⋆m)) s₁↠τ⋆s′)
-      with STM↦⋆→↣⋆ e↦⋆m {h} {COMMIT ∷ c} {σ} {compile e (COMMIT ∷ c)}
-        Equivalent-refl consistent-newLog
+  atomic≼COMMIT h′∧m (⤇-↠ ε ({-"\;\;"-}._ ∧ α≄τ ∧ ↠-↦
+        (↦-atomic {m = m} {h′ = h′} e↦⋆m){-"\;\;"-}) s₁↠τ⋆s′)
+      with STM↦⋆→↣⋆ e↦⋆m {h} {COMMIT ∷ c} {σ}
+        {compile e (COMMIT ∷ c)} Equivalent-refl consistent-newLog
   ... | e↣⋆m ∧ hρω≗h′ ∧ h⊇ρ
         = _ ∧ ⤇-↠ (↣τ⋆→↠τ⋆ e↣⋆m) (_ ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h⊇ρ))) ε
         ∧ ≈′-≈ (≈-trans (≈-sym (elide-τ⋆ s₁↠τ⋆s′)) h′∧m≈hω∧m∷σ) where
+\end{code}
+Thus in response to |↦-atomic e↦⋆m|, the virtual machine makes the silent
+transitions |e↣⋆m| followed by the non-silent |↣-COMMIT|. The requirement
+that the resulting states are bisimilar is taken care of by an application
+of |elide-τ⋆| and an appeal to the following |h′∧m≈hω∧m∷σ| lemma:
+\restorecolumns
+\begin{code}
     ω = (proj₂ ∘ rwLog e↦⋆m) (newLog ∧ newLog)
     h′∧m≈hω∧m∷σ : h′ ∧ ⟨ # m ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [] ≈
       update h ω ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     h′∧m≈hω∧m∷σ rewrite hω≡h′ hρω≗h′ h⊇ρ = elide-τ ↠τ-switch
 \end{code}
+The rewrite using |hω≡h′| (\S\ref{sec:verified-heapeq}) gives definitional
+equality of the resulting heaps, while a silent |↠τ-switch| moves the |# m|
+onto the virtual machine stack, concluding the completeness part of the
+|correctness| property.
 
+%format t↠τ⋆t₀ = "t{\twoheadrightarrow}\tau^\star{}t_0"
+%format t₀↠≄τt₁ = "t_0{\twoheadrightarrow}{\not\simeq}\tau{}t_1"
+%format t₁↠τ⋆t′ = "t_1{\twoheadrightarrow}\tau^\star{}t\Prime{}"
+%format t↣τ⋆t₀ = "t{\rightarrowtail}\tau^\star{}t_0"
+For the soundness half of |correctness|, we are provided with a visible
+virtual machine transition comprising |t↠τ⋆t₀|, |t₀↠≄τt₁| and |t₁↠τ⋆t′|:
 \restorecolumns
 \begin{code}
-  COMMIT≼atomic : h ∧ ⟨ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
+  COMMIT≼atomic : h ∧ ⟨ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
   COMMIT≼atomic h′∧m (⤇-↠ t↠τ⋆t₀ t₀↠≄τt₁ t₁↠τ⋆t′)
       with ↠τ⋆→↣τ⋆ t↠τ⋆t₀
   ... | t₀ ∧ ≡.refl ∧ t↣τ⋆t₀ = {!!}
 \end{code}
+The initial silent combined machine sequence |t↠τ⋆t₀| can neither fork,
+modify the heap nor emit a |∎ m| action, so we may extract a sequence of
+silent virtual machine transitions with the following type,
+\begin{spec}
+t↣τ⋆t₀ : h ∧ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀
+\end{spec}
+keeping in mind that |γ| was earlier defined to be |compile e (COMMIT ∷ c)|.
+The above procedure also refines the type of |t₀↠≄τt₁| to |h ∧ ⟨ t₀ ⟩ ↠≄τ
+s₁|. \emph{(What follows is a sketch of the proof; the fully mechanised
+version is currently in progress.)} Then, using the fact that the |t↠τ⋆t₀|
+sequence is guarded at the end with this non-silent |t₀↠≄τt₁|, we can show
+that |t₀| must be equal to |h ∧ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩| and that
+|t₀↠≄τt₁| is in fact an instance of |↣-COMMIT|.
+
+Following a loosely inverse procedure to that of |STM↦⋆→↣⋆|, we can derive
+a corresponding |e↦⋆m : STM‣ h ∧ e ↦⋆ h′ ∧ # m| sequence that calculates the
+same |m|, and finishes with a heap |h′| that satisfies |Equivalent h′
+h ρ ω|. Thus, the expression |atomic e| may follow with |↦-atomic e↦⋆m| in
+response to the virtual machine's |↣-COMMIT|. Two invocations of |elide-τ⋆|
+on the silent transition sequences before and after the commit completes the
+proof.
 
 %  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-↣ ↣-BEGIN) s₁↠τ⋆s′) = ⊥-elim (α≄τ is-τ)
 %  -- COMMIT≼atomic h′∧m (⤇-↠ ε (._ ∧ α≄τ ∧ ↠-preempt ()) s₁↠τ⋆s′)
@@ -192,7 +242,16 @@ correctness h (a ⊕ b) c σ = foo where postulate foo : _
 
 \section{Conclusion}
 
-fdsfdsfdsfsd
+In this penultimate chapter, we have come full circle by extending our
+object language and its virtual machine with transactional constructs, to
+coincide with the simplified STM model identified in chapter \ref{ch:model}.
+We were able to reuse the existing proofs for the Fork language, requiring
+only an additional case for |atomic e| in the final proof of |correctness|,
+along with the handful of transaction log and heap lemmas given in
+\S\ref{sec:verified-lemmas}. Both the completeness and soundness halves of
+transactional correctness entailed showing that any visible transition on
+one side had a corresponding visible transition computing the same result
+and having the same heap side-effects on the other.
 
 % vim: ft=tex fo-=m fo-=M:
 
