@@ -25,24 +25,15 @@
 
 \chapter{Semantics for Compiler Correctness}\label{ch:semantics}
 
-%\begin{itemize}
-%\item denotational, small-step for $(+,N)$
-%\item equivalence proof
-%\item rule induction (coinduction?)
-%\item machine semantics for $\{PUSH m, ADD\} x N$
-%\item statement of compiler correctness (style? direct vs CPS)
-%\item compiler correctness as running example: proof
-%\end{itemize}
-
-In the context of computer science, semantics is the study of the meaning of
-programming languages. Having a mathematically rigorous definition of the
-language allows us to reason about (programs written in) the language
-precisely and without ambiguity. In this chapter, we will take an elementary
-look at different ways of giving meaning to a language, and various
-techniques for proving properties about programs. After this prelude, we
-reach the nub of this chapter, where we shall define a simple compiler from
-an expression language to a stack machine, and explore what it means to say
-that the compiler is correct.
+In the context of computer science, the primary focus of \textit{semantics}
+is the study of the meaning of programming languages. Having
+a mathematically rigorous definition of a language allows us to reason about
+programs written in the language in a precise manner. In this chapter, we
+begin by reviewing different ways of giving a formal semantics to
+a language, and various techniques for proving properties of these
+semantics. We conclude by presenting a compiler for a simple expression
+language, exploring what it means for this compiler to be correct, and how
+this may be proved.
 
 \section{Semantics}%{{{%
 
@@ -64,9 +55,9 @@ operation of addition. We will adhere to a naming convention of $m, n \in
 \Nat$ and $a, b, e \in \Expression$.
 
 Although seemingly simplistic, this language has sufficient structure to
-illustrate the essential aspects of computation, namely that of sequencing
-computations and combining their results, as we shall expand upon later in
-sections \ref{sec:small-step} and \ref{sec:semantics-degenerate}.
+illustrate two fundamental aspects of computation, namely that of sequencing
+computations and combining their results. We shall shortly expand on this in
+section \ref{sec:semantics-degenerate}.
 
 %}}}%
 
@@ -75,33 +66,34 @@ sections \ref{sec:small-step} and \ref{sec:semantics-degenerate}.
 % semantic brackets
 \def\sb[#1]{[\![#1]\!]}
 
-Denotation semantics attempts to give an interpretation of the source
+Denotational semantics attempts to give an interpretation of a source
 language in some suitable existing formalism that we already understand.
 More specifically, the denotation of a program is a representation of what
 the program means in the vocabulary of the chosen formalism, which could be
 the language of sets and functions, the $\lambda$-calculus, or perhaps one
 of the many process calculi. Thus, to formally give a denotational semantics
 for a language is to define a mapping from the source language into some
-underlying semantic domain.
-
-For example, we can give the following semantics for our earlier
-$\Expression$ language, denoted as a natural number:
+underlying semantic domain. For example, we can give the following semantics
+for our earlier $\Expression$ language, denoted as a natural number:
 \begin{align*}
 	\sb[\anonymous] &: \Expression \rightarrow \Nat \\
 	\sb[ m ] &= m \eqTag{denote-val} \\
 	\sb[ a \Add b ] &= \sb[ a ] + \sb[ b ] \eqTag{denote-plus}
 \end{align*}
 Here, a numeric $\Expression$ is interpreted as just the number itself. The
-denotation of the $\Add$ operator is the familiar $+$ on natural numbers;
-alternatively, we could say that $a \Add b$ is denoted by the sum of the
-denotations of its sub-expressions $a$ and $b$. The expression $\sb[(1
-\Add 2) \Add (4 \Add 8)]$ say, has the denotation $15$ by repeatedly
-applying the above definition:
+expression $a \Add b$ is denoted by the sum of the denotations of its
+sub-expressions $a$ and $b$; alternatively, we could say that the denotation
+of the $\Add$ operator is the familiar $+$ on natural numbers. This
+illustrates the essential compositional aspect of denotational semantics,
+that the meaning of an expression is given in terms of the meaning of its
+parts. The expression $\sb[(1 \Add 2) \Add (4 \Add 8)]$ say, has the
+denotation $15$ by repeatedly applying the above definition:
 \begin{align*}
 	\sb[(1 \Add 2) \Add (4 \Add 8)]
 		&= \sb[1 \Add 2] + \sb[4 \Add 8] \\
 		&= (\sb[1] + \sb[2]) + (\sb[4] + \sb[8]) \\
-		&= (1 + 2) + (4 + 8) = 15
+		&= (1 + 2) + (4 + 8) \\
+		&= 15
 \end{align*}
 
 %}}}%
@@ -109,8 +101,8 @@ applying the above definition:
 \subsection{Big-Step Operational Semantics}%{{{%
 
 The notion of big-step operational semantics is concerned with the overall
-result of a computation. Formally, we define a relation ${\Eval}
-: \Expression \times \Nat$ between $\Expression$s and their final values,
+result of a computation. Formally, we define a relation ${\Eval} \subseteq
+\Expression \times \Nat$ between $\Expression$s and their final values,
 given below in a natural deduction style:
 \begin{gather*}
 \inferrule*{ }
@@ -121,8 +113,8 @@ given below in a natural deduction style:
 The first \eqName{big-val} rule says that a simple numeric $\Expression$
 evaluates to the number itself. The second \eqName{big-plus} rule states
 that, if $a$ evaluates to $m$ and $b$ evaluates to $n$, then $a \Add b$
-evaluates to the sum $m + n$. Thus according to this semantics, $(1 \Add
-2) \Add (4 \Add 8) \Eval 15$ by the following derivation:
+evaluates to the sum $m + n$. Thus according to this semantics, we can show
+that $(1 \Add 2) \Add (4 \Add 8) \Eval 15$ by the following derivation:
 \begin{gather*}
 \inferrule* [left=big-plus]
 {
@@ -149,15 +141,17 @@ evaluates to the sum $m + n$. Thus according to this semantics, $(1 \Add
 {(1 \Add 2) \Add (4 \Add 8) \Eval 15}
 \end{gather*}
 
-\noindent One advantage of a relational operational semantics is that the
-behaviour can be non-deterministic, in the sense that each expression could
-potentially evaluate to multiple distinct values. In contrast,
-a denotational semantics deals with non-determinism in the source language
-by mapping it to a potentially different notion of non-determinism in the
-underlying formalism. Should we require our expression language to be
-non-deterministic, we would need to switch the denotational domain of the
-previous semantics to the power set of natural numbers, rather than just the
-set of natural numbers.
+\noindent For this simple language, the big-step operational semantics
+happens to be essentially the same as the denotational semantics, expressed
+in a different way. However, one advantage of a relational operational
+semantics is that the behaviour can be non-deterministic, in the sense that
+each expression could potentially evaluate to multiple distinct values. In
+contrast, a denotational semantics deals with non-determinism in the source
+language by mapping it to a potentially different notion of non-determinism
+in the underlying formalism. For example, should we require our expression
+language to be non-deterministic, we would need to switch the semantic
+domain of the previous semantics to the power set of natural numbers, rather
+than just the set of natural numbers.
 
 %}}}%
 
@@ -169,8 +163,8 @@ proceeds as a sequence of steps. Both big-step and small-step semantics are
 through how it operates to arrive at the result. However, in this case each
 reduction step is made explicit, which is particularly apt when we wish to
 consider computations that produce side-effects. Again we formally define
-a relation ${\Step} : \Expression \times \Expression$, but between pairs
-of $\Expression$s in this instance:
+a relation ${\Step} \subseteq \Expression \times \Expression$, but between
+pairs of $\Expression$s, rather than between expressions and their values:
 \begin{gather*}
 \inferrule*{ }%
 	{m \Add n \Step m + n} \eqTag{small-plus} \\[2ex]
@@ -182,14 +176,14 @@ of $\Expression$s in this instance:
 The first rule \eqName{small-plus} deals with the case where the expressions
 on both sides of $\Add$ are numerals: in a single step, it reduces to the
 sum $m + n$. The second \eqName{small-right} rule applies when the left
-argument of $\Add$ is a numeral, in which case the right argument makes
+argument of $\Add$ is a numeral, in which case the right argument can make
 a single reduction, while \eqName{small-left} reduces the left argument of
-$\Add$ whenever possible. There is no rule corresponding to a lone numeric
+$\Add$ if this is possible. There is no rule corresponding to a lone numeric
 $\Expression$ as no further reductions are possible in this case.
 
-As each ${\Step}$ corresponds to only a single computational step, it will
-often be more convenient to refer to it via its reflexive, transitive
-closure, defined as follows:
+As each ${\Step}$ step corresponds to a primitive computation, it will often
+be more convenient to refer to it via its reflexive, transitive closure,
+defined as follows:
 \begin{gather*}
 \inferrule*[right=small-nil]
 { }{a \StepS a}
@@ -198,9 +192,8 @@ closure, defined as follows:
 {a \Step a' \and a' \StepS b}
 {a \StepS b}
 \end{gather*}
-Thus, the full reduction sequence of $(1 \Add 2)
-\Add (4 \Add 8) \StepS 15$ would begin at the $1 \Add 2$
-sub-expression,
+For example, the full reduction sequence of $(1 \Add 2) \Add (4 \Add 8)
+\StepS 15$ would begin by evaluating the $1 \Add 2$ sub-expression,
 \begin{gather*}
 \inferrule* [left=small-left]
 {
@@ -218,49 +211,50 @@ followed by $4 \Add 8$,
 }
 {3 \Add (4 \Add 8) \Step 3 \Add 12}
 \end{gather*}
-before delivering the final sum:
+before delivering the final result:
 \begin{gather*}
 \inferrule* [left=small-plus]
 { }{3 \Add 12 \Step 15}
 \end{gather*}
 
-\noindent It would be perfectly reasonable to give a right-to-left, or even
-a non-deterministic interleaved reduction strategy for our $\Expression$
-language. However, we enforce a left-to-right order to coincide with the
-definition of $\bind$ for the $\mathsf{State}\;\alpha$ monad of
-\S\ref{sec:stm-state}, which we motivate in the following section.
-
 %}}}%
 
-\subsection{Monoids as Degenerate Monads}\label{sec:semantics-degenerate}%{{{%
+\subsection{Modelling Sequential Computation with Monoids}\label{sec:semantics-degenerate}%{{{%
 
-In the previous chapter, we briefly explored the use of monads as
-a mechanism for modelling sequential computations. In the degenerate case
-where the result type of the computations form a monoid with an operation
-$\cdot$, such computations themselves naturally form a monoid too.
-Concretely, suppose we are working in some monad $\mathsf{M}$ computing
-values of type $\Nat$, where $(\Nat,\;+,\;0)$ is a monoid. With the
-following definition of $\ast$,
-\[
-	a \ast b \quad=\quad
-		a \bind \lambda m \rightarrow
-		b \bind \lambda n \rightarrow
-		\textit{return}\;(m + n)
-\]
-such computations themselves form the monoid
-$(\mathsf{M}\;\Nat,\;\ast,\;\textit{return}\;0)$. As we have done in
-\S\ref{sec:stm-monad-prop}, we can again use equational reasoning to confirm
-that the relevant left-/right-identity and associativity properties hold.
-Therefore, it is not entirely unreasonable to view monoids as a degenerate
-form of monads.
+It would be perfectly reasonable to give a right-to-left, or even
+a non-deterministic interleaved reduction strategy for the small-step
+semantics of our $\Expression$ language. However, we enforce a left-to-right
+order in order to model the sequential style of computation as found in the
+definition of the $\mathsf{State}\;\alpha$ monad from \S\ref{sec:stm-state}.
 
-As we only consider values of natural numbers, rather than dealing with
-computations of type $\mathsf{M}\;\Nat$, we may as well deal directly with
-the underlying $(\Nat,\;+)$ monoid, mirrored in the syntax of the
-$\Expression$ language. This simplification allows us to avoid the
-orthogonal issues of binding and substitution. By enforcing a left-to-right
-evaluation order for $\Add$ to mirror that of $\bind$, we maintain the key
-monadic aspect of sequencing computations.
+In the case where the result type of monadic computations form a monoid,
+such computations themselves can also be viewed as a monoid. Concretely,
+suppose we are working in some monad $\mathsf{M}$ computing values of type
+$\Nat$. Using the monoid of sums $(\Nat,\;+,\;0)$, the following definition
+of $\oast$:
+\begin{align*}
+	\phantom{a} \oast \phantom{b} \quad:\quad
+		&\mathsf{M} \Nat \rightarrow \mathsf{M} \Nat \rightarrow \mathsf{M} \Nat \\
+	a \oast b \quad=\quad 
+		&a \bind \lambda m \rightarrow \\
+		&b \bind \lambda n \rightarrow \\
+		&\textit{return}\;(m + n)
+\end{align*}
+gives the monoid $(\mathsf{M}\;\Nat,\;\oast,\;\textit{return}\;0)$. We can
+easily verify that the identity and associativity laws hold for this monoid
+via simple equational reasoning proofs, as we had done in
+\S\ref{sec:stm-monad-prop}. Therefore, we can view monoids as a degenerate
+model of monads.
+
+The expression languages of this thesis only computes values of natural
+numbers, so rather than work with monadic computations of type
+$\mathsf{M}\;\Nat$, we may work directly with the underlying
+$(\Nat,\;{+},\;0)$ monoid, since it shares the same monoidal structure. This
+simplification allows us to avoid the orthogonal issues of variable binding
+and substitution. By enforcing a left-to-right evaluation order for $\Add$
+in our expression language to mirror that of the $\bind$ operator, we
+are able to maintain a sequential order for computations, which is the key
+aspect of the monads that we are interested in.
 
 %}}}%
 
@@ -333,28 +327,29 @@ monadic aspect of sequencing computations.
 
 \section{Equivalence Proofs and Techniques}%{{{%
 
-We can now proceed to show various properties of the $\Expression$ language
-in a rigorous manner, now that we have provided precise definitions for the
-semantics of the language. One obvious questions arises, on the matter of
-whether the semantics we have given in the previous section---denotational,
-big-step and small-step---agree in some manner. This section reviews the
-main techniques for proving such properties.
+Now that we have provided precise definitions for the semantics of the
+language, we can proceed to show various properties of the $\Expression$
+language in a rigorous manner. One obvious questions arises, on the matter
+of whether the semantics we have given in the previous
+section---denotational, big-step and small-step---agree in some manner.
+This section reviews the main techniques involved.
 
-\subsection{Syntax and Rule Induction}%{{{%
+\subsection{Rule Induction}%{{{%
 
 \def\subExp{\sqsubset}
 
-The main tool at our disposal is that of well-founded induction, which we
-can apply to any well-founded structure. For example, we can show that the
-syntax of the $\Expression$ language satisfies the condition of
-well-foundedness when paired with the following sub-expression ordering:
+The main proof tool at our disposal is that of \emph{well-founded
+induction}, which can be applied to any well-founded structure. For example,
+we can show that the syntax of the $\Expression$ language satisfies the
+condition of well-foundedness when paired with the following sub-expression
+ordering:
 \[
 	a \subExp a \Add b \qquad b \subExp a \Add b \eqTag{Exp-$\subExp$}
 \]
 The partial order given by the transitive closure of $\subExp$ is
 well-founded, since any $\subExp$-descending chain of expressions must
-eventually end in a numeral at the leaves of the expression tree. This
-particular ordering arises naturally from the inductive definition of
+eventually end in a numeral at the leaves of the finite expression tree.
+This particular ordering arises naturally from the inductive definition of
 $\Expression$: the inductive case \eqName{Exp-$\Add$} allows us to build
 a larger expression $a \Add b$ given two existing expressions $a$ and $b$,
 while the base case \eqName{Exp-$\mathbb{N}$} constructs primitive
@@ -393,17 +388,16 @@ We shall illustrate the above technique with some examples.
 Denotational semantics and big-step operational semantics coincide:
 \[
 	\forall e \in \Expression,\ m \in \Nat.\quad
-		\sb[e] \equiv m \leftrightarrow e \Eval m
+		\sb[e] \equiv m \;\leftrightarrow\; e \Eval m
 \]
 \end{theorem}
 
 \begin{proof}
-We consider each direction of the $\leftrightarrow$ biconditional
-separately. To show $\sb[e] \equiv m \rightarrow e \Eval m$, we could
-proceed by induction on the structure of the definition of the
-$\sb[\anonymous]$ function, which happens to be structurally recursive on
-its argument. Therefore we may equivalently proceed by structural induction
-on $e$, giving us two cases to consider:
+We consider each direction of the $\leftrightarrow$ equivalence separately.
+To show $\sb[e] \equiv m \rightarrow e \Eval m$, we ought to proceed by
+induction on the definition of the $\sb[\anonymous]$ function. As it happens
+to be structurally recursive on its argument, we may equivalently proceed by
+structural induction on $e$, giving us two cases to consider:
 \begin{description}
 \item[Case $e \equiv n$:]%{{{%
 Substituting $e$, this base case specialises to showing that:
@@ -431,10 +425,9 @@ obtain $a \Add b \Eval \sb[a] + \sb [b]$.
 \end{description}
 
 \noindent The second half of the proof requires us to show that $\sb[e]
-\equiv m \leftarrow e \Eval m$. We may proceed by structural induction
-directly on our assumed hypothesis of $e \Eval m$, which must match
-either \eqName{big-val} or \eqName{big-plus} in the definition of
-$\Eval$:
+\equiv m \leftarrow e \Eval m$. We may proceed by rule induction directly on
+our assumed hypothesis of $e \Eval m$, which must match either
+\eqName{big-val} or \eqName{big-plus} in the definition of $\Eval$:
 \begin{description}
 \item[Rule \eqName{big-val}:]%{{{%
 Matching $e \Eval m$ with the consequent of \eqName{big-val}, we may
@@ -471,7 +464,7 @@ trivially true by reflexivity of $\equiv$.
 Big-step and small-step operational semantics coincide. That is,
 \[
 	\forall e \in \Expression,\ m \in \Nat.\quad
-		e \Eval m \leftrightarrow e \StepS m
+		e \Eval m \;\leftrightarrow\; e \StepS m
 \]
 \end{theorem}
 \begin{proof}
@@ -507,13 +500,14 @@ the conclusion.
 %}}}%
 \end{description}
 
-\noindent The converse implication $e \Eval m \leftarrow e \StepS m$
-additionally requires lemma \ref{lem:small-sound}, which states that $e
-\Step e' \rightarrow e' \Eval m \rightarrow e \Eval m$; in other words, the
-reduct of a single step under the small-step semantics evaluates under the
-big-step semantics to the same value as the original expression. We proceed
-by induction over the definition of $\StepS$, given $e \StepS m \rightarrow
-e \Eval m$:
+%The converse implication $e \Eval m \leftarrow e \StepS m$ additionally
+%requires lemma \ref{lem:small-sound}, which states that $e \Step e'
+%\rightarrow e' \Eval m \rightarrow e \Eval m$; in other words, the reduct of
+%a single step under the small-step semantics evaluates under the big-step
+%semantics to the same value as the original expression.
+
+\noindent We proceed by induction over the definition of $\StepS$ and using
+an additional lemma that we state and prove afterwards. Given $e \StepS m$,
 \begin{description}
 \item[Rule \eqName{small-nil}:]%{{{%
 If the reduction sequence is empty, then it follows that $e \equiv m$. In
@@ -522,8 +516,8 @@ this case, we can trivially satisfy the conclusion of $m \Eval m$ with
 %}}}%
 \item[Rule \eqName{small-cons}:]%{{{%
 For non-empty reduction sequences, there exists an $e'$ such that $e \Step
-e'$ and $e' \StepS m$. Invoke lemma \ref{lem:small-sound} with $e
-\Step e'$ and $e' \Eval m$, where the latter given by the induction
+e'$ and $e' \StepS m$. Invoke lemma \ref{lem:small-sound} below with $e
+\Step e'$ and $e' \Eval m$, where the latter is given by the induction
 hypothesis, to obtain proof of $e \Eval m$.
 %}}}%
 \end{description}
@@ -538,8 +532,8 @@ A single small-step reduction preserves the value of expressions with
 respect to the big-step semantics:
 \[
 	\forall e, e' \in \Expression,\ m \in \Nat.\quad
-		e \Step e' \rightarrow
-		e' \Eval m \rightarrow e \Eval m
+		e \Step e' \;\rightarrow\;
+		e' \Eval m \;\rightarrow\; e \Eval m
 \]
 \end{lemma}
 \begin{proof}
@@ -648,28 +642,33 @@ e \Eval m$.
 
 \section{Compiler Correctness}%{{{%
 
-We have given a high-level semantics for the $\Expression$ language in the
-previous sections, but in order to run any such program on a real processor,
-we need to translate, or \emph{compile} an expression to a sequence of
-instructions for some target machine. Given a definition of how the
-processor behaves, how do we ensure that the compiler is producing the
-correct instructions? When we talk of \emph{compiler correctness}, we mean
-that when executed on the target machine, a compiled program ought to
-deliver a result coinciding with what one would expect from the high-level
-semantics. In this section we define a simple stack-based virtual machine,
-along with a compiler for the $\Expression$ language, and demonstrate how we
-can prove a corresponding compiler correctness theorem.
+Now that we have established the equivalence of our three semantics for the
+expression language, we consider how this language may be compiled for
+a simple stack-based machine, what it means for such a compiler to be
+correct, and how this may be proved.
+
+%We have given a high-level semantics for the $\Expression$ language in the
+%previous sections, but in order to run any such program on a real processor,
+%we need to translate, or \emph{compile} an expression to a sequence of
+%instructions for some target machine. Given a definition of how the
+%processor behaves, how do we ensure that the compiler is producing the
+%correct instructions? When we talk of \emph{compiler correctness}, we mean
+%that when executed on the target machine, a compiled program ought to
+%deliver a result coinciding with what one would expect from the high-level
+%semantics. In this section we define a simple stack-based virtual machine,
+%along with a compiler for the $\Expression$ language, and demonstrate how we
+%can prove a corresponding compiler correctness theorem.
 
 \subsection{A Stack Machine and Its Semantics}\label{sec:stack-machine}%{{{%
 
 \def\MS<#1,#2>{\langle #1 ,\; #2 \rangle}
 
-Unlike the previously defined high-level semantics---which specify
-transitions between pairs of arbitrarily-sized $\Expression$s---real
-processors generally execute a \emph{linear} sequences of instructions, each
-mutating the state of the machine in some primitive way. In order to give
-such a low-level implementation of our $\Expression$ language, we will make
-use of a stack-based virtual machine.
+Unlike the previously defined high-level semantics---which operate directly
+on $\Expression$s themselves---real processors generally execute
+a \emph{linear} sequences of instructions, each mutating the state of the
+machine in some primitive way. In order to give such a low-level
+implementation of our $\Expression$ language, we will make use of
+a stack-based virtual machine.
 
 Our stack machine has a stack of natural numbers as its sole form of
 storage, and the state of the $\Machine$ at any point may be conveniently
@@ -689,10 +688,10 @@ stack:
 \begin{align*}
 	\Instruction & \prod \PUSH \Nat \altn \ADD
 \end{align*}
-The $\PUSH m$ instruction places the number $m$ atop the current stack,
+The $\PUSH m$ instruction places the number $m$ on top of the current stack,
 while $\ADD$ replaces the top two values with their sum. Formally, the
-semantics of the virtual machine is defined by the $\Exec$
-reduction relation, given below:
+semantics of the virtual machine is defined by the $\Exec$ reduction
+relation, given below:
 \begin{gather*}
 	\MS<\PUSH m :: c , \sigma>
 	\Exec
@@ -716,9 +715,9 @@ $\Exec$:
 \end{gather*}
 
 Informally, the difference between the semantics of a virtual machine versus
-a high-level semantics is that the reduction rules for the former is simply
-a collection of transition rules between pairs of states, and does not make
-use of any premises.
+a small-step operational semantics is that the reduction rules for the
+former is simply a collection of transition rules between pairs of states,
+and does not make use of any premises.
 
 %}}}%
 
@@ -726,15 +725,15 @@ use of any premises.
 
 Given an $\Expression$, a compiler in this context produces some $\Code$
 that when executed according to the semantics of the virtual machine just
-defined, computes the value of the $\Expression$, leaving the result atop
-the current stack. To avoid the need to define concatenation on instruction
-sequences and the consequent need to prove various distributive properties,
-the definition of $\compile$ below accepts an extra \emph{code continuation}
-argument, to which the code for the expression being compiled is prepended.
-To compile a top-level expression, we simply pass in the empty sequence
-$\nil$. This both simplifies reasoning and results in more efficient
-compilers~\cite{hutton07-haskell}. A numeric expression $m$ is compiled to
-a $\PUSH m$ instruction, while $a \Add b$ involves compiling the
+defined, computes the value of the $\Expression$, leaving the result on top
+of the current stack. To avoid the need to define concatenation on
+instruction sequences and the consequent need to prove various distributive
+properties, the definition of $\compile$ below accepts an extra \emph{code
+continuation} argument, to which the code for the expression being compiled
+is prepended. To compile a top-level expression, we simply pass in the empty
+sequence $\nil$. This both simplifies reasoning and results in more
+efficient compilers~\cite{hutton07-haskell}. A numeric expression $m$ is
+compiled to a $\PUSH m$ instruction, while $a \Add b$ involves compiling the
 sub-expressions $a$ and $b$ in turn, followed by an $\ADD$ instruction:
 \begin{align*}
 	&\compile : \Expression \rightarrow \Code \rightarrow \Code \\
@@ -766,30 +765,31 @@ which when executed with an empty initial stack, reduces as follows:
 By compiler correctness, we mean that given an expression $e$ which
 evaluates to $m$ according to a high-level semantics, compiling $e$ and
 executing the resultant code on the corresponding virtual machine must
-computes the same $m$. Earlier in the chapter, we had shown the mutual
-equivalence of the denotational, big-step, and small-step semantics. While
-we may freely choose any of these as our high-level semantics, we shall
-adopt the big-step semantics, as it makes our later proofs much shorter.
+compute the same $m$. Earlier in the chapter, we had shown the equivalence
+of our denotational, big-step, and small-step semantics. While we may freely
+choose any of these as our high-level semantics, we shall adopt the big-step
+semantics, as it makes our later proofs much shorter.
 
-The following equation captures this idea in a rigorous manner:
+Using these ideas, the correctness of our compiler can now be formalised by
+the following equivalence:
 \begin{gather*}
 	e \Eval m
 	\quad\leftrightarrow\quad
 	\MS<\compile\;e\;\nil, \sigma>
 		\ExecS \MS<\nil, m :: \sigma>
 \end{gather*}
-As $\Eval$ and $\ExecS$ are relations, we necessarily
-require the double implication: the $\rightarrow$ direction corresponds to
-a notion of \emph{completeness}, and states that the machine must be able to
-compute any $m$ that the big-step semantics permits. Conversely, the
-$\leftarrow$ direction corresponds to \emph{soundness}, and states that the
-machine can only produce values permitted by the big-step semantics.
-
-For the purposes of this proof however, we will need to generalise the
-virtual machine on the RHS to an arbitrary code continuation and stack.
-\begin{theorem}\label{thm:compiler-correct}
-The compiler and virtual machine semantics coincide with the earlier
-big-step semantics:
+%As $\Eval$ and $\ExecS$ are relations, we necessarily
+%require the double implication:
+The $\rightarrow$ direction corresponds to a notion of \emph{completeness},
+and states that the machine must be able to compute any $m$ that the
+big-step semantics permits. Conversely, the $\leftarrow$ direction
+corresponds to \emph{soundness}, and states that the machine can only
+produce values permitted by the big-step semantics. For this proof, we will
+need to generalise the virtual machine on the right hand side to an
+arbitrary code continuation and stack.
+\begin{theorem}[Compiler Correctness]\label{thm:compiler-correct}
+%The compiler and virtual machine semantics coincide with the earlier
+%big-step semantics:
 \begin{gather*}
 	e \Eval m
 	\quad\leftrightarrow\quad
@@ -807,15 +807,15 @@ structure:
 \item[Rule \eqName{big-val}:]%{{{%
 There exists an $n$ such that $e \equiv n$ and $m \equiv n$. Substituting
 $n$ for both $e$ and $m$, the conclusion becomes:
-\[
+\begin{align*}
 		\MS<\compile\;n\;c, \sigma>
-			\ExecS \MS<c, n :: \sigma>
-	\quad\textrm{, or}\quad
+			&\ExecS \MS<c, n :: \sigma> \quad{,} \\
+	\textrm{or}\quad
 		\MS<\PUSH n :: c, \sigma>
-			\ExecS \MS<c, n :: \sigma>
-\]
+			& \ExecS \MS<c, n :: \sigma>
+\end{align*}
 by \eqName{compile-val} in the definition of \compile. The conclusion is
-satisfied by applying \eqName{vm-cons} to \eqName{vm-push} and
+satisfied by simply applying \eqName{vm-cons} to \eqName{vm-push} and
 \eqName{vm-nil}:
 \[\inferrule* [Left=vm-cons]
 {
@@ -868,8 +868,8 @@ follows,
 gives the required conclusion of:
 \begin{align*}
 	\forall c, \sigma.\
-		&\MS<\compile\;a\;(\compile\;b\;(\ADD :: c)), \sigma> \\
-		&\Exec \MS<c, n_a + n_b :: \sigma>
+		&\MS<\compile\;a\;(\compile\;b\;(\ADD :: c)), \sigma>
+			\Exec \MS<c, n_a + n_b :: \sigma>
 \end{align*}
 %}}}%
 \end{description}
@@ -936,13 +936,12 @@ turn satisfied by instantiating the induction hypothesis with $\forall c_a,
 and $\forall c_b, \sigma_b.\ \MS<\compile\;b\;c_b, \sigma_b> \ExecS \MS<c_b,
 n_b :: \sigma_b>$.
 
-\TODO{there's more to be said on the determinism of $\Exec$ here---in
-contrast with the non-det VMs later---just not sure what it is yet.}
+%\TODO{there's more to be said on the determinism of $\Exec$ here---in
+%contrast with the non-det VMs later---just not sure what it is yet.}
 
 %}}}%
 \end{description}
-We have shown both the completeness and soundness parts of the compiler
-correctness theorem.
+This completes the proof of the compiler correctness theorem.
 \end{proof}
 
 %}}}%
@@ -953,14 +952,14 @@ correctness theorem.
 
 In this chapter, we have shown by example what it means to give the
 semantics of simple language in denotational, big-step and small-step
-styles. We justify the use of a monoidal model of natural numbers and
+styles. We justified the use of a monoidal model of natural numbers and
 addition---with left-to-right evaluation order---as simplification of
 monadic sequencing. We then proved the three given semantics to be
 equivalent, and demonstrate the use of well-founded induction on the
 structure of the reduction rules (that is, rule induction) and of the
-syntax. Finally, we have defined a stack-based virtual machine and
-a compiler for running programs of the $\Expression$ language, and present
-a proof of compiler correctness.
+syntax. Finally, we defined a stack-based virtual machine and a compiler for
+running programs of the $\Expression$ language, and presented a proof of
+compiler correctness.
 
 %}}}%
 
