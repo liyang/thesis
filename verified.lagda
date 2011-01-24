@@ -158,6 +158,9 @@ equality of the resulting heaps, while a silent |↠τ-switch| moves the |# m|
 onto the virtual machine stack, concluding the completeness part of the
 |correctness| property.
 
+
+-- Given t↠τ⋆t₀ and t₀↠≄τt₁, derive that t₀↠≄τt₁ must be h₀ ∧ ⟨ ⟨ COMMIT ∷ c ‚ … ⟩ ⟩ 
+
 %format t↠τ⋆t₀ = "t{\twoheadrightarrow}\tau^\star{}t_0"
 %format t₀↠≄τt₁ = "t_0{\twoheadrightarrow}{\not\simeq}\tau{}t_1"
 %format t₁↠τ⋆t′ = "t_1{\twoheadrightarrow}\tau^\star{}t\Prime{}"

@@ -211,7 +211,7 @@ corecursive calls to |≼-trans| for each half of the property.
 \end{code}
 %endif
 
-Earlier we stated that we are obligated to show that |_≈′_| implies |_≈_|.
+Earlier we stated that we are obliged to show that |_≈′_| implies |_≈_|.
 Having now implemented all of the functions corresponding to the terms of
 the embedded |_≈′_| language, we can proceed quite simply as follows:
 %format ≈′→≈ = "\func{{\approx}\Prime{\rightarrow}{\approx}}"

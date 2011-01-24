@@ -110,9 +110,11 @@ As we mentioned in the conclusion of chapter \ref{ch:agda}, the equational
 reasoning combinators defined in the standard
 library~\cite{danielsson10-stdlib} allow us to present the proof in a simple
 calculational style. In the code above, proofs of bisimilarity (or
-definitional equality) are supplied between the |⟪| and |⟫| brackets, and
-are combined using the appropriate reflexivity, symmetry and transitivity
-properties. That is, the above proof could have been equivalently written:
+definitional equality) are supplied as the second argument of the |_≈⟪_⟫_|
+operator; the |_≈⟪_⁻¹⟫_| operator is a symmetric variant, while |_≡⟪_⟫_|
+takes a proof of definitional equality instead. The proofs are combined
+using the appropriate reflexivity, symmetry and transitivity properties.
+That is, the above could have been equivalently written:
 %format ≡→≈ = "\func{{\equiv}{\rightarrow}{\approx}}"
 \restorecolumns
 \begin{spec}
@@ -120,7 +122,7 @@ properties. That is, the above proof could have been equivalently written:
     ( ≈-trans (≈-sym (elide-τ (↠-↣ ↣-PUSH))) (≡→≈ ≡.refl) )
 \end{spec}
 However, the extra annotations in the equational reasoning version makes the
-proof almost self-explanatory.
+proof easier to read and understand.
 
 Moving on to the inductive case, where |e ≡ a ⊕ b|:
 \restorecolumns
@@ -417,10 +419,10 @@ turn the |correctness| theorem for our Zap language.
 
 \section{Conclusion}%{{{%
 
-In this chapter we introduced a simpler technique for handling
-non-determinism in the context of compiler correctness proofs, which we
-illustrated using the Zap language. By carefully choosing silent and visible
-actions to distinguish between non-deterministic choices in the reduction of
+In this chapter we introduced a new technique for handling non-determinism
+in the context of compiler correctness proofs, which we illustrated using
+the Zap language. By carefully choosing silent and visible actions to
+distinguish between non-deterministic choices in the reduction of
 expressions and virtual machines, we were able to show the crucial |elide-τ|
 lemma used in the compiler correctness proof that follows. Finally, our
 notion of a combined machine allowed us to directly establish a bisimulation

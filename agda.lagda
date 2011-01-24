@@ -8,8 +8,8 @@ theory~\cite{martin-lof80-itt,nordstrom90-program}. Via the Curry-Howard
 correspondence---that is, viewing types as propositions and programs as
 proofs---it is also used as a proof assistant for constructive mathematics.
 In this chapter, we shall provide a gentle introduction to the language, and
-demonstrate how we can formalise statements of compiler correctness into
-machine-checked proofs, culminating in a verified formalisation of the
+demonstrate how we can formalise statements of compiler correctness by means
+of machine-checked proofs, culminating in a verified formalisation of the
 proofs of chapter \ref{ch:semantics}.
 
 \section{Introduction to Agda}%{{{%
@@ -46,10 +46,10 @@ Functions & |id|, |_+_|, |Star.gmap|\ldots
 Epigram~\cite{mcbride08-epigram,mcbride05-epigram-notes} and
 Coq~\cite{the-coq-development-team08-website}. Dependent types systems are
 so-called because they allow for types to depend on values, in addition to
-the usual parametrisation by other types as seen in languages like Haskell.
-This provides us with a much richer vocabulary of discourse for not only
-stating the properties of our programs, but also to be able to prove such
-properties within the same system. We will begin to explore how this is
+the usual parametrisation by other types as seen in languages such as
+Haskell. This provides us with a much richer vocabulary of discourse for not
+only stating the properties of our programs, but also to be able to prove
+such properties within the same system. We will begin to explore how this is
 facilitated by dependent types from section \ref{sec:agda-curryhoward}
 onwards.
 
@@ -81,8 +81,7 @@ colours provides more information for the reader.}. Secondly, we write |:|
 to mean \emph{has-type-of}, and write |Set| for the \emph{type of
 types}\footnote{Agda in fact has countably infinite levels of |Set|s, with
 $|Set : Set₁ : Set₂ : |\ldots$. This stratification prevents the formation
-of say, \emph{Russell's paradox}, that would lead to inconsistencies in the
-system.}.
+of paradoxes that would lead to inconsistencies in the system.}.
 % FIXME: cite Russell?
 
 Thus, the above defines |ℕ| as a new data type inhabiting |Set|, with
@@ -124,7 +123,7 @@ terms in a model of computation such as the typed lambda calculus.
 The intuitionistic approach to logic only relies on constructive methods,
 disallowing notions from classical logic such as the law of the excluded
 middle ($P \vee \lnot P$) or double-negation elimination ($\lnot \lnot
-P \rightarrow P$). For example, intuitionist reject $P \vee \lnot P$ since
+P \rightarrow P$). For example, intuitionist reject $P \vee \lnot P$ because
 there exists a statement $P$ in any sufficiently powerful logic that can
 neither be proved nor disproved within the system, by G\"{o}del's
 incompleteness theorems. In other words, intuitionism equates the truth of
@@ -135,10 +134,10 @@ non-existence of $P$, does not imply $P$ itself.
 What does this mean for the proletarian programmer? Under the Curry-Howard
 correspondence, the type |A -> B| is interpreted as the logical statement
 `\emph{|A| implies |B|}', and vice-versa. Accordingly, a program |p : A ->
-B| corresponds to the proof of `\emph{|A| implies |B|}', in that executing
-|p| constructs a witness of |B| as output, given a witness of |A| as input.
-Thus in a suitable type system, programming is the same as constructing
-proofs in a very concrete sense.
+B| corresponds to a proof of `\emph{|A| implies |B|}', in that executing |p|
+constructs a witness of |B| as output, given a witness of |A| as input. Thus
+in a suitable type system, programming is the same as constructing proofs in
+a very concrete sense.
 
 In a traditional strongly typed programming language such as Haskell, the
 type system exists to segregate values of different types. On the other
@@ -149,7 +148,7 @@ barrier in a limited sense, by allowing the constructors of a parametric
 type to target particular instantiations of the return type. While this
 allows us to exploit a Haskell type checker that supports GADTs as
 a proof-checker in some very simple cases, it comes at the cost of requiring
-`counterfeit type-level copies of data'.~\cite{mcbride02-faking}
+`counterfeit type-level copies of data'~\cite{mcbride02-faking}.
 
 %}}}%
 
@@ -287,7 +286,7 @@ above is in fact syntactic sugar for the following:
       refl : {x : _} → x ≡ x
 \end{spec}
 
-Agda includes an interactive user interface running under the
+Agda includes an interactive user interface for the
 Emacs~\cite{stallman10-emacs} operating system that supports incremental
 development by the placement of `holes' where arbitrary expressions are
 expected. Incomplete programs with holes can be passed to the type checker,
@@ -578,13 +577,13 @@ open import Common
 \section{Agda for Compiler Correctness}%{{{%
 
 In this section, we shall revisit the language of numbers and addition from
-chapter \ref{ch:semantics}, and demonstrate how the previous compiler
+chapter~\ref{ch:semantics}, and demonstrate how the previous compiler
 correctness result can be formalised using Agda.
 
 \subsection{Syntax and Semantics}%{{{%
 
-Just like we had done in chapter \ref{ch:model}, we can encode the syntax of
-our language as a basic algebraic data type:
+As in chapter \ref{ch:model}, we can encode the syntax of our language as
+a simple algebraic data type:
 %if False
 \begin{code}
 infix l4 _⊕_
@@ -711,7 +710,7 @@ e ↦⋆# m = e ↦⋆ # m
 
 %}}}%
 
-\subsection{Semantics Equivalence}%{{{%
+\subsection{Semantic Equivalence}%{{{%
 
 %format denote→big = "\func{denote{\rightarrow}big}"
 %format big→denote = "\func{big{\rightarrow}denote}"
