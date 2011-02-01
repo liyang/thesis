@@ -99,19 +99,28 @@ cached value for |v|, then return that; if not, then look it up from the
 heap.
 
 %format update-rLog = "\func{update\text-\!\rho}"
-When reading a variable for the first time in a transaction, we also need to
-update the read log. The following |update-rLog| function fulfils this task:
+When reading a variable within a transaction for the first time, we also
+need to update the read log, when certain conditions are met. This task is
+fulfilled by the following |update-rLog| function:
 \begin{code}
 update-rLog : Heap → Log → Log → Variable → Log
 update-rLog h ρ ω v with ω « v »
 update-rLog h ρ ω v | just m = ρ
+\end{code}
+An entry in |ω| means that |v| has previously been written to, in which case
+we return |ρ| unchanged---even if |v| has never been read from---as the
+written value logged in |ω| takes precedence. If |ω « v »| is |nothing| on
+the other hand, we proceed to inspect |ρ|:
+\begin{code}
 update-rLog h ρ ω v | nothing with ρ « v »
 update-rLog h ρ ω v | nothing | just m = ρ
 update-rLog h ρ ω v | nothing | nothing = ρ « v »≔ just (h « v »)
 \end{code}
-Keep in mind that if a variable has already been written to---even if it has
-never been read from---there is no need to update |ρ|, since the logged
-value in |ω| takes precedence for lookups.
+The former of the two |with ρ « v »| clauses handles the case where
+a previous read had already logged |m| as the heap value of |v|, so we may
+return |ρ| as it is. The latter corresponds to an initial read of |v| within
+a transaction with no preceding writes to it, in which case we update |ρ|
+with the value of |v| from the current heap.
 
 % vim: ft=tex fo-=m fo-=M:
 

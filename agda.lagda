@@ -225,9 +225,9 @@ the position then becomes |Fin zero|, which is uninhabited. In this case, we
 may use the `impossible' pattern |()| for the first argument, to indicate
 that the case is unreachable:
 \restorecolumns
-\begin{code}
+\begin{spec}
     lookup ()      []
-\end{code}
+\end{spec}
 In such cases, the right hand side of the definition is simply omitted.
 
 This is only an elementary demonstration of the power of dependent types.
@@ -403,6 +403,17 @@ of the first type:
 %      inj₂  : (y : Y) → X ⊎ Y
 %\end{code}
 
+%if False
+\begin{code}
+    infix 4 _≡_
+    infixr 4 _∧_
+    infixr 5 _++_ _∷_
+    _++_ : ∀ {X m n} → Vec X m → Vec X n → Vec X (m + n)
+    _++_ [] ys = ys
+    _++_ (x ∷ xs) ys = x ∷ xs ++ ys
+\end{code}
+%endif
+
 %format splitAt = "\func{splitAt}"
 \noindent Putting the above into practice, we present below a definition of
 |splitAt| that splits a vector of length |m + n| at position |m| into left
@@ -411,8 +422,8 @@ Haskell function, we can also witness that the contatenation of the
 resulting vectors coincides with the input:
 \begin{code}
     splitAt : (m : ℕ) {n : ℕ} {X : Set} (xs : Vec X (m + n)) →
-      Σ (Vec A m) λ ys → Σ (Vec A n) λ zs → xs ≡ ys ++ zs
-    splitAt zero     xs                 = [] ∧ xs ∧ ≡.refl
+      Σ (Vec X m) λ ys → Σ (Vec X n) λ zs → xs ≡ ys ++ zs
+    splitAt zero     xs                 = [] ∧ xs ∧ refl
 \end{code}
 For the base case where the position is |zero|, we simply return the empty
 list as the left part and the entirety of |xs| as the right. Since |[] ++
@@ -426,7 +437,7 @@ intermediate results using the magic `|with|' keyword, which could be
 thought of as the dependently-typed analogue to Haskell's $\keyw{case}$:
 \begin{code}
     splitAt (suc m)  (x ∷ xs)           with splitAt m xs
-    splitAt (suc m)  (x ∷ .(ys ++ zs))  | ys ∧ zs ∧ ≡.refl = x ∷ ys ∧ zs ∧ ≡.refl
+    splitAt (suc m)  (x ∷ .(ys ++ zs))  | ys ∧ zs ∧ refl = x ∷ ys ∧ zs ∧ refl
 \end{code}
 When we case-split on the proof of |xs ≡ ys ++ zs|, Agda sees that |≡.refl|
 is the only possible constructor, and correspondingly rewrites the tail of
@@ -484,8 +495,8 @@ adjacent elements |x : R i j| and |y : R j k| must share a common index |j|.
 %if False
 \begin{code}
     infixr 5 _◅_
-    data ⊤ : Set where
-      tt : ⊤
+    record ⊤ : Set where
+      constructor tt
 \end{code}
 %endif
 
@@ -586,7 +597,7 @@ As in chapter \ref{ch:model}, we can encode the syntax of our language as
 a simple algebraic data type:
 %if False
 \begin{code}
-infix l4 _⊕_
+infixl 4 _⊕_
 infix 5 #_
 \end{code}
 %endif
@@ -1068,10 +1079,11 @@ machine→big {a ⊕ b} a⊕b↣⋆#m | na ∧ a↣⋆#na  | nb ∧ b↣⋆#nb
 \end{code}
 The concatenation |a↣⋆#na ◅◅ b↣⋆#nb ◅◅ ↣-ADD ◅ ε| produces a reduction
 sequence of |a ⊕ b ↣⋆# na + nb|. Using the previously defined |unique|
-lemma, we compare this with |a⊕b↣⋆#m| to yield a proof of |na + nb ≡ m|.
-Examining this proof using a second |with| clause, the goal becomes |a
-⊕ b ⇓ na + nb|. This calls for an instance of |⇓-⊕|, whose two premises of
-|a ⇓ na| and |b ⇓ nb| are obtained by recursion.
+lemma, we may match each step of the sequence with those of |a⊕b↣⋆#m| to
+yield a proof of |na + nb ≡ m|. Examining this proof using a second |with|
+clause, the goal becomes |a ⊕ b ⇓ na + nb|. This calls for an instance of
+|⇓-⊕|, whose two premises of |a ⇓ na| and |b ⇓ nb| are obtained by
+recursion.
 
 %}}}%
 
@@ -1081,18 +1093,46 @@ Examining this proof using a second |with| clause, the goal becomes |a
 \section{Coinductive Proofs and Data}\label{sec:agda-coinduction}%{{{%
 
 * I CAN SEE FOREVER LOL
-
 * Recent versions of Agda provides coinductive data. \cite{danielsson10-productivity}
-
 * productive instead of terminating
-
 * analysis necessarily conservative
-
 * requires corecursive calls to be constructor guarded
 
+* What you've basically done with ≈ and ≈′ is that the former corresponds to StreamW, while the latter StreamP.
+* Your ≈′→≈ is the equivalent of |whnf|, but you don't have an equivalent of the Stream type itself for bisimulations…
+* Nor have you given the interpretation functions ⟦_⟧P or ⟦_⟧W
+
+trivial omissions, too annoying / much work to fix for now.
+
 \begin{code}
-fib : Stream N
-fib = 0 ∷ zipWith _+_ (1 ∷ fib)
+open import Data.Stream
+
+-- fib : Stream ℕ
+-- fib = 0 ∷ ♯ zipWith _+_ (1 ∷ ♯ fib) fib
+
+data StreamP : Set → Set₁ where
+  _∷_ : ∀ {A} → (x : A) (xs : ∞ (StreamP A)) → StreamP A
+  zipWithP : ∀ {A B C} → (A → B → C) → StreamP A → StreamP B → StreamP C
+
+data StreamW : Set → Set₁ where
+  _∷_ : ∀ {A} → (x : A) (xs : StreamP A) → StreamW A
+
+fibP : StreamP ℕ
+fibP = 0 ∷ ♯ zipWithP _+_ (1 ∷ ♯ fibP) fibP
+
+zipWithW : ∀ {A B C} → (A → B → C) → StreamW A → StreamW B → StreamW C
+zipWithW f (x ∷ xs) (y ∷ ys) = f x y ∷ zipWithP f xs ys
+
+whnf : ∀ {A} → StreamP A → StreamW A
+whnf (x ∷ xs) = x ∷ ♭ xs
+whnf (zipWithP f xs ys) = zipWithW f (whnf xs) (whnf ys)
+
+mutual
+  ⟦_⟧P : ∀ {A} → StreamP A → Stream A
+  ⟦ xs ⟧P = ⟦ whnf xs ⟧W
+
+  ⟦_⟧W : ∀ {A} → StreamW A → Stream A
+  ⟦ x ∷ xs ⟧W = x ∷ ♯ ⟦ xs ⟧P
 \end{code}
 
 %}}}%

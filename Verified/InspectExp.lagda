@@ -59,8 +59,8 @@ corresponds to transitions starting from expressions of the form |a ⊕ b|:
     ExpCase a⊕b↦⋆m+n
 \end{code}
 A complete sequence |a⊕b↦⋆m+n| comprises of the concatenation of two
-subsequences |a↦⋆m| and |b↦⋆n|---suitably lifted using |↦⋆-L| and |↦⋆-R| to
-transition from |a ⊕ b| to |# m ⊕ b| then |# m ⊕ # n|---followed by a single
+subsequences |a↦⋆m| and |b↦⋆n|---suitably lifted using |↦⋆-L| and |↦⋆-R|, to
+transition from |a ⊕ b| to |# m ⊕ b|, then |# m ⊕ # n|---followed by a single
 invocation of the |↦-⊞| rule to give |# (m + n)| as the final value. The
 final |rwLog-≗| argument gives a proof of the fact that the overall
 transition sequence has the same heap side-effects as the composition of the

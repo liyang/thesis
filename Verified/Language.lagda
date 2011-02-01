@@ -232,12 +232,12 @@ context.
 
 \subsubsection{Reconstructing the Transaction Logs}
 
-Even though the above transactional semantics do not make of any logs, they
-do serve as a useful summary of the side-effects of the transaction on the
-heap, which is why we chose to embed pairs of read and write logs in |☢_|
-actions. The |↦-atomic| rule thus uses |rwLog| to reconstruct a pair of read
-and write logs from a sequence of |STM| transitions. Let us first give an
-auxiliary definition that classifies each transition as either a read or
+Even though the above transactional semantics do not make use of any logs,
+they do serve as a useful summary of the side-effects of the transaction on
+the heap, which is why we chose to embed pairs of read and write logs in
+|☢_| actions. The |↦-atomic| rule thus uses |rwLog| to reconstruct a pair of
+read and write logs from a sequence of |STM| transitions. Let us first give
+an auxiliary definition that classifies each transition as either a read or
 a write:
 %format STM→rw = "\func{STM\text-r{\uplus}w}"
 \restorecolumns
@@ -251,10 +251,10 @@ a write:
   STM→rw (↦-read {v} {h})    = just (v ∧ inj₁ h)
   STM→rw (↦-writeℕ {v} {m})  = just (v ∧ inj₂ m)
 \end{code}
-In the former case we return the heap from which the value is read, while in the latter case we return the newly-written value.
-The |rwLog| function is written in an accumulator-passing
-style to allow for easy composition and reasoning later, and proceeds
-through the sequence one step at a time:
+In the former case we return the heap from which the value is read, while in
+the latter case we return the newly-written value. The |rwLog| function is
+written in an accumulator-passing style to allow for easy composition and
+reasoning later, and proceeds through the sequence one step at a time:
 % WTF didn't I write this as a Star.fold? Too scared to change it in case it
 % messes up later proofs. :(
 %format e′↦⋆e″ = "e\Prime{\mapsto}^\star{}e\PPrime{}"
@@ -277,58 +277,13 @@ logs alone and recurse on the remainder of the sequence:
     | just (v ∧ inj₂ m) = rwLog e′↦⋆e″ (ρ ∧ ω « v »≔ just m)
 \end{code}
 For transitions involving a write, we obtain the corresponding variable |v|
-and its new value |m|, and we update the write log accordingly. For reads, we simply update
+and its new value |m|, and update the write log accordingly. For reads,
+we simply invoke the |update-rLog| function defined previously to obtain the
+new read log:
 \begin{code}
   rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
     | just (v ∧ inj₁ h) = rwLog e′↦⋆e″ (update-rLog h ρ ω v ∧ ω)
 \end{code}
-
-FIXME
-
-however, we must first check if the variable has already been written to:
-\restorecolumns
-\begin{spec}
-  rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
-    | just (v ∧ inj₁ m)  with ω « v »
-  rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
-    | just (v ∧ inj₁ m)  | just m′ = rwLog e′↦⋆e″ (ρ ∧ ω)
-\end{spec}
-An entry in |ω| implies that |v| has been updated by a prior
-transition to |m′|. In the high-level stop-the-world semantics of the
-expression language interference from concurrent threads is not possible,
-|m′| should be the same as the |m| read directly from the heap by the
-current transition. (We do not yet have the evidence to convince Agda of
-this right now, however.) In other words |m| is implied by the previous
-transitions; it does not directly depend on the initial value of |v| at the
-beginning of the transaction, and we need not make a corresponding entry in
-the read log.
-
-The lack of an entry in |ω| for |v| means that it has not been updated, so
-we next inspect the read log:
-\restorecolumns
-\begin{spec}
-  rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
-    | just (v ∧ inj₁ m)  | nothing
-      with ρ « v »
-  rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
-    | just (v ∧ inj₁ m)  | nothing
-      | just m′ = rwLog e′↦⋆e″ (ρ ∧ ω)
-\end{spec}
-An entry in |ρ| for |v| implies that a prior transition had read |v| as
-having the value |m′| above. The non-interference property of the
-stop-the-world semantics implies that this should in fact be equal to the
-|m| obtained from the heap, so we may keep the existing entry for |v| in
-|ρ|, handing over both logs as they are to the next iteration.
-
-Otherwise, |v| is being read for the first time in the current transaction.
-Its heap value |m| is extracted from |e↦e′| and recorded in the log |ρ
-« v »≔ just m|:
-\restorecolumns
-\begin{spec}
-  rwLog (e↦e′ ◅ e′↦⋆e″) (ρ ∧ ω)
-    | just (v ∧ inj₁ m)  | nothing
-      | nothing = rwLog e′↦⋆e″ (ρ « v »≔ just m ∧ ω)
-\end{spec}
 
 %format ↦⋆-R = "\func{{\mapsto}^\star\text-R}"
 %format ↦⋆-L = "\func{{\mapsto}^\star\text-L}"
@@ -477,7 +432,7 @@ _↣τ⋆_ = Star _↣τ_
 %format ⟨⟩ = "\cons{\langle\rangle}"
 The definition of a combined machine remains unchanged, with the
 constructors |⟨_‚_⟩|, |⟨_⟩| and |⟨⟩| corresponding to the three phases of
-executions:
+execution:
 \begin{code}
 data Combined : Set where
   ⟨_‚_⟩ : (e : Expression IO) (t : Machine) → Combined

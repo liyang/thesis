@@ -84,7 +84,10 @@ postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′
 
 %format ↠τ⋆→↣τ⋆ = "\func{{\twoheadrightarrow}\tau^\star{\rightarrow}{\rightarrowtail}\tau^\star}"
 \begin{code}
-postulate ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′∧s′ → ∃ λ t′ → h′∧s′ ≡ h ∧ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
+postulate
+  ↠τ⋆→↣τ⋆ : ∀ {h t h′ s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′ ∧ s′ → ∃ λ t′ → h ≡ h′ × s′ ≡ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
+--   ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′∧s′ → ∃ λ t′ → h′∧s′ ≡ h ∧ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
+  ↠≄τ→↣≄τ : ∀ {h t₀ h₁ t₁} → h ∧ ⟨ t₀ ⟩ ∷ [] ↠≄τ h₁ ∧ ⟨ t₁ ⟩ ∷ [] → (h ∧ t₀) ↣≄τ (h₁ ∧ t₁)
 {-
 ↠τ⋆→↣τ⋆ ε = _ ∧ ≡.refl ∧ ε
 ↠τ⋆→↣τ⋆ ((._ ∧ () ∧ ↠-done) ◅ _)
@@ -94,6 +97,8 @@ postulate ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ []
 ↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) | is-τ with ↠τ⋆→↣τ⋆ t₀↠τ⋆t′
 ↠τ⋆→↣τ⋆ ((._ ∧ α≃τ ∧ ↠-↣ t↣t₀) ◅ t₀↠τ⋆t′) | is-τ | t′ ∧ ≡.refl ∧ t₀↣τ⋆t′ = t′ ∧ ≡.refl ∧ (_ ∧ is-τ ∧ t↣t₀) ◅ t₀↣τ⋆t′
 -}
+
+
 \end{code}
 
 % vim: ft=tex fo-=m fo-=M:

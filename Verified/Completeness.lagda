@@ -31,11 +31,11 @@ open ≡.Reasoning
 \section{Completeness of Log-Based Transactions}
 
 During a transaction, the high-level stop-the-world semantics of the
-expression language manipulates the heap directly. A virtual machine on the
-other hand accumulates its reads and writes in a pair of read and write
-logs. Upon reaching the |COMMIT| instruction, it either applies the contents
-of the write log to the heap, or retries the transaction, depending on
-wither the read log is consistent with the heap at that point.
+expression language directly manipulates the heap. A virtual machine on the
+other hand accumulates its reads and writes in its transaction log; upon
+reaching the |COMMIT| instruction, it either applies the contents of the
+write log to the heap, or retries the transaction, depending on wither the
+read log is found to be consistent with the heap at that point.
 
 By `completeness of log-based transactions', we mean that the log-based
 semantics of the virtual machine can match anything the stop-the-world
@@ -44,7 +44,7 @@ sequence of transitions (within a transactional context) from some
 expression to its final value, there exists an equivalent sequence of
 virtual machine transitions computing the same value such that if the latter
 then commits, its side-effects on the heap would be indistinguishable from
-that of the former. We will spell out what this means in concrete types in
+that of the former. We will spell this out in concrete terms soon in
 \S\ref{sec:verified-complete}.
 
 \input{Verified/InspectExp.lagda}
@@ -94,14 +94,14 @@ the dotted pattern |.ε| below:
 STM↦⋆→↣⋆ .ε h₀ρω≗h h₀⊇ρ | exp-# = ↣τ-PUSH ◅ ε ∧ h₀ρω≗h ∧ h₀⊇ρ
 \end{code}
 The corresponding virtual machine of |h₀ ∧ ⟨ PUSH m ∷ c ‚ σ ‚ γ ‚ ρ ‚ ω ⟩|
-can follow by the |↣-PUSH| rule; the supplied witnesses of equivalence and
-consistency suffices as neither |ρ| nor |ω| have changed.
+can follow by the |↣-PUSH| rule; the supplied equivalence and consistency
+witnesses are sufficient as neither |ρ| nor |ω| have changed.
 
 Next, the |exp-⊕| constructor corresponds to matching on transitions from |a
 ⊕ b| to |# (m + n)|, which carries with it the respective subsequences
 |a↦⋆m| and |b↦⋆n|. Note that |e↦⋆m| is forced to be |↦⋆-L b a↦⋆m ◅◅ ↦⋆-R
-m b↦⋆n ◅◅ ↦-⊞ ◅ ε|, though we have not to spelt it out explicitly, writing
-in its place the dotted anonymous pattern:
+m b↦⋆n ◅◅ ↦-⊞ ◅ ε|, and we have written in its place the dotted anonymous
+pattern rather than to spell it out explicitly:
 %format a↣⋆m = "a{\rightarrowtail}^\star{}m"
 %format b↣⋆n = "b{\rightarrowtail}^\star{}n"
 %format h₀ρ′ω′≗h′ = "h_0\rho\Prime\omega\Prime{\circeq}h\Prime{}"
@@ -131,7 +131,7 @@ Appending a final |↣τ-ADD| takes the virtual machine to the desired state of
 construct appropriate witnesses of |h₀ρ″ω″≗h″| and |h₀⊇ρ″|.
 
 For |exp-read|, the |e↦⋆m| argument is forced be to the single transition
-|↦-read|, taking |read v| to |h « v »|. This gives the virtual machine
+|↦-read|, taking |read v| to |# (h « v »)|. This gives the virtual machine
 a target of |h₀ ∧ ⟨ c ‚ h « v » ∷ σ ‚ γ ‚ ρ″ ‚ ω ⟩|, along with proof
 obligations of |Equivalent h h₀ ρ″ ω| and |Consistent h₀ ρ″|:
 %format ↣τ-READ′ = "\func{{\rightarrowtail}\tau\text-READ\Prime}"
@@ -235,8 +235,8 @@ complete the proof of equivalence.
 
 Moving on to the proof of consistency, we repeat the familiar outline of
 inspecting the read log followed by the write log. When entries exist for
-|v| in either log, the updated |ρ′| reduces to just |ρ|, so
-the existing consistency witness |h₀⊇ρ| for |ρ| suffices:
+|v| in either log, the updated |ρ′| reduces to just |ρ|, so the existing
+consistency witness |h₀⊇ρ| for |ρ| is adequate:
 %format v≡v′ = "v{\equiv}v\Prime{}"
 \restorecolumns
 \begin{code}

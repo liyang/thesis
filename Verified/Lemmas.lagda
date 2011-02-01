@@ -132,9 +132,9 @@ lemma is equally applicable for our representation of read and write logs.
 
 %format set-get′ = "\func{set\text-get\Prime}"
 %format v≢v′ = "v{\not\equiv}v\Prime{}"
-Conversely, looking up a different variable |v′| from the above---as
-witnessed by the |v ≢ v′| argument---gives the same value as looking it up
-directly in the original heap |h|:
+Conversely, looking up a different variable |v′| from the |v| above---as
+imposed by the |v ≢ v′| witness---gives the same value as looking it up
+directly in the original |h|:
 \begin{code}
 set-get′ : ∀ {X N v v′} (h : Vec X N) m → v ≢ v′ →
   (h « v »≔ m) « v′ » ≡ h « v′ »
@@ -157,9 +157,8 @@ set-lookup : ∀ {h : Heap} {ρ} ω v m →
 set-lookup ω v m rewrite set-get v ω (just m) = ≡.refl
 \end{code}
 %format set-lookup′ = "\func{write\text-lookup\Prime}"
-This is in fact just a corollary of |set-get|. The associated |set-lookup′|
-for looking up a different variable |v′| is also easily obtained as
-a corollary of |set-get′|, as follows:
+This is in fact just a corollary of |set-get|. The dual |set-lookup′| for
+looking up a different variable |v′| also follows easily from |set-get′|:
 \def\setLookupPSig#1{|∀ {v h} ρ ω m {v′} → v ≢ v′ →|}
 \begin{code}
 set-lookup′ : {-"\setLookupPSig{"-}∀ {N v} {h : Heap′ N} ρ ω m {v′} → v ≢ v′ →{-"}"-}
@@ -245,8 +244,9 @@ as that which is modified in-place by the stop-the-world semantics.
 
 Note that we make use of the |≗→≡| lemma to show that pointwise equality for
 heaps implies definitional equality, which happens holds for our vector
-representation. Were this not the case, we could nevertheless proceed using
-only pointwise equality.
+representation. Were this not the case, we should nevertheless be able to
+proceed using only pointwise equality, with minor adjustments to the
+definition of |Equivalent|.
 
 The |hω≗h′| part of the proof is on the structure of |lookupTVar|---used in
 the definition of |Equivalent|---and begins by inspecting the write log.
@@ -263,9 +263,9 @@ show that |update h ω « v » ≡ m|; meanwhile |lookupTVar h ρ ω v| reduces 
 |m|, so the type of |hρω≗h′ v| is refined to |m ≡ h′ « v »|. These two
 equalities together gives us the desired goal.
 
-Were |ω| not to contain an entry for |v|, we first use the |update-get′|
-lemma to rewrite the goal---which is refined to |h « v » ≡ h′
-« v »|---before proceeding to inspect the read log:
+Were it the case that |ω| did not contain an entry for |v|, we may use the
+|update-get′| lemma to first rewrite the goal---which becomes refined to |h
+« v » ≡ h′ « v »|---before proceeding to inspect the read log:
 \restorecolumns
 \begin{code}
   hω≗h′ v | hρ«v»≡h′«v»  | nothing with-≡ ω«v»≡

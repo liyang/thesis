@@ -17,7 +17,7 @@
 %format :: = "\mathrel{\keyw{::}}"
 %format _ = "\keyw{\anonymous}"
 %format | = "\mathrel{\keyw{|}}"
-%format -> = "\mathrel{\type{\rightarrow}}"
+%format -> = "\mathrel{\keyw{\rightarrow}}"
 %format hsPrompt = "\texttt*\name{Main}\texttt>"
 
 % Prelude

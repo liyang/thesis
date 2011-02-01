@@ -329,7 +329,7 @@ compile (a `Add` b)  c = compile a (compile b (ADD : c))
 
 \section{Randomised Testing with QuickCheck and HPC}%{{{%
 
-\TODO{slip in `\emph{assert}' a bit more liberally}
+% \TODO{slip in `\emph{assert}' a bit more liberally}
 
 %{{{%
 
@@ -601,7 +601,7 @@ corresponding to unevaluated expressions in our code. (Alternatively, we could
 have visualised the results using the \texttt{hpc markup} command, which
 generates a highlighted copy of the source code for our perusal.) The
 salient\footnote{The omitted ticks correspond to compiler-generated helper
-definitions, and are none of our concern.} ones are listed below:
+definitions.} ones are listed below:
 \begin{verbatim}
 module "Main" {
   inside "smallStep"  { tick "Set.empty" on line 201; }

@@ -47,7 +47,8 @@ foo h e c σ cow moo = {!!}
 \end{code}
 %endif
 
-% Given a sequence of silent virtual machine transitions, guarded at the end with a non-silent one...
+% Given a sequence of silent virtual machine transitions, guarded at the end
+% with a non-silent one...
 
 %if False
 \begin{code}

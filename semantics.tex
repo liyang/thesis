@@ -231,16 +231,16 @@ In the case where the result type of monadic computations form a monoid,
 such computations themselves can also be viewed as a monoid. Concretely,
 suppose we are working in some monad $\mathsf{M}$ computing values of type
 $\Nat$. Using the monoid of sums $(\Nat,\;+,\;0)$, the following definition
-of $\oast$:
+of $\circledast$:
 \begin{align*}
-	\phantom{a} \oast \phantom{b} \quad:\quad
+	\phantom{a} \circledast \phantom{b} \quad:\quad
 		&\mathsf{M} \Nat \rightarrow \mathsf{M} \Nat \rightarrow \mathsf{M} \Nat \\
-	a \oast b \quad=\quad 
+	a \circledast b \quad=\quad 
 		&a \bind \lambda m \rightarrow \\
 		&b \bind \lambda n \rightarrow \\
 		&\textit{return}\;(m + n)
 \end{align*}
-gives the monoid $(\mathsf{M}\;\Nat,\;\oast,\;\textit{return}\;0)$. We can
+gives the monoid $(\mathsf{M}\;\Nat,\;\circledast,\;\textit{return}\;0)$. We can
 easily verify that the identity and associativity laws hold for this monoid
 via simple equational reasoning proofs, as we had done in
 \S\ref{sec:stm-monad-prop}. Therefore, we can view monoids as a degenerate

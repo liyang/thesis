@@ -490,9 +490,9 @@ isValS (h, s) = case traverse isValP s of
 	isValP _         = Nothing
 \end{code}
 This completes our executable model of the high-level semantics: in
-particular, |reduceUntil isValS redS| then corresponds to an implementation
-of $\red P$, which produces a set of |(Heap, [Integer])| pairs from an
-initial |(Heap, [Proc])|.
+particular, the term |reduceUntil isValS redS| then corresponds to an
+implementation of $\red P$, which produces a set of |(Heap, [Integer])|
+pairs from an initial |(Heap, [Proc])|.
 
 In summary, the above semantics for transactions and processes mirror those
 for STM Haskell, but for a simplified language. Moreover, while the original
@@ -575,9 +575,9 @@ compileP e c = case e of
 For example, invoking |compileP (incTwice counter) NIL| delivers the
 following code:
 \begin{spec}
-[ FORK [ BEGIN, READ counter, PUSH 1, ADD, WRITE counter, COMMIT ]
-, FORK [ BEGIN, READ counter, PUSH 1, ADD, WRITE counter, COMMIT ]
-, ADD ]
+[  FORK [ BEGIN, READ counter, PUSH 1, ADD, WRITE counter, COMMIT ]
+,  FORK [ BEGIN, READ counter, PUSH 1, ADD, WRITE counter, COMMIT ]
+,  ADD ]
 \end{spec}
 
 %}}}%
@@ -644,6 +644,7 @@ example of a transaction that increments a given counter.
 Consider the following timeline:
 {\footnotesize
 \begin{longtable}{@@{}l@@{\hspace{1ex}}llclclclc}
+\hspace{10ex}% shift boxes right a bit, towards the centre
 & \multicolumn{8}{l}{|increment|} \\
 \cline{2-9}
 1 & \multicolumn{1}{||l||}{|BEGIN|} & \multicolumn{1}{l||}{|READ counter|}

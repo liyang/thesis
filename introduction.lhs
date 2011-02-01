@@ -39,7 +39,7 @@ engineers can manufacture on a single silicon chip for the same cost has
 been increasing at an exponential pace, roughly doubling every two years.
 This growth has been remained consistent, so much so that it has been
 informally codified as `Moore's Law'~\cite{moore65-law}. The related
-statement~\footnote{Due to David House---an Intel executive at the time---as
+statement\footnote{Due to David House---an Intel executive at the time---as
 claimed by Moore:\\\url{http://news.cnet.com/2100-1001-984051.html}} that
 ``microprocessors \emph{performance} roughly doubles every 18 months'' has
 also held true, once we factor in the improved performance of individual

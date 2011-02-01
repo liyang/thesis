@@ -169,11 +169,19 @@ For the soundness half of |correctness|, we are provided with a visible
 virtual machine transition comprising |t↠τ⋆t₀|, |t₀↠≄τt₁| and |t₁↠τ⋆t′|:
 \restorecolumns
 \begin{code}
+
+
   COMMIT≼atomic : h ∧ ⟨ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
   COMMIT≼atomic h′∧m (⤇-↠ t↠τ⋆t₀ t₀↠≄τt₁ t₁↠τ⋆t′)
       with ↠τ⋆→↣τ⋆ t↠τ⋆t₀
-  ... | t₀ ∧ ≡.refl ∧ t↣τ⋆t₀ = {!!}
+  ... | t₀ ∧ h≡h₀ ∧ s₀≡⟨t₀⟩ ∧ t↣τ⋆t₀ = {!!} where
+    postulate
+      guarded : ∀ {h₁∧t₁} → h ∧ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ → (t₀↣≄τt₁ : (h ∧ t₀) ↣≄τ h₁∧t₁) →
+        ∃ λ m → ∃₂ λ ρ ω → t₀ ≡ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩
+-- × t₀↣≄τt₁ ≡ ☢ (ρ ∧ ω) ∧ (λ ()) ∧ {!↣-COMMIT (yes ?)!}
+--     guarded foo bar = {!!}
+
 \end{code}
 The initial silent combined machine sequence |t↠τ⋆t₀| can neither fork,
 modify the heap nor emit a |∎ m| action, so we may extract a sequence of
@@ -186,7 +194,7 @@ The above procedure also refines the type of |t₀↠≄τt₁| to |h ∧ ⟨ t�
 s₁|. \emph{(What follows is a sketch of the proof; the fully mechanised
 version is currently in progress.)} Then, using the fact that the |t↠τ⋆t₀|
 sequence is guarded at the end with this non-silent |t₀↠≄τt₁|, we can show
-that |t₀| must be equal to |h ∧ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩| and that
+that |t₀| must be equal to |⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩| and that
 |t₀↠≄τt₁| is in fact an instance of |↣-COMMIT|.
 
 Following a loosely inverse procedure to that of |STM↦⋆→↣⋆|, we can derive
@@ -247,14 +255,16 @@ correctness h (a ⊕ b) c σ = foo where postulate foo : _
 
 In this penultimate chapter, we have come full circle by extending our
 object language and its virtual machine with transactional constructs, to
-coincide with the simplified STM model identified in chapter \ref{ch:model}.
-We were able to reuse the existing proofs for the Fork language, requiring
-only an additional case for |atomic e| in the final proof of |correctness|,
-along with the handful of transaction log and heap lemmas given in
-\S\ref{sec:verified-lemmas}. Both the completeness and soundness halves of
-transactional correctness entailed showing that any visible transition on
-one side had a corresponding visible transition computing the same result
-and having the same heap side-effects on the other.
+coincide with the simplified STM model first identified in chapter
+\ref{ch:model}. We were able to reuse the existing proofs for the Fork
+language, requiring only an additional case for |atomic e| in the final
+proof of |correctness|, along with the handful of transaction log and heap
+lemmas given in \S\ref{sec:verified-lemmas}. The completeness half of
+transactional correctness entailed showing that every visible transition
+arising from the stop-the-world |↦-atomic| rule on expressions had
+a corresponding visible transition in the virtual machine world that
+computed the same result and having the same heap side-effects, and
+vice-versa for soundness.
 
 % vim: ft=tex fo-=m fo-=M:
 
