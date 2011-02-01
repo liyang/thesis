@@ -1,0 +1,13 @@
+*.agdai
+*.lhs.tex
+*.lagda.tex
+*.aux
+now.tex
+thesis.bbl
+thesis.bib
+thesis.blg
+thesis.cites
+thesis.log
+thesis.pdf
+thesis.ptb
+thesis.toc
