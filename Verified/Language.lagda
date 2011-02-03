@@ -317,7 +317,7 @@ from the Fork language given in \S\ref{sec:fork-semantics}, additionally
 passing along |h|, |γ|, |ρ| and |ω| unchanged:
 %if False
 \begin{code}
-infix 4 _↣‹_›_ _↣_ _↣⋆_ _↣τ_ _↣τ⋆_
+infix 4 _↣‹_›_ _↣_ _↣⋆_ _↣τ_ _↣≄τ_ _↣τ⋆_
 \end{code}
 %endif
 \savecolumns
