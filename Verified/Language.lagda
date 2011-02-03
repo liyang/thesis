@@ -452,6 +452,7 @@ M⁺ = ⟨_⟩
 \end{code}
 %endif
 
+%format M⁺≃τ-inj = "\func{M^\texttt+{\simeq}\tau\text-inj}"
 %if False
 \begin{code}
 -- prepend child to soup if appropriate (was: soupCon / soupÇon)
