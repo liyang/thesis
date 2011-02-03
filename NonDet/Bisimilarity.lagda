@@ -124,7 +124,6 @@ obvious manner.
 %Symmetric   _∼_ = ∀ {x y}    → x ∼ y → y ∼ x
 %Transitive  _∼_ = ∀ {x y z}  → x ∼ y → y ∼ z → x ∼ z
 %\end{spec}%
-%}
 With this technique, we are obliged to show that |_≈′_| implies |_≈_|,
 i.e.~provide an interpretor from this embedded language to an actual |_≈_|
 proof. However, as far as comprehension is concerned, the reader can simply
