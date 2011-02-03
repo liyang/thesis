@@ -6,6 +6,8 @@
 %include Verified/Language.lagda
 %include Verified/Commit.lagda
 %include Verified/Lemmas.lagda
+%include Verified/InspectExp.lagda
+%include Verified/Completeness.lagda
 \end{comment}
 %endif
 
@@ -29,43 +31,44 @@ open import Verified.Lemmas as Lemmas
 To be completed. Please refer to proof sketch at the end of
 \S\ref{sec:verified-correct} in the meantime.
 
-% Soundness follows a similar strategy.
-
-%if False
+Given a sequence of silent virtual machine transitions from the start of
+a transaction, guarded at the end with a non-silent transition, we can show
+that the former computes some |m| and the logs |ρ| and |ω|, and that the
+non-silent transition must be a |↣-COMMIT (yes h⊇ρ)|:
+%format guarded = "\func{guarded}"
+%format t₀↣≄τt₁ = "t_0{\rightarrowtail}{\not\simeq}\tau{}t_1"
 \begin{code}
-foo : ∀ h (e : Expression STM) c σ {t₀ h₁∧s₁} →
-  h ∧ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ compile e (COMMIT ∷ c) ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ →
-  (h₀∧t₀↠≄τh₁∧s₁ : h ∧ ⟨ t₀ ⟩ ∷ [] ↠≄τ h₁∧s₁) →
-    ∃ λ m → ∃₂ λ ρ ω →
-      t₀ ≡ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ compile e (COMMIT ∷ c) ‚ ρ ‚ ω ⟩ ×
-      Consistent h ρ
-{-
- →
-      h₀∧t₀↠≄τh₁∧s₁ ≡ ☢ (ρ ∧ ω) ∧ (λ ()) ∧ ↠-↣ (↣-COMMIT (yes h₀⊆ρ))
--}
-foo h e c σ cow moo = {!!}
+postulate
+  guarded : ∀ {c σ γ h t₀ h₁ t₁} (e : Expression STM) →
+    h ∧ ⟨ compile e (COMMIT ∷ c) ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ →
+    (t₀↣≄τt₁ : h ∧ t₀ ↣≄τ h₁ ∧ t₁) →
+    ∃ λ m → ∃₂ λ ρ′ ω′ →
+      t₀ ≡ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ′ ‚ ω′ ⟩ ×
+      t₁ ≡ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ×
+      h₁ ≡ update h ω ×
+      visible (proj₁ (proj₂ t₀↣≄τt₁) ∘ M⁺≃τ-inj) ≡ ☢ (ρ′ ∧ ω′)
 \end{code}
-%endif
+There's some technical difficulty giving a direct proof of |t₀↣≄τt₁
+≡ ↣-COMMIT (yes h⊇ρ)|, so we return four properties implied by it instead.
 
-% Given a sequence of silent virtual machine transitions, guarded at the end
-% with a non-silent one...
-
-%if False
+%format STM↣⋆→↦⋆ = "\func{STM{\rightarrowtail}^\star{\rightarrow}{\mapsto}^\star}"
+%format e↣⋆m = "e{\rightarrowtail}^\star{}m"
+%format ρ′∧ω′ = "\rho\Prime{\land}\omega\Prime{}"
+The |STM↣⋆→↦⋆| lemma is the moral dual of |STM↦⋆→↣⋆|, showing that there
+exists some transition sequence |e↦⋆m : STM‣ h ∧ e ↦⋆ h′ ∧ # m| from |e| to
+the same |m| as that computed by |e↣⋆m|, and furthermore that the
+reconstructed logs from |e↦⋆m| match those of |e↣⋆m|:
 \begin{code}
--- STM↣⋆→↦⋆ : ∀ {h₀ ρ ω} h (e : Expression STM) →
--- --   (e↣τ⋆m : h₀ ∧ ⟨ compile e c ‚ σ ‚ γ ‚ ρ ‚ ω ⟩ ↣τ⋆
--- --     h₀ ∧ ⟨ c ‚ m ∷ σ ‚ γ ‚ ρ′ ‚ ω′ ⟩) →
---   Equivalent h h₀ ρ ω → Consistent h₀ ρ → ∃₂ λ h′ m →
---   Σ (STM‣ h ∧ e ↦⋆ h′ ∧ # m) λ e↦⋆m → let
---     ρ′∧ω′ = rwLog e↦⋆m (ρ ∧ ω); ρ′ = proj₁ ρ′∧ω′; ω′ = proj₂ ρ′∧ω′ in
---     Equivalent h′ h₀ ρ′ ω′ × Consistent h₀ ρ′
--- STM↣⋆→↦⋆ h (# m) h₀ρω≗h h₀⊇ρ = h ∧ m ∧ ε ∧ h₀ρω≗h ∧ h₀⊇ρ
--- STM↣⋆→↦⋆ h (a ⊕ b) h₀ρω≗h h₀⊇ρ = {!!}
--- STM↣⋆→↦⋆ h (read v) h₀ρω≗h h₀⊇ρ = h ∧ h « v » ∧ ↦-read ◅ ε ∧ {!!} ∧ {!!}
--- STM↣⋆→↦⋆ h (write v e) h₀ρω≗h h₀⊇ρ with STM↣⋆→↦⋆ h e h₀ρω≗h h₀⊇ρ
--- STM↣⋆→↦⋆ h (write v e) h₀ρω≗h h₀⊇ρ | h′ ∧ m ∧ e↦⋆m ∧ h₀ρ′ω′≗h′ ∧ h₀⊇ρ′ = h′ « v »≔ m ∧ m ∧ ↦⋆-writeE v e↦⋆m ◅◅ ↦-writeℕ ◅ ε ∧ {!!} ∧ {!h₀⊇ρ′!}
+postulate
+  STM↣⋆→↦⋆ : ∀ {h h₀ m c σ γ ρ ω ρ′ ω′} (e : Expression STM) →
+    (e↣⋆m : h₀ ∧ ⟨ compile e c ‚ σ ‚ γ ‚ ρ ‚ ω ⟩ ↣τ⋆
+      h₀ ∧ ⟨ c ‚ m ∷ σ ‚ γ ‚ ρ′ ‚ ω′ ⟩) →
+    Equivalent h h₀ ρ ω → Consistent h₀ ρ → ∃ λ h′ →
+    Σ (STM‣ h ∧ e ↦⋆ h′ ∧ # m) λ e↦⋆m → let
+      ρ′∧ω′ = rwLog e↦⋆m (ρ ∧ ω) in
+      ρ′ ≡ proj₁ ρ′∧ω′ × ω′ ≡ proj₂ ρ′∧ω′ ×
+      Equivalent h′ h₀ ρ′ ω′ × Consistent h₀ ρ′
 \end{code}
-%endif
 
 % vim: ft=tex fo-=m fo-=M:
 

@@ -28,6 +28,7 @@ open import Verified.Commit as Commit
 open import Verified.Bisimilarity as Bisimilarity
 open import Verified.Lemmas as Lemmas
 open import Verified.Completeness as Completeness
+open import Verified.Soundness as Soundness
 open import Verified.Misc as Misc
 
 -- Rethink this: same heap for both? Surely not…
@@ -158,7 +159,6 @@ equality of the resulting heaps, while a silent |↠τ-switch| moves the |# m|
 onto the virtual machine stack, concluding the completeness part of the
 |correctness| property.
 
-
 -- Given t↠τ⋆t₀ and t₀↠≄τt₁, derive that t₀↠≄τt₁ must be h₀ ∧ ⟨ ⟨ COMMIT ∷ c ‚ … ⟩ ⟩ 
 
 %format t↠τ⋆t₀ = "t{\twoheadrightarrow}\tau^\star{}t_0"
@@ -169,22 +169,23 @@ For the soundness half of |correctness|, we are provided with a visible
 virtual machine transition comprising |t↠τ⋆t₀|, |t₀↠≄τt₁| and |t₁↠τ⋆t′|:
 \restorecolumns
 \begin{code}
-
-
   COMMIT≼atomic : h ∧ ⟨ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
     ≼ h ∧ ⟨ atomic e ‚ ⟨ c ‚ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ []
-  COMMIT≼atomic h′∧m (⤇-↠ t↠τ⋆t₀ t₀↠≄τt₁ t₁↠τ⋆t′)
+  COMMIT≼atomic (h′ ∧ s′) (⤇-↠ {s₀ = h₀ ∧ s₀} {s₁ = h₁ ∧ s₁} t↠τ⋆t₀ t₀↠≄τt₁ t₁↠τ⋆t′)
       with ↠τ⋆→↣τ⋆ t↠τ⋆t₀
-  ... | t₀ ∧ h≡h₀ ∧ s₀≡⟨t₀⟩ ∧ t↣τ⋆t₀ = {!!} where
-    postulate
-      guarded : ∀ {h₁∧t₁} → h ∧ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀ → (t₀↣≄τt₁ : (h ∧ t₀) ↣≄τ h₁∧t₁) →
-        ∃ λ m → ∃₂ λ ρ ω → t₀ ≡ ⟨ COMMIT ∷ c ‚ m ∷ σ ‚ γ ‚ ρ ‚ ω ⟩
--- × t₀↣≄τt₁ ≡ ☢ (ρ ∧ ω) ∧ (λ ()) ∧ {!↣-COMMIT (yes ?)!}
---     guarded foo bar = {!!}
-
+  ... | t₀ ∧ h₀≡h ∧ s₀≡⟨t₀⟩ ∧ t↣τ⋆t₀ rewrite h₀≡h | s₀≡⟨t₀⟩
+        with ↠≄τ→↣≄τ t₀↠≄τt₁
+  ...   | t₁ ∧ s₁≡⟨t₁⟩ ∧ t₀↣≄τt₁ ∧ ⟦t₀↠≄τt₁⟧≡⟦t₀↣≄τt₁⟧ rewrite s₁≡⟨t₁⟩
+          with guarded e t↣τ⋆t₀ t₀↣≄τt₁
+  ...     | m ∧ ρ ∧ ω ∧ t₀≡⟨COMMIT∷c⟩ ∧ t₁≡⟨c⟩ ∧ h₁≡hω ∧ α≡☢ρω rewrite t₀≡⟨COMMIT∷c⟩ | t₁≡⟨c⟩ | h₁≡hω
+            with STM↣⋆→↦⋆ e t↣τ⋆t₀ Equivalent-refl consistent-newLog
+  ...       | h₁′ ∧ e↦⋆m ∧ ρ≡rwLog ∧ ω≡rwLog ∧ hρω≗h₁′ ∧ h⊇ρ rewrite ρ≡rwLog | ω≡rwLog | ⟦t₀↠≄τt₁⟧≡⟦t₀↣≄τt₁⟧ | α≡☢ρω | hω≡h′ hρω≗h₁′ h⊇ρ
+              = (h₁′ ∧ ⟨ ⟨ c ‚ m ∷ σ ‚ [] ‚ newLog ‚ newLog ⟩ ⟩ ∷ [])
+              ∧ ⤇-↠ ε (☢ rwLog e↦⋆m (newLog ∧ newLog) ∧ (λ ()) ∧ ↠-↦ (↦-atomic e↦⋆m)) (↠τ-switch ◅ ε)
+              ∧ ≈′-sym (≈′-≈ (elide-τ⋆ t₁↠τ⋆t′))
 \end{code}
 The initial silent combined machine sequence |t↠τ⋆t₀| can neither fork,
-modify the heap nor emit a |∎ m| action, so we may extract a sequence of
+modify the heap, nor emit a |∎ m| action, so we may extract a sequence of
 silent virtual machine transitions with the following type,
 \begin{spec}
 t↣τ⋆t₀ : h ∧ ⟨ γ ‚ σ ‚ γ ‚ newLog ‚ newLog ⟩ ↣τ⋆ h ∧ t₀
