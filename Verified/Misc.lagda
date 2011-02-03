@@ -85,9 +85,11 @@ postulate ↠τ⋆-heap : ∀ {h h′ r r′} → h ∧ r ↠τ⋆ h′ ∧ r′
 %format ↠τ⋆→↣τ⋆ = "\func{{\twoheadrightarrow}\tau^\star{\rightarrow}{\rightarrowtail}\tau^\star}"
 \begin{code}
 postulate
-  ↠τ⋆→↣τ⋆ : ∀ {h t h′ s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′ ∧ s′ → ∃ λ t′ → h ≡ h′ × s′ ≡ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
+  ↠τ⋆→↣τ⋆ : ∀ {h t h′ s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′ ∧ s′ → ∃ λ t′ → h′ ≡ h × s′ ≡ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
 --   ↠τ⋆→↣τ⋆ : ∀ {h t h′∧s′} → h ∧ ⟨ t ⟩ ∷ [] ↠τ⋆ h′∧s′ → ∃ λ t′ → h′∧s′ ≡ h ∧ ⟨ t′ ⟩ ∷ [] × h ∧ t ↣τ⋆ h ∧ t′
-  ↠≄τ→↣≄τ : ∀ {h t₀ h₁ t₁} → h ∧ ⟨ t₀ ⟩ ∷ [] ↠≄τ h₁ ∧ ⟨ t₁ ⟩ ∷ [] → (h ∧ t₀) ↣≄τ (h₁ ∧ t₁)
+  ↠≄τ→↣≄τ : ∀ {h t₀ h₁ s₁} → (t₀↠≄τt₁ : h ∧ ⟨ t₀ ⟩ ∷ [] ↠≄τ h₁ ∧ s₁) →
+    ∃ λ t₁ → s₁ ≡ ⟨ t₁ ⟩ ∷ [] ×
+    Σ (h ∧ t₀ ↣≄τ h₁ ∧ t₁) λ t₀↣≄τt₁ → ⟦ t₀↠≄τt₁ ⟧ ≡ visible (proj₁ (proj₂ t₀↣≄τt₁) ∘ M⁺≃τ-inj)
 {-
 ↠τ⋆→↣τ⋆ ε = _ ∧ ≡.refl ∧ ε
 ↠τ⋆→↣τ⋆ ((._ ∧ () ∧ ↠-done) ◅ _)
