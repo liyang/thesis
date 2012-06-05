@@ -14,13 +14,14 @@ open import Data.Unit public using (⊤; tt)
 open import Relation.Binary public
 
 module ≡ where
-  open import Relation.Binary.PropositionalEquality public
+  open import Relation.Binary.PropositionalEquality public hiding (inspect)
   module Reasoning where
     open ≡-Reasoning public renaming
       ( _≡⟨_⟩_ to _≡⟪_⟫_ )
     infixr 2 _≡⟪_⁻¹⟫_
     _≡⟪_⁻¹⟫_ : ∀ {X : Set} (x : X) {y z} → y ≡ x → y IsRelatedTo z → x IsRelatedTo z
     _≡⟪_⁻¹⟫_ x = _≡⟪_⟫_ x ∘ sym
+  open Deprecated-inspect public
 open ≡ public using (_≡_; _≢_; _≗_; _with-≡_)
 
 module ≅ where
