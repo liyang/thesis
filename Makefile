@@ -12,7 +12,7 @@ LHS2TEX_DEP := haskell.fmt agda.fmt
 LHS2TEX_LHS := --include=haskell.fmt
 LHS2TEX_LAGDA := --include=agda.fmt
 
-all: now latex-all now.png
+all: latex-all
 again: latex-again
 clean: latex-clean
 distclean: latex-distclean
