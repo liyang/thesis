@@ -108,23 +108,16 @@ open Fin public using (Fin; zero; suc) renaming (_≟_ to _≟Fin_)
 \end{code}
 %endif
 
+%format Vec.tabulate = "\func{Vec.tabulate}"
 %if False
 \begin{code}
 module Vec where
   open import Data.Vec public
   open import Data.Vec.Properties public
-\end{code}
-%endif
 
-%if False
-\begin{code}
   lookup∘replicate : ∀ {X : Set} {N : ℕ} (i : Fin N) (x : X) → lookup i (replicate x) ≡ x
   lookup∘replicate i = Morphism.op-pure (lookup-morphism i)
-\end{code}
-%endif
 
-%if False
-\begin{code}
   module Pointwise where
     open import Relation.Binary.Vec.Pointwise public
   open Pointwise public using (Pointwise; Pointwise-≡)
@@ -142,12 +135,11 @@ open List public using (List; []; _∷_; _++_)
 
 %format ○ = "\cons{\circ}"
 %format ● = "\cons{\bullet}"
+%format maybe = "\func{maybe}"
 %if False
 \begin{code}
 module Maybe where
   open import Data.Maybe public renaming (nothing to ○; just to ●)
-  from : {A : Set} → A → Maybe A → A
-  from = maybe′ id
   ●-inj : ∀ {A : Set} {x y : A} → _≡_ {A = Maybe A} (● x) (● y) → x ≡ y
   ●-inj ≡.refl = ≡.refl
 open Maybe public using (Maybe; ○; ●; ●-inj) renaming (maybe′ to maybe)

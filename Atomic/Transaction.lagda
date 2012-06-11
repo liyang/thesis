@@ -151,15 +151,13 @@ Write-Equivalent {h} {l = ρ & ω} {v} {m} equiv v′ with equiv v′
 
 %if False
 \begin{code}
-Commit-Update : ∀ {h′ h l} → let open Logs.Logs l in
+Commit-Update : ∀ {h′ h l} →
   Consistent h l → Equivalent h l h′ → h′ ≡ Update h l
 Commit-Update {h′} {h} {l} cons equiv = Equivalence.to Vec.Pointwise-≡ ⟨$⟩ Vec.Pointwise.ext h′≗hω where
-  open import Function.Equality using (_⟨$⟩_)
-  open Logs.Logs l
   h′≗hω : ∀ v → Vec.lookup v h′ ≡ Vec.lookup v (Update h l)
-  h′≗hω v rewrite Vec.lookup∘tabulate (λ v → Maybe.from (Vec.lookup v h) (Vec.lookup v ω)) v with Vec.lookup v ω | equiv v
+  h′≗hω v rewrite Vec.lookup∘tabulate (Update-lookup h l) v with Vec.lookup v (Logs.ω l) | equiv v
   ... | ● m | equiv-v = equiv-v
-  ... | ○   | equiv-v with Vec.lookup v ρ | ≡.inspect (Vec.lookup v) ρ
+  ... | ○   | equiv-v with Vec.lookup v (Logs.ρ l) | ≡.inspect (Vec.lookup v) (Logs.ρ l)
   ...   | ● m | [ ρ[v]≡m ] = ≡.trans equiv-v (≡.sym (cons v m ρ[v]≡m))
   ...   | ○   | _ = equiv-v
 \end{code}
@@ -188,7 +186,7 @@ Commit-Update′ {h′} {h} {l} cons equiv = {!Equivalence.to Vec.Pointwise-≡ 
   open import Function.Equality using (_⟨$⟩_)
   open Logs l
   h′≗hω : ∀ v → Vec.lookup v h′ ≡ Vec.lookup v (Update h l)
-  h′≗hω v rewrite Vec.lookup∘tabulate (λ v → Maybe.from (Vec.lookup v h) (Vec.lookup v ω)) v with Vec.lookup v ω | equiv v
+  h′≗hω v rewrite Vec.lookup∘tabulate (Update-lookup h l) v with Vec.lookup v ω | equiv v
   ... | ● m | equiv-v = equiv-v
   ... | ○   | equiv-v with Vec.lookup v ρ | ≡.inspect (Vec.lookup v) ρ
   ...   | ● m | [ ρ[v]≡m ] = ≡.trans equiv-v (≡.sym (cons v m ρ[v]≡m))

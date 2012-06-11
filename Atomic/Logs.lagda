@@ -75,10 +75,10 @@ with the in-transaction value of the variable:
 \begin{code}
 Read : Heap → Logs → Variable → Logs × ℕ
 Read h (ρ & ω) v with Vec.lookup v ω
-... | ● m = ρ & ω , m
-... | ○ with Vec.lookup v ρ
-...   | ● m = ρ & ω , m
-...   | ○ = ρ « v »≔ ● m & ω , m where m = Vec.lookup v h
+... |  ● m = ρ & ω , m
+... |  ○ with Vec.lookup v ρ
+...    | ● m = ρ & ω , m
+...    | ○ = ρ « v »≔ ● m & ω , m where m = Vec.lookup v h
 \end{code}
 If a variable has been written to according to |ω|, we immediately return
 the new value. Otherwise we consult the read log |ρ|: if a previous value
@@ -91,8 +91,11 @@ read log entry will never be filled.
 
 %if False
 \begin{code}
+Update-lookup : Heap → Logs → Variable → ℕ
+Update-lookup h (ρ & ω) v = maybe id (Vec.lookup v h) (Vec.lookup v ω)
+
 Update : Heap → Logs → Heap
-Update h (ρ & ω) = Vec.tabulate (λ v → Maybe.from (Vec.lookup v h) (Vec.lookup v ω))
+Update h l = Vec.tabulate (Update-lookup h l)
 \end{code}
 %endif
 
