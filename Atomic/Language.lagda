@@ -205,8 +205,6 @@ examine how a corresponding rule in the log-based semantics allows the heap
 to mutate during a transaction.
 
 
-\subsection{Transaction Logs}
-
 \input{Atomic/Logs.lagda.tex}
 
 %if False
