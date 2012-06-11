@@ -1,6 +1,9 @@
 module Sound where
 
 open import Common
+open import Heap
+open import Logs
+open import Transaction
 open import Language
 
 -- sequence of ↣′ transitions with different heaps
@@ -35,40 +38,40 @@ H↣′⋆-Consistent : ∀ {h′ l′ e′ l e} →
   H⊢ l , e ↣′⋆ l′ , e′ →
   Consistent h′ l′ → Consistent h′ l
 H↣′⋆-Consistent {h′} {l′} {e′} = flip $
-  ⋆.gfold fst (const ∘ Consistent h′) H↣′-Consistent {k = l′ , e′}
+  Star.gfold fst (const ∘ Consistent h′) H↣′-Consistent {k = l′ , e′}
 
 private
   extract : ∀ {α h R l e h′ c′ e′ h″ c″ e″} →
     H⊢ ∅ , R ↣′⋆ l , e →
     α ≢ τ →
     h , ↣: ● (R , l) , atomic e  ↠⋆  h′ , c′ , e′ →
-    α ⊢  h′ , c′ , e′  ↠  h″ , c″ , e″ →
+    α ▹  h′ , c′ , e′  ↠  h″ , c″ , e″ →
     ∃₂ λ l′ m →
     α ≡ ☢ ×
     c′ , e′ ≡ ↣: ● (R , l′) , atomic (# m) ×
     h″ , c″ , e″ ≡ Update h′ l′ , ↣: ○ , # m ×
     Consistent h′ l′ ×
     H⊢ ∅ , R ↣′⋆ l′ , # m
-  extract R↣′⋆e α≢τ [] (↠-↣ (↣-step e↣e′)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ [] (↠-↣ (↣-mutate h′)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ [] (↠-↣ (↣-abort ¬cons)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ [] (↠-↣ (↣-commit cons)) = _ , _ , ≡.refl , ≡.refl , ≡.refl , cons , R↣′⋆e
-  extract R↣′⋆e α≢τ (↠-↣ (↣-step e↣e′)   ∷ c′↠⋆c″) c″↠c‴ = extract (R↣′⋆e ◅◅ (_ , e↣e′) ∷ []) α≢τ c′↠⋆c″ c″↠c‴
-  extract R↣′⋆e α≢τ (↠-↣ (↣-mutate h′)   ∷ c′↠⋆c″) c″↠c‴ = extract R↣′⋆e α≢τ c′↠⋆c″ c″↠c‴
-  extract R↣′⋆e α≢τ (↠-↣ (↣-abort ¬cons) ∷ c′↠⋆c″) c″↠c‴ = extract [] α≢τ c′↠⋆c″ c″↠c‴
+  extract R↣′⋆e α≢τ ε (↠-↣ (↣-step e↣e′)) = ⊥-elim (α≢τ ≡.refl)
+  extract R↣′⋆e α≢τ ε (↠-↣ (↣-mutate h′)) = ⊥-elim (α≢τ ≡.refl)
+  extract R↣′⋆e α≢τ ε (↠-↣ (↣-abort ¬cons)) = ⊥-elim (α≢τ ≡.refl)
+  extract R↣′⋆e α≢τ ε (↠-↣ (↣-commit cons)) = _ , _ , ≡.refl , ≡.refl , ≡.refl , cons , R↣′⋆e
+  extract R↣′⋆e α≢τ (↠-↣ (↣-step e↣e′)   ◅ c′↠⋆c″) c″↠c‴ = extract (R↣′⋆e ◅◅ (_ , e↣e′) ◅ ε) α≢τ c′↠⋆c″ c″↠c‴
+  extract R↣′⋆e α≢τ (↠-↣ (↣-mutate h′)   ◅ c′↠⋆c″) c″↠c‴ = extract R↣′⋆e α≢τ c′↠⋆c″ c″↠c‴
+  extract R↣′⋆e α≢τ (↠-↣ (↣-abort ¬cons) ◅ c′↠⋆c″) c″↠c‴ = extract ε α≢τ c′↠⋆c″ c″↠c‴
 
 ↣-extract : ∀ {α h R h′ c′ e′ h″ c″ e″} →
   α ≢ τ →
   h , ↣: ○ , atomic R ↠⋆ h′ , c′ , e′ →
-  α ⊢ h′ , c′ , e′ ↠ h″ , c″ , e″ →
+  α ▹ h′ , c′ , e′ ↠ h″ , c″ , e″ →
   ∃₂ λ l′ m →
   α ≡ ☢ ×
   c′ , e′ ≡ ↣: ● (R , l′) , atomic (# m) ×
   h″ , c″ , e″ ≡ Update h′ l′ , ↣: ○ , # m ×
   Consistent h′ l′ ×
   H⊢ ∅ , R ↣′⋆ l′ , # m
-↣-extract α≢τ [] (↠-↣ ↣-begin) = ⊥-elim (α≢τ ≡.refl)
-↣-extract α≢τ (↠-↣ ↣-begin ∷ c↠⋆c′) c′↠c″ = extract [] α≢τ c↠⋆c′ c′↠c″
+↣-extract α≢τ ε (↠-↣ ↣-begin) = ⊥-elim (α≢τ ≡.refl)
+↣-extract α≢τ (↠-↣ ↣-begin ◅ c↠⋆c′) c′↠c″ = extract ε α≢τ c↠⋆c′ c′↠c″
 
 ↣′-swap : ∀ {h h′ l e l′ e′} →
   Consistent h′ l′ →
@@ -90,12 +93,12 @@ private
   Consistent h′ l′ →
   H⊢ l , e ↣′⋆ l′ , e′ →
   h′ ⊢ l , e ↣′⋆ l′ , e′
-↣′⋆-swap {h′} cons = fst ∘ ⋆.gfold id P f ([] , cons) where
+↣′⋆-swap {h′} cons = fst ∘ Star.gfold id P f (ε , cons) where
   P : Logs × Expression′ → Logs × Expression′ → Set
   P (l , e) (l′ , e′) = h′ ⊢ l , e ↣′⋆ l′ , e′ × Consistent h′ l
   f : ∀ {c c′ c″} → H⊢ c ↣′ c′ → P c′ c″ → P c c″
   f (h , e↣e′) (e′↣′⋆e″ , cons′)
-    = ↣′-swap cons′ e↣e′ ∷ e′↣′⋆e″
+    = ↣′-swap cons′ e↣e′ ◅ e′↣′⋆e″
     , H↣′-Consistent (h , e↣e′) cons′
 {-
 -- alternative definition with explicit recursion (and recomputing cons′ from scratch)
@@ -134,7 +137,7 @@ private
   Consistent h₀ l′ ×
   Equivalent h₀ l′ h′ ×
   h , e ↦′⋆ h′ , e′
-↣′⋆→↦′⋆ cons equiv [] = _ , cons , equiv , []
-↣′⋆→↦′⋆ cons equiv (e↣′e′ ∷ e′↣′⋆e″) with ↣′→↦′ cons equiv e↣′e′
+↣′⋆→↦′⋆ cons equiv ε = _ , cons , equiv , ε
+↣′⋆→↦′⋆ cons equiv (e↣′e′ ◅ e′↣′⋆e″) with ↣′→↦′ cons equiv e↣′e′
 ... | h′ , cons′ , equiv′ , e↦′e′ with ↣′⋆→↦′⋆ cons′ equiv′ e′↣′⋆e″
-...   | h″ , cons″ , equiv″ , e′↦′⋆e″ = h″ , cons″ , equiv″ , e↦′e′ ∷ e′↦′⋆e″
+...   | h″ , cons″ , equiv″ , e′↦′⋆e″ = h″ , cons″ , equiv″ , e↦′e′ ◅ e′↦′⋆e″

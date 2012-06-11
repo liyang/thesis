@@ -19,15 +19,8 @@ open import Logs
 
 %if False
 \begin{code}
-Consistent : Heap → Logs → Set
-Consistent h (ρ ∧ _) = ∀ v m → Vec.lookup v ρ ≡ ● m → Vec.lookup v h ≡ m
-\end{code}
-%endif
-
-%if False
-\begin{code}
 Consistent? : Decidable Consistent
-Consistent? h (ρ ∧ ω) = Dec.map′ Vec.Pointwise.app Vec.Pointwise.ext
+Consistent? h (ρ & ω) = Dec.map′ Vec.Pointwise.app Vec.Pointwise.ext
     (Vec.Pointwise.decidable dec h ρ) where
   dec : (h[v] : ℕ) (ρ[v] : Maybe ℕ) → Dec (∀ m → ρ[v] ≡ ● m → h[v] ≡ m)
   dec h[v] (● m) with h[v] ≟ℕ m
@@ -69,14 +62,14 @@ private
 %if False
 \begin{code}
 Read-Consistent : ∀ {h} l v → let open Logs.Logs l in Vec.lookup v ρ ≡ ○ →
-  Consistent h l ⇔ Consistent h (ρ « v »≔ ● (Vec.lookup v h) ∧ ω)
-Read-Consistent {h} (ρ ∧ ω) v ρ[v]≡○ = equivalence t f where
-  t : Consistent h (ρ ∧ ω) → Consistent h (ρ « v »≔ ● (Vec.lookup v h) ∧ ω)
+  Consistent h l ⇔ Consistent h (ρ « v »≔ ● (Vec.lookup v h) & ω)
+Read-Consistent {h} (ρ & ω) v ρ[v]≡○ = equivalence t f where
+  t : Consistent h (ρ & ω) → Consistent h (ρ « v »≔ ● (Vec.lookup v h) & ω)
   t cons v′ with v′ ≟Fin v
   ... | yes v′≡v rewrite v′≡v | Vec.lookup∘update v ρ (● (Vec.lookup v h)) = λ m → ●-inj
   ... | no v′≢v rewrite Vec.lookup∘update′ v′≢v ρ (● (Vec.lookup v h)) = cons v′
 
-  f : Consistent h (ρ « v »≔ ● (Vec.lookup v h) ∧ ω) → Consistent h (ρ ∧ ω)
+  f : Consistent h (ρ « v »≔ ● (Vec.lookup v h) & ω) → Consistent h (ρ & ω)
   f cons v′ with v′ ≟Fin v
   ... | yes v′≡v rewrite v′≡v | ρ[v]≡○ = λ m ()
   ... | no v′≢v rewrite ≡.sym $ Vec.lookup∘update′ v′≢v ρ (● (Vec.lookup v h)) = cons v′
@@ -87,19 +80,19 @@ Read-Consistent {h} (ρ ∧ ω) v ρ[v]≡○ = equivalence t f where
 \begin{code}
 Read-Consistent′ : ∀ {h} l v →
   Consistent h l ⇔ Consistent h (fst (Read h l v))
-Read-Consistent′ (ρ ∧ ω) v with Vec.lookup v ω
+Read-Consistent′ (ρ & ω) v with Vec.lookup v ω
 ... | ● n = Equivalence.id
 ... | ○ with Vec.lookup v ρ | ≡.inspect (Vec.lookup v) ρ
 ...   | ● n | _ = Equivalence.id
-...   | ○   | [ ρ[v]≡○ ] = Read-Consistent (ρ ∧ ω) v ρ[v]≡○
+...   | ○   | [ ρ[v]≡○ ] = Read-Consistent (ρ & ω) v ρ[v]≡○
 \end{code}
 %endif
 
 %if False
 \begin{code}
 Read-Equivalent : ∀ {h₀ l h′ v} → let open Logs.Logs l in
-  Consistent h₀ l → Equivalent h₀ l h′ → Equivalent h₀ (ρ « v »≔ ● (Vec.lookup v h₀) ∧ ω) h′
-Read-Equivalent {h₀} {ρ ∧ ω} {h′} {v} cons equiv v′ with cons v′ | equiv v′
+  Consistent h₀ l → Equivalent h₀ l h′ → Equivalent h₀ (ρ « v »≔ ● (Vec.lookup v h₀) & ω) h′
+Read-Equivalent {h₀} {ρ & ω} {h′} {v} cons equiv v′ with cons v′ | equiv v′
 ... | cons-v′ | equiv-v′ with Vec.lookup v′ ω
 ...   | ● m = equiv-v′
 ...   | ○ with v′ ≟Fin v
@@ -108,7 +101,7 @@ Read-Equivalent {h₀} {ρ ∧ ω} {h′} {v} cons equiv v′ with cons v′ | e
 
 %if False
 \begin{code}
-Read-Equivalent {h₀} {ρ ∧ ω} {h′} {v} cons equiv v′
+Read-Equivalent {h₀} {ρ & ω} {h′} {v} cons equiv v′
     | cons-v′ | equiv-v′ | ○
         | yes v′≡v rewrite v′≡v | Vec.lookup∘update v ρ (● (Vec.lookup v h₀)) with Vec.lookup v ρ
 ...       | ● m = ≡.trans equiv-v′ (≡.sym (cons-v′ m ≡.refl))
@@ -118,7 +111,7 @@ Read-Equivalent {h₀} {ρ ∧ ω} {h′} {v} cons equiv v′
 
 %if False
 \begin{code}
-Read-Equivalent {h₀} {ρ ∧ ω} {h′} {v} cons equiv v′
+Read-Equivalent {h₀} {ρ & ω} {h′} {v} cons equiv v′
     | cons-v′ | equiv-v′ | ○
         | no v′≢v rewrite Vec.lookup∘update′ v′≢v ρ (● (Vec.lookup v h₀)) with Vec.lookup v′ ρ
 ...       | ● m = equiv-v′
@@ -132,7 +125,7 @@ Read-Equivalent′ : ∀ h l {h′} v →
   Consistent h l →
   Equivalent h l h′ →
   Equivalent h (fst (Read h l v)) h′
-Read-Equivalent′ h (ρ ∧ ω) v cons equiv v′ with Vec.lookup v ω
+Read-Equivalent′ h (ρ & ω) v cons equiv v′ with Vec.lookup v ω
 ... | ● m = equiv v′
 ... | ○ with Vec.lookup v ρ
 ...   | ● m = equiv v′
@@ -145,7 +138,7 @@ Read-Equivalent′ h (ρ ∧ ω) v cons equiv v′ with Vec.lookup v ω
 Write-Equivalent : ∀ {h h₀ l v m} →
   Equivalent h₀ l h →
   Equivalent h₀ (Write l v m) (h « v »≔ m)
-Write-Equivalent {h} {l = ρ ∧ ω} {v} {m} equiv v′ with equiv v′
+Write-Equivalent {h} {l = ρ & ω} {v} {m} equiv v′ with equiv v′
 ... | equiv-v′ with v′ ≟Fin v
 ...   | yes v′≡v rewrite v′≡v | Vec.lookup∘update v ω (● m) = Vec.lookup∘update v h m
 ...   | no v′≢v rewrite Vec.lookup∘update′ v′≢v h m | Vec.lookup∘update′ v′≢v ω (● m) with Vec.lookup v′ ω

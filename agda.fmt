@@ -1,6 +1,8 @@
 % Agda Language
 %format data = "\keyw{data}\;"
 %format record = "\keyw{data}\;"
+%format constructor = "\keyw{constructor}\;"
+%format field = "\keyw{field}\;"
 %format ; = "\keyw{;}\;"
 %format with = "\keyw{with}"
 %format let = "\;\keyw{let}\;"
@@ -131,14 +133,14 @@
 
 % Data.Product renaming (_,_ to _∧_) -- or _‚_? lhs2TeX doesn't like commas
 %format Σ = "\type{\Sigma}"
-%format × = "\infix{\func{\times}}"
-%format _×_ = "\func{\anonymous{\times}\anonymous}"
+%format × = "\infix{\type{\times}}"
+%format _×_ = "\type{\anonymous{\times}\anonymous}"
 % format ‚ = "\infix{\cons{,}}"
 % format _‚_ = "\cons{\anonymous,\anonymous}"
 %format ∧ = "\infix{\cons{{\wedge}}}"
 %format _∧_ = "\cons{\anonymous{\wedge}\anonymous}"
-%format ∃ = "\func{\exists}"
-%format ∃₂ = "\func{\exists_2}"
+%format ∃ = "\type{\exists}"
+%format ∃₂ = "\type{\exists_2}"
 %format proj₁ = "\func{proj_L}"
 %format proj₂ = "\func{proj_R}"
 
@@ -156,7 +158,7 @@
 
 % Data.Fin
 %format Fin = "\type{Fin}"
-%format _≟ℕ_ = "\func{\anonymous{\stackrel?=}_{Fin}\!\anonymous}"
+%format _≟Fin_ = "\func{\anonymous{\stackrel?=}_{Fin}\!\anonymous}"
 %format ≟Fin = "\infix{\func{{\stackrel?=}_{Fin}}}"
 
 % Data.Nat
@@ -189,7 +191,7 @@
 %format nothing = "\cons{nothing}"
 
 % Relation.Nullary
-%format ¬ = "\func{\lnot}"
+%format ¬ = "\type{\lnot}"
 %format yes = "\cons{yes}"
 %format no = "\cons{no}"
 %format Dec = "\type{Dec}"
@@ -200,16 +202,16 @@
 %format ⌋ = "\postfix{\func{{\rfloor}}}"
 
 % Relation.Binary
-%format Rel = "\func{Rel}"
-%format REL = "\func{REL}"
-%format Reflexive = "\func{Reflexive}"
-%format Symmetric = "\func{Symmetric}"
-%format Sym = "\func{Sym}"
-%format Transitive = "\func{Transitive}"
-%format _⇒_ = "\func{\anonymous{\Rightarrow}\anonymous}"
-%format ⇒ = "\infix{\func{{\Rightarrow}}}"
-%format _Preserves₂_⟶_⟶_ = "\func{\anonymous{}Preserves_2\anonymous{\longrightarrow}\anonymous{\longrightarrow}\anonymous}"
-%format Preserves₂ = "\infix{\func{Preserves_2}}"
+%format Rel = "\type{Rel}"
+%format REL = "\type{REL}"
+%format Reflexive = "\type{Reflexive}"
+%format Symmetric = "\type{Symmetric}"
+%format Sym = "\type{Sym}"
+%format Transitive = "\type{Transitive}"
+%format _⇒_ = "\type{\anonymous{\Rightarrow}\anonymous}"
+%format ⇒ = "\infix{\type{{\Rightarrow}}}"
+%format _Preserves₂_⟶_⟶_ = "\type{\anonymous{}Preserves_2\anonymous{\longrightarrow}\anonymous{\longrightarrow}\anonymous}"
+%format Preserves₂ = "\infix{\type{Preserves_2}}"
 
 % Relation.Binary.PropositionalEquality
 %format ≡ = "\type{{\equiv}}"
@@ -220,7 +222,7 @@
 %format ≡.cong = "\func{{\equiv}.cong}"
 %format ≡.inspect = "\func{{\equiv}.inspect}"
 %format with-≡ = "\infix{\cons{with\text-{\equiv}}}"
-%format ≗ = "\infix{\func{{\circeq}}}"
+%format ≗ = "\infix{\type{{\circeq}}}"
 
 % Relation.Binary.PreorderReasoning
 %format begin = "\func{begin}"

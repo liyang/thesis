@@ -1,6 +1,6 @@
 TEXT := thesis.tex introduction.lhs stm.lhs semantics.tex \
 	testing.lhs model.lhs agda.lagda nondet.lagda fork.lagda \
-	verified.lagda conclusion.tex
+	atomic.lagda conclusion.tex
 
 LTXALL := thesis # ...
 LTXDEP := # article.sty # ... thesis.bbl
@@ -38,6 +38,9 @@ verified.lagda.tex: Verified/Heap.lagda.tex Verified/Action.lagda.tex \
 	Verified/Language.lagda.tex Verified/Commit.lagda.tex \
 	Verified/Lemmas.lagda.tex Verified/InspectExp.lagda.tex \
 	Verified/Completeness.lagda.tex Verified/Soundness.lagda.tex
+
+atomic.lagda.tex: Atomic/Common.lagda.tex Atomic/Language.lagda.tex \
+	Atomic/Heap.lagda.tex Atomic/Logs.lagda.tex Atomic/Transaction.lagda.tex
 
 polycode.lhs.tex: LHS2TEX_LHS=
 
