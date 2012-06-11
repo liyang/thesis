@@ -99,11 +99,4 @@ Update h l = Vec.tabulate (Update-lookup h l)
 \end{code}
 %endif
 
-%if False
-\begin{code}
-Consistent : Heap → Logs → Set
-Consistent h (ρ & _) = ∀ v m → Vec.lookup v ρ ≡ ● m → Vec.lookup v h ≡ m
-\end{code}
-%endif
-
 % vim: ft=tex fo-=m fo-=M:

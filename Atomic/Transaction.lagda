@@ -19,6 +19,13 @@ open import Logs
 
 %if False
 \begin{code}
+Consistent : Heap → Logs → Set
+Consistent h (ρ & _) = ∀ v m → Vec.lookup v ρ ≡ ● m → Vec.lookup v h ≡ m
+\end{code}
+%endif
+
+%if False
+\begin{code}
 Consistent? : Decidable Consistent
 Consistent? h (ρ & ω) = Dec.map′ Vec.Pointwise.app Vec.Pointwise.ext
     (Vec.Pointwise.decidable dec h ρ) where
