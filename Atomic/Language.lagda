@@ -4,7 +4,6 @@
 %include Atomic/Common.lagda
 %include Atomic/Heap.lagda
 %include Atomic/Logs.lagda
-%include Atomic/Transaction.lagda
 \end{comment}
 %endif
 
@@ -15,7 +14,6 @@ module Language where
 open import Common
 open import Heap
 open import Logs
-open import Transaction
 \end{code}
 %endif
 
@@ -121,7 +119,7 @@ data _↦′_ : Rel (Heap × Expression′) where
              h , # m ⊕  b  ↦′  h′ , # m ⊕  b′
 
   ↦′-read : ∀ {h} v →
-    h , read v  ↦′  h , # Vec.lookup v h
+    h , read v  ↦′  h , # h « v »
   ↦′-writeℕ : ∀ {h v m} →
     h , write v (# m) ↦′ h « v »≔ m , # m
   ↦′-writeE : ∀ {h e h′ e′ v} →
@@ -207,12 +205,6 @@ to mutate during a transaction.
 
 \input{Atomic/Logs.lagda.tex}
 
-%if False
-\begin{code}
-TState : Set
-TState = Maybe (Expression′ × Logs)
-\end{code}
-%endif
 
 \subsection{Log-based Semantics}
 
@@ -222,162 +214,134 @@ infix 3 _⊢_↣′_
 \end{code}
 %endif
 
-%if False
+%format _⊢_↣′_ = "\type{\anonymous{\vdash}\anonymous{\rightarrowtail}\Prime\anonymous}"
+%format ⊢ = "\infix{\type{\vdash}}"
+%format ↣′ = "\infix{\type{\rightarrowtail\Prime}}"
+%format ↣′-ℕ = "\cons{{\rightarrowtail}\Prime\text-{\oplus}\mathbb{N}}"
+%format ↣′-L = "\cons{{\rightarrowtail}\Prime\text-{\oplus}L}"
+%format ↣′-R = "\cons{{\rightarrowtail}\Prime\text-{\oplus}R}"
+%format ↣′-read = "\cons{{\rightarrowtail}\Prime\text-read}"
+%format ↣′-writeE = "\cons{{\rightarrowtail}\Prime\text-write_E}"
+%format ↣′-writeℕ = "\cons{{\rightarrowtail}\Prime\text-write_{\mathbb{N}}}"
+%format a↣a′ = "a{\rightarrowtail}a\Prime{}"
+%format b↣b′ = "b{\rightarrowtail}b\Prime{}"
+%format e↣e′ = "e{\rightarrowtail}e\Prime{}"
+%format l′m = "l\Prime{}m"
+The log-base semantics makes transitions between pairs of |Logs| and
+|Expression′| rather than operating directly on a |Heap|. We can still read
+from the heap, but it is never modified by the following rules. The first
+three rules corresponding to left-biased addition should look familiar:
+\savecolumns
 \begin{code}
-data _⊢_↣′_ (h : Heap) : Rel (Logs × Expression′) where
+data _⊢_↣′_ {-"\;"-} (h : Heap) : Rel (Logs × Expression′) where
   ↣′-ℕ : ∀ {l m n} →
     h ⊢  l , # m ⊕ # n  ↣′  l , # (m + n)
   ↣′-R : ∀ {l b l′ b′} m →
-    (b↣b′ : h ⊢  l ,       b  ↣′  l′ ,       b′)  →
-            h ⊢  l , # m ⊕ b  ↣′  l′ , # m ⊕ b′
+    (b↣b′ :  h ⊢ l ,        b ↣′ l′ ,        b′)  →
+             h ⊢ l , # m ⊕  b ↣′ l′ , # m ⊕  b′
   ↣′-L : ∀ {l a l′ a′} b →
-    (a↣a′ : h ⊢  l , a      ↣′  l′ , a′)  →
-            h ⊢  l , a ⊕ b  ↣′  l′ , a′ ⊕ b
+    (a↣a′ :  h ⊢ l , a       ↣′ l′ , a′)  →
+             h ⊢ l , a ⊕ b   ↣′ l′ , a′ ⊕ b
 \end{code}
-%endif
-
-%if False
+The |↣′-read| rule reduces a |read v| expression to the value of |v| using
+the |Read| function defined in the previous section, potentially also
+resulting in a new log:
+\restorecolumns
 \begin{code}
   ↣′-read : ∀ l v → let l′m = Read h l v in
-    h ⊢  l , read v  ↣′  fst l′m , # snd l′m
+    h ⊢ l , read v ↣′ fst l′m , # snd l′m
   ↣′-writeℕ : ∀ {l v m} →
-    h ⊢  l , write v (# m)  ↣′  Write l v m , # m
+    h ⊢ l , write v (# m) ↣′ Write l v m , # m
   ↣′-writeE : ∀ {l e l′ e′ v} →
-    (e↣e′ : h ⊢  l ,         e  ↣′  l′ ,         e′)  →
-            h ⊢  l , write v e  ↣′  l′ , write v e′
+    (e↣e′ :  h ⊢ l ,          e ↣′ l′ ,          e′)  →
+             h ⊢ l , write v  e ↣′ l′ , write v  e′
 \end{code}
-%endif
+The |↣′-writeℕ| rule updates the write log via the |Write| helper when the
+expression argument to |write| is just a number, while |↣′-writeE| effects
+the reduction of |e| in the same manner as the stop-the-world semantics.
 
-%if False
+%format TState = "\type{TState}"
+%format _▹_↣_ = "\type{\anonymous{\triangleright}\anonymous{\rightarrowtail}\anonymous}"
+%format ↣ = "\infix{\type{\rightarrowtail}}"
+%format ↣-ℕ = "\cons{{\rightarrowtail}\text-{\oplus}\mathbb{N}}"
+%format ↣-L = "\cons{{\rightarrowtail}\text-{\oplus}L}"
+%format ↣-R = "\cons{{\rightarrowtail}\text-{\oplus}R}"
+%format ↣-begin = "\cons{{\rightarrowtail}\text-begin}"
+%format ↣-step = "\cons{{\rightarrowtail}\text-step}"
+%format ↣-mutate = "\cons{{\rightarrowtail}\text-mutate}"
+%format ↣-abort = "\cons{{\rightarrowtail}\text-abort}"
+%format ↣-commit = "\cons{{\rightarrowtail}\text-commit}"
+%format ¬cons = "\Varid{\lnot{}cons}"
+For the `IO' level of this log-based semantics, we define a transition
+|_▹_↣_| between triples of heaps, transaction states and expressions,
+labelled with the same |Action|s we used earlier. During a running
+transaction, the state comprises of the original expression and the
+transaction |Logs|; otherwise it is empty:
 \begin{code}
--- sequence of ↣′ transitions with the same heap
-infix 3 _⊢_↣′⋆_
-_⊢_↣′⋆_ : Heap → Rel (Logs × Expression′)
-h ⊢ l , e ↣′⋆ l′ , e′ = Star (_⊢_↣′_ h) (l , e) (l′ , e′)
+TState : Set
+TState = Maybe (Expression′ × Logs)
 \end{code}
-%endif
-
 %if False
 \begin{code}
 infix 3 _▹_↣_
+\end{code}
+%endif
+The rules for addition are identical to those of |_▹_↦_|:
+\savecolumns
+\begin{code}
 data _▹_↣_ : Action → Rel (Heap × TState × Expression) where
   ↣-ℕ : ∀ {h m n} →
-    ⊞ ▹  h , ○ , # m ⊕ # n  ↣  h , ○ , # (m + n)
+    ⊞  ▹ h , ○ , # m ⊕ # n ↣ h , ○ , # (m + n)
   ↣-R : ∀ {α h t b h′ t′ b′} m →
-    (b↣b′ : α ▹  h , t ,       b  ↣  h′ , t′ ,       b′)  →
-            α ▹  h , t , # m ⊕ b  ↣  h′ , t′ , # m ⊕ b′
+    (b↣b′ :  α ▹ h , t ,        b ↣ h′ , t′ ,        b′)  →
+             α ▹ h , t , # m ⊕  b ↣ h′ , t′ , # m ⊕  b′
   ↣-L : ∀ {α h t a h′ t′ a′} b →
-    (a↣a′ : α ▹  h , t , a      ↣  h′ , t′ , a′)  →
-            α ▹  h , t , a ⊕ b  ↣  h′ , t′ , a′ ⊕ b
+    (a↣a′ :  α ▹ h , t , a       ↣ h′ , t′ , a′)  →
+             α ▹ h , t , a ⊕ b   ↣ h′ , t′ , a′ ⊕ b
 \end{code}
-%endif
-
-%if False
+Next we move on to the transaction rules: when the expression to be reduced
+is of the form |atomic e| and we have yet to enter the transaction, the
+|↣-begin| rule sets up the restart expression to |e| and initialises the
+transaction logs to |∅|:
+\restorecolumns
 \begin{code}
   ↣-begin : ∀ {h e} →
-    τ ▹  h , ○ , atomic e  ↣  h , ● (e , ∅) , atomic e
-  ↣-step : ∀ {h R l e l′ e′} →
-    (e↣e′ : h ⊢  l , e  ↣′  l′ , e′)  →
-    τ ▹ h , ● (R , l) , atomic e  ↣  h , ● (R , l′) , atomic e′
+    τ  ▹ h , ○ , atomic e ↣ h , ● (e , ∅) , atomic e
+\end{code}
+The second |↣-step| rule allows us to make a single |_⊢_↣′_| transition on
+the transaction level; note that the heap |h| does not change:
+\restorecolumns
+\begin{code}
+  ↣-step : ∀ {h r l e l′ e′} →
+    (e↣e′ : h ⊢ l , e ↣′ l′ , e′)  →
+    τ  ▹ h , ● (r , l) , atomic e ↣ h , ● (r , l′) , atomic e′
+\end{code}
+While the Atomic language does not contain explicit parallelism, we can
+model interference using a |↣-mutate| rule that changes to an arbitrary heap
+|h′| at any time during a transaction:
+\restorecolumns
+\begin{code}
   ↣-mutate : ∀ h′ {h t e} →
-    τ ▹ h , ● t , atomic e  ↣  h′ , ● t , atomic e
-  ↣-abort : ∀ {h R l m} → (¬cons : ¬ Consistent h l) →
-    τ ▹  h , ● (R , l) , atomic (# m)  ↣  h , ● (R , ∅) , atomic R
-  ↣-commit : ∀ {h R l m} → (cons : Consistent h l) →
-    ☢ ▹  h , ● (R , l) , atomic (# m)  ↣  Update h l , ○ , # m
+    τ  ▹ h , ● t , atomic e ↣ h′ , ● t , atomic e
 \end{code}
-%endif
-
-\subsection{Properties?}
-
-\input{Atomic/Transaction.lagda.tex}
-
-%if False
+Finally we come to the |↣-abort| and |↣-commit| rules, one of which applies
+when the transactional expression has reduced down to a number:
+\restorecolumns
 \begin{code}
--- ↣′ preserves consistency
-↣′-Consistent : ∀ {h l e l′ e′} →
-  h ⊢  l , e  ↣′  l′ , e′ →
-  Consistent h l ⇔ Consistent h l′
-↣′-Consistent ↣′-ℕ = Equivalence.id
-↣′-Consistent (↣′-R m b↣b′) = ↣′-Consistent b↣b′
-↣′-Consistent (↣′-L b a↣a′) = ↣′-Consistent a↣a′
-↣′-Consistent (↣′-read l v) = Read-Consistent′ l v
-↣′-Consistent (↣′-writeE e↣e′) = ↣′-Consistent e↣e′
-↣′-Consistent ↣′-writeℕ = Equivalence.id
+  ↣-abort : ∀ {h r l m} (¬cons : ¬ Consistent h l) →
+    τ  ▹ h , ● (r , l) , atomic (# m) ↣ h , ● (r , ∅) , atomic r
+  ↣-commit : ∀ {h r l m} (cons : Consistent h l) →
+    ☢  ▹ h , ● (r , l) , atomic (# m) ↣ Update h l , ○ , # m
 \end{code}
-%endif
+Both rules carry proof of the consistency or otherwise of the log |l| with
+respect to |h|. While this is not technically necessary and we could make do
+with a single rule---as consistency is decidable---having two rules labelled
+with distinct |Actions| makes later proofs easier to work with.
 
-%if False
-\begin{code}
-↣′⋆-Consistent : ∀ {h l′ e′ l e} →
-  h  ⊢ l , e ↣′⋆ l′ , e′ →
-  Consistent h l ⇔ Consistent h l′
-↣′⋆-Consistent {h} {l′} {e′} = Star.gfold (Consistent h ∘ fst) _⇔_
-  (λ e↣′e′ l⇔l′ → l⇔l′ ⟨∘⟩ ↣′-Consistent e↣′e′) {k = l′ , e′} Equivalence.id
-\end{code}
-%endif
-
-\subsection{Combined}
-
-%if False
-\begin{code}
-infix 7 ↣:_
-\end{code}
-%endif
-
-%if False
-\begin{code}
--- Combined Expressions; choice of big or small-step semantics
-data Combined : Set where
-  ↦: : Combined
-  ↣:_ : (t : TState) → Combined
-\end{code}
-%endif
-
-%if False
-\begin{code}
-infix 3 _▹_↠_
-\end{code}
-%endif
-
-%if False
-\begin{code}
-data _▹_↠_ (α : Action) : Rel (Heap × Combined × Expression) where
-  ↠-↦ : ∀ {h e h′ e′} →
-    (e↦e′ : α ▹  h ,      e  ↦  h′ ,      e′)  →
-            α ▹  h , ↦: , e  ↠  h′ , ↦: , e′
-  ↠-↣ : ∀ {h t e h′ t′ e′} →
-    (e↣e′ : α ▹  h ,    t , e  ↣  h′ ,    t′ , e′)  →
-            α ▹  h , ↣: t , e  ↠  h′ , ↣: t′ , e′
-\end{code}
-%endif
-
-%if False
-\begin{code}
-infix 3 _↠⋆_
-_↠⋆_ : Rel (Heap × Combined × Expression)
-_↠⋆_ = Star (_▹_↠_ τ)
-\end{code}
-%endif
-
-%if False
-\begin{code}
-infix 3 _▹_⤇_
-\end{code}
-%endif
-
-%if False
-\begin{code}
-record _▹_⤇_ (α : Action) (x x″ : Heap × Combined × Expression) : Set where
-  constructor ⤇:
-  field
-    {h′} : Heap
-    {c′} : Combined
-    {e′} : Expression
-    α≢τ : α ≢ τ
-    e↠⋆e′ : x ↠⋆ h′ , c′ , e′
-    e′↠e″ : α ▹ h′ , c′ , e′ ↠ x″
-\end{code}
-%endif
+In any case if we do have consistency, we commit the transaction by applying
+the write log to the heap using the |Update| function, setting the
+transaction state to |○|, and reducing |atomic (# m)| to |# m|. Otherwise
+the |↣-abort| rule applies, and we silently restart the transaction by
+resetting the transaction state and the expression.
 
 % vim: ft=tex fo-=m fo-=M:

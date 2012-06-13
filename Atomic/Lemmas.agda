@@ -2,6 +2,7 @@ module Lemmas where
 
 open import Common
 open import Language
+open import Combined
 
 -- No progress.
 

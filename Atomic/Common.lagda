@@ -13,12 +13,17 @@ open import Function public
 \end{code}
 %endif
 
+%format ⟨$⟩ = "\infix{\func{\langle{\$}\rangle}}"
 %if False
 \begin{code}
 open import Function.Equality public using (_⟨$⟩_)
 \end{code}
 %endif
 
+%format ⇔ = "\infix{\type{\Leftrightarrow}}"
+%format equivalence = "\func{equivalence}"
+%format Equivalence.id = "\func{Equivalence.id}"
+%format Equivalence.to = "\func{Equivalence.to}"
 %if False
 \begin{code}
 module Equivalence where
@@ -36,6 +41,8 @@ open import Category.Applicative.Indexed public
 \end{code}
 %endif
 
+%format Dec.map = "\func{Dec.map}"
+%format Dec.map′ = "\func{Dec.map\Prime}"
 %if False
 \begin{code}
 module Dec where
@@ -69,11 +76,13 @@ Setoid = RBin.Setoid Level.zero Level.zero
 \end{code}
 %endif
 
+%format ‹ = "\prefix{\cons{\texttt[}}"
+%format › = "\postfix{\cons{\texttt]}}"
 %if False
 \begin{code}
 module ≡ where
   open import Relation.Binary.PropositionalEquality public
-open ≡ public using (_≡_; _≢_; _≗_; [_])
+open ≡ public using (_≡_; _≢_; _≗_) renaming ([_] to ‹_›)
 \end{code}
 %endif
 
@@ -109,6 +118,14 @@ open Fin public using (Fin; zero; suc) renaming (_≟_ to _≟Fin_)
 %endif
 
 %format Vec.tabulate = "\func{Vec.tabulate}"
+%format Vec.Pointwise.app = "\func{Vec.Pointwise.app}"
+%format Vec.Pointwise.ext = "\cons{Vec.Pointwise.ext}"
+%format Vec.Pointwise-≡ = "\func{Vec.Pointwise\text-{\equiv}}"
+%format Vec.Pointwise.decidable = "\func{Vec.Pointwise.decidable}"
+%format Vec.lookup∘replicate = "\func{Vec.lookup{\circ}replicate}"
+%format Vec.lookup∘tabulate = "\func{Vec.lookup{\circ}tabulate}"
+%format Vec.lookup∘update = "\func{Vec.lookup{\circ}update}"
+%format Vec.lookup∘update′ = "\func{Vec.lookup{\circ}update′}"
 %if False
 \begin{code}
 module Vec where
@@ -136,6 +153,7 @@ open List public using (List; []; _∷_; _++_)
 %format ○ = "\cons{\circ}"
 %format ● = "\cons{\bullet}"
 %format maybe = "\func{maybe}"
+%format ●-inj = "\func{\bullet\text-inj}"
 %if False
 \begin{code}
 module Maybe where
@@ -147,6 +165,8 @@ open Maybe public using (Maybe; ○; ●; ●-inj) renaming (maybe′ to maybe)
 %endif
 
 %format , = "\infix{\cons{,}\,}"
+%format fst = "\func{fst}"
+%format snd = "\func{snd}"
 %if False
 \begin{code}
 module Σ where
@@ -184,3 +204,4 @@ open Star public using (Star; _◅◅_; ε; _◅_)
 \end{code}
 %endif
 
+% vim: ft=tex fo-=m fo-=M:

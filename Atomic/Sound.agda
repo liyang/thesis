@@ -3,42 +3,9 @@ module Sound where
 open import Common
 open import Heap
 open import Logs
-open import Transaction
 open import Language
-
--- sequence of ↣′ transitions with different heaps
-infix 3 H⊢_↣′_ H⊢_↣′⋆_
-H⊢_↣′_ : Rel (Logs × Expression′)
-H⊢ c ↣′ c′ = Σ Heap (λ h → h ⊢ c ↣′ c′)
-
-H⊢_↣′⋆_ : Rel (Logs × Expression′)
-H⊢_↣′⋆_ = Star H⊢_↣′_
-
--- only backwards consistency preservation when heap changes
-H↣′-Consistent : ∀ {h′ l e l′ e′} →
-  H⊢ l , e ↣′ l′ , e′ →
-  Consistent h′ l′ → Consistent h′ l
-H↣′-Consistent (h , ↣′-ℕ) cons′ = cons′
-H↣′-Consistent (h , ↣′-R m b↣b′) cons′ = H↣′-Consistent (h , b↣b′) cons′
-H↣′-Consistent (h , ↣′-L b a↣a′) cons′ = H↣′-Consistent (h , a↣a′) cons′
-H↣′-Consistent (h , ↣′-writeE e↣e′) cons′ = H↣′-Consistent (h , e↣e′) cons′
-H↣′-Consistent (h , ↣′-writeℕ) cons′ = cons′
-H↣′-Consistent {h′} (h , ↣′-read l v) cons′ with Vec.lookup v (Logs.ω l)
-... | ● m = cons′
-... | ○ with Vec.lookup v (Logs.ρ l) | ≡.inspect (Vec.lookup v) (Logs.ρ l)
-...   | ● m | _ = cons′
-...   | ○ | [ ρ[v]≡○ ] = cons where
-  cons : Consistent h′ l
-  cons v′ with v′ ≟Fin v
-  ... | yes v′≡v rewrite v′≡v | ρ[v]≡○ = λ m ()
-  ... | no v′≢v with cons′ v′
-  ...   | cons′-v′ rewrite Vec.lookup∘update′ v′≢v (Logs.ρ l) (● (Vec.lookup v h)) = cons′-v′
-
-H↣′⋆-Consistent : ∀ {h′ l′ e′ l e} →
-  H⊢ l , e ↣′⋆ l′ , e′ →
-  Consistent h′ l′ → Consistent h′ l
-H↣′⋆-Consistent {h′} {l′} {e′} = flip $
-  Star.gfold fst (const ∘ Consistent h′) H↣′-Consistent {k = l′ , e′}
+open import Transaction
+open import Combined
 
 private
   extract : ∀ {α h R l e h′ c′ e′ h″ c″ e″} →
@@ -82,12 +49,12 @@ private
 ↣′-swap cons′ (↣′-L b a↣a′) = ↣′-L b (↣′-swap cons′ a↣a′)
 ↣′-swap cons′ (↣′-writeE e↣e′) = ↣′-writeE (↣′-swap cons′ e↣e′)
 ↣′-swap cons′ ↣′-writeℕ = ↣′-writeℕ
-↣′-swap {h} {h′} cons′ (↣′-read l v) with cons′ v (Vec.lookup v h) | ↣′-read {h = h′} l v
-... | cons′-v-h | ↣′-read′ with Vec.lookup v (Logs.ω l)
+↣′-swap {h} {h′} cons′ (↣′-read l v) with cons′ v (h « v ») | ↣′-read {h = h′} l v
+... | cons′-v-h | ↣′-read′ with Logs.ω l « v »
 ...   | ● m = ↣′-read′
-...   | ○ with Vec.lookup v (Logs.ρ l)
+...   | ○ with Logs.ρ l « v »
 ...     | ● m = ↣′-read′
-...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (Vec.lookup v h)) | cons′-v-h ≡.refl = ↣′-read′
+...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »)) | cons′-v-h ≡.refl = ↣′-read′
 
 ↣′⋆-swap : ∀ {h′ l e l′ e′} →
   Consistent h′ l′ →
@@ -121,12 +88,12 @@ private
 ↣′→↦′ cons equiv (↣′-writeE e↣e′) = Σ.map id (Σ.map id (Σ.map id ↦′-writeE)) (↣′→↦′ cons equiv e↣e′)
 ↣′→↦′ cons equiv ↣′-writeℕ = _ , cons , Write-Equivalent equiv , ↦′-writeℕ
 ↣′→↦′ {h} cons equiv (↣′-read l v) with equiv v | ↦′-read {h} v
-... | equiv-v | ↦′-read′ with Vec.lookup v (Logs.ω l)
+... | equiv-v | ↦′-read′ with Logs.ω l « v »
 ...   | ● m rewrite equiv-v = _ , cons , equiv , ↦′-read′
-...   | ○ with Vec.lookup v (Logs.ρ l) | ≡.inspect (Vec.lookup v) (Logs.ρ l)
+...   | ○ with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
 ...     | ● m | _ rewrite equiv-v = _ , cons , equiv , ↦′-read′
-...     | ○ | [ ρ[v]≡○ ] rewrite equiv-v = _
-          , Equivalence.to (Read-Consistent l v ρ[v]≡○) ⟨$⟩ cons
+...     | ○ | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
+          , Read-Consistent l v cons
           , Read-Equivalent cons equiv , ↦′-read′
 
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →

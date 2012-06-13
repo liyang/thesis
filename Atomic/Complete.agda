@@ -3,8 +3,9 @@ module Complete where
 open import Common
 open import Heap
 open import Logs
-open import Transaction
 open import Language
+open import Transaction
+open import Combined
 
 -- Equivalence of _↦′_ and _↣′_
 
@@ -35,12 +36,12 @@ open import Language
 ↦′→↣′ cons equiv (↦′-writeE e↦e′) = Σ.map id (Σ.map id (Σ.map id ↣′-writeE)) (↦′→↣′ cons equiv e↦e′)
 ↦′→↣′ cons equiv ↦′-writeℕ = , cons , Write-Equivalent equiv , ↣′-writeℕ
 ↦′→↣′ {h₀} {ρ & ω} cons equiv (↦′-read v) with equiv v | ↣′-read (ρ & ω) v
-... | equiv-v | ↣-read′ with Vec.lookup v ω
+... | equiv-v | ↣-read′ with ω « v »
 ...   | ● m rewrite equiv-v = , cons , equiv , ↣-read′
-...   | ○ with Vec.lookup v ρ | ≡.inspect (Vec.lookup v) ρ
+...   | ○ with ρ « v » | ≡.inspect (_«_» ρ) v
 ...     | ● m | _ rewrite equiv-v = , cons , equiv , ↣-read′
-...     | ○   | [ ρ[v]≡○ ] rewrite equiv-v = _
-          , Equivalence.to (Read-Consistent (ρ & ω) v ρ[v]≡○) ⟨$⟩ cons
+...     | ○   | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
+          , Read-Consistent (ρ & ω) v cons
           , Read-Equivalent cons equiv , ↣-read′
 
 ↦′⋆→↣′⋆ : ∀ {h₀ l h e h′ e′} →

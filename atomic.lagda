@@ -30,5 +30,7 @@ language.
 
 \input{Atomic/Language.lagda.tex}
 
+\input{Atomic/Transaction.lagda.tex}
+
 % vim: ft=tex fo-=m fo-=M:
 

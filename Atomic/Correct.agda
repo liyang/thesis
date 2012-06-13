@@ -5,6 +5,7 @@ open import Heap
 open import Logs
 open import Language
 open import Transaction
+open import Combined
 open import Lemmas
 open import Complete
 open import Sound
@@ -76,9 +77,9 @@ eval-left {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣�
 transaction : ∀ {h e} → h , atomic e ⊢ ↦: ≈ ↣: ○
 transaction {h} {e} = ♯ ↦≼↣ & ♯ ↣≼↦ where
   ↦≼↣ : h , atomic e ⊢ ↦: ≼ ↣: ○
-  ↦≼↣ {h″} e⤇e′ with ↦-extract e⤇e′
+  ↦≼↣ {h′} e⤇e′ with ↦-extract e⤇e′
   ... | h₀ , m , ≡.refl , ≡.refl , h≟h₀ , e↦′⋆m with ↦′⋆→↣′⋆ ∅-Consistent ∅-Equivalent e↦′⋆m
-  ...   | l′ , cons′ , equiv′ , e↣′⋆m rewrite Commit-Update cons′ equiv′ ∶ h″ ≡ Update h₀ l′ = _ , e⤇m , #⊢↦≈↣ where
+  ...   | l′ , cons′ , equiv′ , e↣′⋆m rewrite ≡.sym (Commit-Update cons′ equiv′) ∶ h′ ≡ Update h₀ l′ = _ , e⤇m , #⊢↦≈↣ where
 
     mutate? : ∀ {h₀} → Dec (h ≡ h₀) → h  , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , ∅) , atomic e
     mutate? (yes h≡h₀) rewrite h≡h₀ = ε
@@ -93,7 +94,7 @@ transaction {h} {e} = ♯ ↦≼↣ & ♯ ↣≼↦ where
   ↣≼↦ : h , atomic e ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ (⤇: {h′} α≢τ c↠⋆c′ c′↠c″) with ↣-extract α≢τ c↠⋆c′ c′↠c″
   ... | l′ , m , ≡.refl , ≡.refl , ≡.refl , cons , e↣⋆m with ↣′⋆→↦′⋆ ∅-Consistent ∅-Equivalent (↣′⋆-swap cons e↣⋆m)
-  ...   | h″ , _ , equiv , e↦′⋆m rewrite Commit-Update cons equiv ∶ h″ ≡ Update h′ l′ = _ , e⤇m , ≈-sym #⊢↦≈↣ where
+  ...   | h″ , _ , equiv , e↦′⋆m rewrite ≡.sym (Commit-Update cons equiv) ∶ h″ ≡ Update h′ l′ = _ , e⤇m , ≈-sym #⊢↦≈↣ where
 
     mutate? : ∀ {h₀} → Dec (h ≡ h₀) → h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
     mutate? (yes ≡.refl) = ε
