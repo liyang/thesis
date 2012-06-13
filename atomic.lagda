@@ -21,8 +21,8 @@ language.
 %   * Choice of Actions
 %   * Stop-the-world semantics
 %   * Interleaved semantics (Y NO COMPILER?)
-% * Combined Semantics and Bisimilarity --definitions
 % * Reasoning Transactionally --various lemmas
+% * Combined Semantics and Bisimilarity --definitions
 % * Completeness and Soundness of transactions
 % * Bisimilarity of Semantics (correctness, eval-left/right &c.)
 % * Conclusion

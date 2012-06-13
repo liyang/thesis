@@ -7,6 +7,48 @@ open import Language
 open import Transaction
 open import Combined
 
+-- sequence of ↣′ transitions with different heaps
+infix 3 H⊢_↣′_ H⊢_↣′⋆_
+H⊢_↣′_ : Rel (Logs × Expression′)
+H⊢ c ↣′ c′ = Σ Heap (λ h → h ⊢ c ↣′ c′)
+
+H⊢_↣′⋆_ : Rel (Logs × Expression′)
+H⊢_↣′⋆_ = Star H⊢_↣′_
+
+↣′-swap : ∀ {h h′ l e l′ e′} →
+  Consistent h′ l′ →
+  h  ⊢ l , e ↣′ l′ , e′ →
+  h′ ⊢ l , e ↣′ l′ , e′
+↣′-swap cons′ ↣′-ℕ = ↣′-ℕ
+↣′-swap cons′ (↣′-R m b↣b′) = ↣′-R m (↣′-swap cons′ b↣b′)
+↣′-swap cons′ (↣′-L b a↣a′) = ↣′-L b (↣′-swap cons′ a↣a′)
+↣′-swap cons′ (↣′-writeE e↣e′) = ↣′-writeE (↣′-swap cons′ e↣e′)
+↣′-swap cons′ ↣′-writeℕ = ↣′-writeℕ
+↣′-swap {h} {h′} cons′ (↣′-read l v) with cons′ v (h « v ») | ↣′-read {h = h′} l v
+... | cons′-v-h | ↣′-read′ with Logs.ω l « v »
+...   | ● m = ↣′-read′
+...   | ○ with Logs.ρ l « v »
+...     | ● m = ↣′-read′
+...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »)) | cons′-v-h ≡.refl = ↣′-read′
+
+↣′⋆-swap : ∀ {h′ l e l′ e′} →
+  Consistent h′ l′ →
+  H⊢ l , e ↣′⋆ l′ , e′ →
+  h′ ⊢ l , e ↣′⋆ l′ , e′
+↣′⋆-swap {h′} cons = fst ∘ Star.gfold id P f (ε , cons) where
+  P : Logs × Expression′ → Logs × Expression′ → Set
+  P (l , e) (l′ , e′) = h′ ⊢ l , e ↣′⋆ l′ , e′ × Consistent h′ l
+  f : ∀ {c c′ c″} → H⊢ c ↣′ c′ → P c′ c″ → P c c″
+  f (h , e↣e′) (e′↣′⋆e″ , cons′)
+    = ↣′-swap cons′ e↣e′ ◅ e′↣′⋆e″
+    , ↣′-Consistent′ e↣e′ cons′
+{-
+-- alternative definition with explicit recursion (and recomputing cons′ from scratch)
+↣′⋆-swap {h′} cons″ [] = []
+↣′⋆-swap {h′} cons″ ((h , e↣e′) ∷ H⊢e′↣e″) = ↣′-swap cons′ e↣e′ ∷ ↣′⋆-swap cons″ H⊢e′↣e″ where
+  cons′ = H↣′⋆-Consistent H⊢e′↣e″ cons″
+-}
+
 private
   extract : ∀ {α h R l e h′ c′ e′ h″ c″ e″} →
     H⊢ ∅ , R ↣′⋆ l , e →
@@ -39,40 +81,6 @@ private
   H⊢ ∅ , R ↣′⋆ l′ , # m
 ↣-extract α≢τ ε (↠-↣ ↣-begin) = ⊥-elim (α≢τ ≡.refl)
 ↣-extract α≢τ (↠-↣ ↣-begin ◅ c↠⋆c′) c′↠c″ = extract ε α≢τ c↠⋆c′ c′↠c″
-
-↣′-swap : ∀ {h h′ l e l′ e′} →
-  Consistent h′ l′ →
-  h  ⊢ l , e ↣′ l′ , e′ →
-  h′ ⊢ l , e ↣′ l′ , e′
-↣′-swap cons′ ↣′-ℕ = ↣′-ℕ
-↣′-swap cons′ (↣′-R m b↣b′) = ↣′-R m (↣′-swap cons′ b↣b′)
-↣′-swap cons′ (↣′-L b a↣a′) = ↣′-L b (↣′-swap cons′ a↣a′)
-↣′-swap cons′ (↣′-writeE e↣e′) = ↣′-writeE (↣′-swap cons′ e↣e′)
-↣′-swap cons′ ↣′-writeℕ = ↣′-writeℕ
-↣′-swap {h} {h′} cons′ (↣′-read l v) with cons′ v (h « v ») | ↣′-read {h = h′} l v
-... | cons′-v-h | ↣′-read′ with Logs.ω l « v »
-...   | ● m = ↣′-read′
-...   | ○ with Logs.ρ l « v »
-...     | ● m = ↣′-read′
-...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »)) | cons′-v-h ≡.refl = ↣′-read′
-
-↣′⋆-swap : ∀ {h′ l e l′ e′} →
-  Consistent h′ l′ →
-  H⊢ l , e ↣′⋆ l′ , e′ →
-  h′ ⊢ l , e ↣′⋆ l′ , e′
-↣′⋆-swap {h′} cons = fst ∘ Star.gfold id P f (ε , cons) where
-  P : Logs × Expression′ → Logs × Expression′ → Set
-  P (l , e) (l′ , e′) = h′ ⊢ l , e ↣′⋆ l′ , e′ × Consistent h′ l
-  f : ∀ {c c′ c″} → H⊢ c ↣′ c′ → P c′ c″ → P c c″
-  f (h , e↣e′) (e′↣′⋆e″ , cons′)
-    = ↣′-swap cons′ e↣e′ ◅ e′↣′⋆e″
-    , H↣′-Consistent (h , e↣e′) cons′
-{-
--- alternative definition with explicit recursion (and recomputing cons′ from scratch)
-↣′⋆-swap {h′} cons″ [] = []
-↣′⋆-swap {h′} cons″ ((h , e↣e′) ∷ H⊢e′↣e″) = ↣′-swap cons′ e↣e′ ∷ ↣′⋆-swap cons″ H⊢e′↣e″ where
-  cons′ = H↣′⋆-Consistent H⊢e′↣e″ cons″
--}
 
 ↣′→↦′ : ∀ {h l e l′ e′ h₀} →
   Consistent h₀ l →

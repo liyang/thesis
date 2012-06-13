@@ -211,6 +211,7 @@ to mutate during a transaction.
 %if False
 \begin{code}
 infix 3 _⊢_↣′_
+infix 3 _⊢_↣′⋆_
 \end{code}
 %endif
 
@@ -260,6 +261,15 @@ The |↣′-writeℕ| rule updates the write log via the |Write| helper when the
 expression argument to |write| is just a number, while |↣′-writeE| effects
 the reduction of |e| in the same manner as the stop-the-world semantics.
 
+%format _⊢_↣′⋆_ = "\type{\anonymous{\vdash}\anonymous{\rightarrowtail}\Prime^\star\anonymous}"
+%format ↣′⋆ = "\infix{\type{\rightarrowtail\Prime^\star}}"
+We write |_⊢_↣′⋆_| for the reflexive, transitive closure of |_⊢_↣′_| under
+the same heap, again defined using the |Star| type:
+\begin{code}
+_⊢_↣′⋆_ : Heap → Rel (Logs × Expression′)
+_⊢_↣′⋆_ h = Star (_⊢_↣′_ h)
+\end{code}
+
 %format TState = "\type{TState}"
 %format _▹_↣_ = "\type{\anonymous{\triangleright}\anonymous{\rightarrowtail}\anonymous}"
 %format ↣ = "\infix{\type{\rightarrowtail}}"
@@ -272,11 +282,11 @@ the reduction of |e| in the same manner as the stop-the-world semantics.
 %format ↣-abort = "\cons{{\rightarrowtail}\text-abort}"
 %format ↣-commit = "\cons{{\rightarrowtail}\text-commit}"
 %format ¬cons = "\Varid{\lnot{}cons}"
-For the `IO' level of this log-based semantics, we define a transition
-|_▹_↣_| between triples of heaps, transaction states and expressions,
-labelled with the same |Action|s we used earlier. During a running
-transaction, the state comprises of the original expression and the
-transaction |Logs|; otherwise it is empty:
+\noindent For the `IO' level of this log-based semantics, we define
+a transition |_▹_↣_| between triples of heaps, transaction states and
+expressions, labelled with the same |Action|s we used earlier. During
+a running transaction, the state comprises of the original expression and
+the transaction |Logs|; otherwise it is empty:
 \begin{code}
 TState : Set
 TState = Maybe (Expression′ × Logs)

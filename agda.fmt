@@ -30,9 +30,9 @@
 
 %format = = "\mathrel{\keyw{=}}"
 %format ∀ = "\keyw{\forall}"
-%format | = "\mathrel{\keyw{\vert}}"
+%format | = "\,\keyw{\vert}\,"
 %format λ = "\prefix{\keyw{\lambda}}"
-%format → = "\mathrel{\keyw{\rightarrow}}"
+%format → = "\keyw{\rightarrow}"
 %format : = "\mathrel{\keyw{:}}"
 %format ... = "\mathord{\keyw{\ldots}}"
 %format { = "\keyw{\{}"

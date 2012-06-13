@@ -52,28 +52,18 @@ the same, we can use |Vec.lookup∘update| to show that the updated read log
 entry is |● h«v»|, in which case the goal of |● h « v′ » ≡ ● m → h « v′
 » ≡ m| can be satisfied by injectivity of |●|. When |v| and |v′| correspond
 to different variables, |Vec.lookup∘update′| gives us a proof that the read
-log entry for |v′| remains unchanged, and the existing |cons| proof
-suffices.
+log entry for |v′| remains unchanged, and the |cons| argument suffices.
 
-%if False
+Using the above result, we can show that any transaction transition under
+the log-based semantics preserves consistency:
+%format ↣′-Consistent = "\func{{\rightarrowtail}\Prime\text-Consistent}"
 \begin{code}
--- sequence of ↣′ transitions with the same heap
-infix 3 _⊢_↣′⋆_
-_⊢_↣′⋆_ : Heap → Rel (Logs × Expression′)
-h ⊢ l , e ↣′⋆ l′ , e′ = Star (_⊢_↣′_ h) (l , e) (l′ , e′)
-\end{code}
-%endif
-
-%if False
-\begin{code}
--- ↣′ preserves consistency
 ↣′-Consistent : ∀ {h l e l′ e′} →
-  h ⊢  l , e  ↣′  l′ , e′ →
-  Consistent h l → Consistent h l′
+  h ⊢ l , e ↣′ l′ , e′ → Consistent h l → Consistent h l′
 ↣′-Consistent ↣′-ℕ = id
-↣′-Consistent (↣′-R m b↣b′) = ↣′-Consistent b↣b′
-↣′-Consistent (↣′-L b a↣a′) = ↣′-Consistent a↣a′
-↣′-Consistent (↣′-writeE e↣e′) = ↣′-Consistent e↣e′
+↣′-Consistent (↣′-R  m    b↣b′)  = ↣′-Consistent b↣b′
+↣′-Consistent (↣′-L  b    a↣a′)  = ↣′-Consistent a↣a′
+↣′-Consistent (↣′-writeE  e↣e′)  = ↣′-Consistent e↣e′
 ↣′-Consistent ↣′-writeℕ = id
 ↣′-Consistent (↣′-read (ρ & ω) v) with ω « v »
 ... |  ● m = id
@@ -81,73 +71,55 @@ h ⊢ l , e ↣′⋆ l′ , e′ = Star (_⊢_↣′_ h) (l , e) (l′ , e′)
 ...    | ● m = id
 ...    | ○ = Read-Consistent (ρ & ω) v
 \end{code}
-%endif
+The proof proceeds by induction on the structure of the reduction rules,
+making use of the |Read-Consistent| lemma when the read log changes.
 
-%if False
-% not used?
-\begin{spec}
-↣′⋆-Consistent : ∀ {h l″ e″ l e} →
-  h  ⊢ l , e ↣′⋆ l″ , e″ →
-  Consistent h l → Consistent h l″
-↣′⋆-Consistent {h} {l″} {e″} = Star.gfold (Consistent h ∘ fst) (λ a b → a → b)
-  (λ e↣′e′ l′→l″ → l′→l″ ∘ ↣′-Consistent e↣′e′) {k = l″ , e″} id
-\end{spec}
-%endif
-
-%if False
+%format Read-Consistent′ = "\func{Read\text-Consistent\Prime}"
+%format ρ«v»≡○ = "\Varid{\rho_v{\equiv}{\circ}}"
+%format cons′ = "\Varid{cons\Prime}"
+In the opposite direction, we can show a pair of similar but slightly more
+general consistency-preservation lemmas. This extra generality in fact turns
+out to be crucial to our later proofs. The |Read-Consistent′| lemma shares
+an analogous structure to that of |Read-Consistent|, but requires an extra
+argument showing that the pre-transition read log entry for |v| is empty:
 \begin{code}
--- sequence of ↣′ transitions with different heaps
-infix 3 H⊢_↣′_ H⊢_↣′⋆_
-H⊢_↣′_ : Rel (Logs × Expression′)
-H⊢ c ↣′ c′ = Σ Heap (λ h → h ⊢ c ↣′ c′)
+Read-Consistent′ : ∀ {h n} l v → Logs.ρ l « v » ≡ ○ →
+  Consistent h (Logs.ρ l « v »≔ ● n & Logs.ω l) → Consistent h l
+Read-Consistent′ {h} {n} (ρ & ω) v ρ«v»≡○ cons′ v′ m with v′ ≟Fin v
+... | yes v′≡v rewrite v′≡v | ρ«v»≡○ = λ ()
+... | no v′≢v rewrite ≡.sym (Vec.lookup∘update′ v′≢v ρ (● n)) = cons′ v′ m
 \end{code}
-%endif
+As before, there are two alternatives: when |v′| coincides with the variable
+|v| whose read log entry is being updated, we use the |ρ«v»≡○| argument to
+rewrite the goal to |○ ≡ ● m → h « v » ≡ m|, which is then discharged with
+an absurd $\lambda$. This is essentially making use of the fact that that
+each read log entry is only ever updated once, from |○| to |●|. When |v′|
+differs, the |cons′| argument suffices.
 
-%if False
+%format ↣′-Consistent′ = "\func{{\rightarrowtail}\Prime\text-Consistent\Prime}"
+In the |yes| case of |Read-Consistent|, we required that the post-transition
+read log entry for |v| be |● (h « v »)|. Since the corresponding case here
+is absurd, this is no longer necessary, and the proof can be generalised to
+any |● n|. This means that the heap |h| under which the logs and expression
+make their transition need not be the same as the heap |h′| with which |l|
+and |l′| are consistent in the following lemma:
 \begin{code}
-H⊢_↣′⋆_ : Rel (Logs × Expression′)
-H⊢_↣′⋆_ = Star H⊢_↣′_
+↣′-Consistent′ : ∀ {h h′ l e l′ e′} →
+  h ⊢ l , e ↣′ l′ , e′ → Consistent h′ l′ → Consistent h′ l
+↣′-Consistent′ ↣′-ℕ cons′ = cons′
+↣′-Consistent′ (↣′-R  m    b↣b′)  cons′ = ↣′-Consistent′ b↣b′ cons′
+↣′-Consistent′ (↣′-L  b    a↣a′)  cons′ = ↣′-Consistent′ a↣a′ cons′
+↣′-Consistent′ (↣′-writeE  e↣e′)  cons′ = ↣′-Consistent′ e↣e′ cons′
+↣′-Consistent′ ↣′-writeℕ cons′ = cons′
+↣′-Consistent′ (↣′-read (ρ & ω) v) cons′ with ω « v »
+... |  ● m = cons′
+... |  ○ with ρ « v » | ≡.inspect (_«_» ρ) v
+...    | ● m  | _ = cons′
+...    | ○    | ‹ ρ«v»≡○ › = Read-Consistent′ (ρ & ω) v ρ«v»≡○ cons′
 \end{code}
-%endif
-
-%if False
-\begin{code}
--- only backwards consistency preservation when heap changes
-H↣′-Consistent : ∀ {h′ l e l′ e′} →
-  H⊢ l , e ↣′ l′ , e′ →
-  Consistent h′ l′ → Consistent h′ l
-H↣′-Consistent (h , ↣′-ℕ) cons′ = cons′
-H↣′-Consistent (h , ↣′-R m b↣b′) cons′ = H↣′-Consistent (h , b↣b′) cons′
-H↣′-Consistent (h , ↣′-L b a↣a′) cons′ = H↣′-Consistent (h , a↣a′) cons′
-H↣′-Consistent (h , ↣′-writeE e↣e′) cons′ = H↣′-Consistent (h , e↣e′) cons′
-H↣′-Consistent (h , ↣′-writeℕ) cons′ = cons′
-\end{code}
-%endif
-
-%if False
-\begin{code}
-H↣′-Consistent {h′} (h , ↣′-read l v) cons′ with Logs.ω l « v »
-... | ● m = cons′
-... | ○ with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
-...   | ● m | _ = cons′
-...   | ○ | ‹ ρ[v]≡○ › = cons where
-  cons : Consistent h′ l
-  cons v′ with v′ ≟Fin v
-  ... | yes v′≡v rewrite v′≡v | ρ[v]≡○ = λ m ()
-  ... | no v′≢v with cons′ v′
-  ...   | cons′-v′ rewrite Vec.lookup∘update′ v′≢v (Logs.ρ l) (● (h « v »)) = cons′-v′
-\end{code}
-%endif
-
-%if False
-\begin{code}
-H↣′⋆-Consistent : ∀ {h′ l′ e′ l e} →
-  H⊢ l , e ↣′⋆ l′ , e′ →
-  Consistent h′ l′ → Consistent h′ l
-H↣′⋆-Consistent {h′} {l′} {e′} = flip $
-  Star.gfold fst (const ∘ Consistent h′) H↣′-Consistent {k = l′ , e′}
-\end{code}
-%endif
+This follows an identical structure to |↣′-Consistent|, with the only
+difference being the use of the |≡.inspect| idiom to obtain a proof of |ρ
+« v » ≡ ○|.
 
 
 \subsection{Heaps and Logs Equivalence}
@@ -163,13 +135,14 @@ the stop-the-world semantics:
 Equivalent : Heap → Logs → Heap → Set
 Equivalent h l h′ = snd ∘ Read h l ≗ _«_» h′
 \end{code}
-In other words, |Read h l| gives the same result as looking it up directly
-from |h′| for all variables.
+We write |f ≗ g| to mean pointwise equality of |f| and |g|, and is a synonym
+for |∀ x → f x ≡ g x|. In other words, |Read h l v| gives the same value as
+|h′ « v »| for all variables.
 
-On commencing a transaction, the transaction logs are initialised to
-|∅| by the |↣-begin| rule, while the heaps according to both
-semantics have yet to diverge. The following definition shows that every
-heap |h| is equivalent to itself overlaid with empty logs:
+On commencing a transaction, the logs are initialised to |∅| by the
+|↣-begin| rule, while the heaps according to both semantics have yet to
+diverge. The following definition shows that every heap |h| is equivalent to
+itself overlaid with empty logs:
 %format ∅-Equivalent = "\func{\varnothing\text-Equivalent}"
 \begin{code}
 ∅-Equivalent : ∀ {h} → Equivalent h ∅ h
@@ -178,35 +151,45 @@ heap |h| is equivalent to itself overlaid with empty logs:
 \end{code}
 The two rewrites correspond to showing that the write and read logs are
 always empty, using the |Vec.lookup∘replicate| lemma to obtain proofs of
-|Vec.replicate ○ « v » ≡ ○|. In this case, the value returned by
-|Read| reduces to just |h « v »|, and the goal is trivially satisfied
-by reflexivity.
+|Vec.replicate ○ « v » ≡ ○|, so that the value returned by |Read| reduces to
+just |h « v »|. The goal is then trivially satisfied by reflexivity.
 
 %format Read-Equivalent = "\func{Read\text-Equivalent}"
 %format cons-v′ = "\Varid{cons\text-v\Prime}"
 %format equiv-v′ = "\Varid{equiv\text-v\Prime}"
+%format ρ«v»≡m = "\Varid{\rho_v{\equiv}m}"
+In a similar manner to |Read-Consistent|, the operation of updating the read
+log for a variable |v| when it is first read preserves heap-log equivalence.
 \savecolumns
 \begin{code}
 Read-Equivalent : ∀ {h l h′ v} → Consistent h l → Equivalent h l h′ →
   Equivalent h (Logs.ρ l « v »≔ ● (h « v ») & Logs.ω l) h′
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ with cons v′ | equiv v′
-...  |  cons-v′ | equiv-v′ with ω « v′ »
+Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ with equiv v′
+...  |  equiv-v′ with ω « v′ »
 ...     |  ● m = equiv-v′
 ...     |  ○ with v′ ≟Fin v
 \end{code}
-
+We start by binding the application |equiv v′| to |equiv-v′|, which starts
+off with a type of |snd (Read h l v′) ≡ h′ « v′ »|. This is so that the
+|Read| function in its type can reduce as we perform case analyses on the
+write and read log entries for |v′|. Since the write log does not change,
+the types of both the goal and |equiv-v′| reduces to |m ≡ h′ « v′ »| when |ω
+« v′ »| is |● m|, and we can discharge the goal with |equiv-v′|. Otherwise
+we must consider whether |v′| refers to the same variable as |v| whose read
+log entry is being updated:
 \restorecolumns
 \begin{code}
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | cons-v′ | equiv-v′ | ○
+Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | equiv-v′ | ○
            |  yes v′≡v rewrite v′≡v | Vec.lookup∘update v ρ (● (h « v »))
-              with ρ « v »
-...           | ● m = ≡.trans (cons-v′ m ≡.refl) equiv-v′
-...           | ○ = equiv-v′
+              with ρ « v » | ≡.inspect (_«_» ρ) v
+...           | ● m  | ‹ ρ«v»≡m › = ≡.trans (cons v m ρ«v»≡m) equiv-v′
+...           | ○    | _ = equiv-v′
 \end{code}
 
+
 \restorecolumns
 \begin{code}
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | cons-v′ | equiv-v′ | ○
+Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | equiv-v′ | ○
            |  no v′≢v rewrite Vec.lookup∘update′ v′≢v ρ (● (h « v »))
               with ρ « v′ »
 ...           | ● m = equiv-v′
@@ -261,15 +244,14 @@ lorem ipsum
 %format h′≗hω = "\func{h\Prime{\circeq}h\omega}"
 %format cons-v = "\Varid{cons\text-v}"
 %format equiv-v = "\Varid{equiv\text-v}"
-%format ρ«v»≡m = "\Varid{\rho_v{\equiv}m}"
 \begin{code}
 Commit-Update : ∀ {h l h′} →
   Consistent h l → Equivalent h l h′ → Update h l ≡ h′
 Commit-Update {h} {l} {h′} cons equiv =
-    Equivalence.to Vec.Pointwise-≡ ⟨$⟩ Vec.Pointwise.ext h′≗hω where
+    Equivalence.to Vec.Pointwise-≡ ⟨$⟩ Vec.Pointwise.ext hω≗h′ where
   open Logs.Logs l
-  h′≗hω : ∀ v → Update h l « v » ≡ h′ « v »
-  h′≗hω v rewrite Vec.lookup∘tabulate (Update-lookup h l) v
+  hω≗h′ : _«_» (Update h l) ≗ _«_» h′
+  hω≗h′ v rewrite Vec.lookup∘tabulate (Update-lookup h l) v
        with ω « v » | equiv v
   ...  |  ● m  | equiv-v = equiv-v
   ...  |  ○    | equiv-v with ρ « v » | ≡.inspect (_«_» ρ) v

@@ -56,9 +56,10 @@ rules for log-based writes and reads in the the context of the current
 chapter.
 %}
 
-%format « = "\prefix{\func{\,\!\!\texttt[\!}}"
+%format _«_» = "\func{\anonymous\!\texttt[\anonymous\texttt]}"
+%format « = "\prefix{\func{\!\texttt[\!}}"
 %format »≔ = "\postfix{\func{\!\texttt]\!{:}{=}}}"
-%format » = "\postfix{\func{\!\texttt]\,\!\!}}"
+%format » = "\postfix{\func{\!\texttt]\!}}"
 %if False
 \begin{code}
 infix 8 _«_»≔_

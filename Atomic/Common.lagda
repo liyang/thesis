@@ -76,8 +76,8 @@ Setoid = RBin.Setoid Level.zero Level.zero
 \end{code}
 %endif
 
-%format ‹ = "\prefix{\cons{\texttt[}}"
-%format › = "\postfix{\cons{\texttt]}}"
+%format ‹ = "\prefix{\cons{\!\texttt[\!\!\texttt[\!}}"
+%format › = "\postfix{\cons{\!\texttt]\!\!\texttt]\!}}"
 %if False
 \begin{code}
 module ≡ where
