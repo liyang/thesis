@@ -18,7 +18,7 @@ infix 7 ↣:_
 
 %if False
 \begin{code}
--- Combined Expressions; choice of big or small-step semantics
+-- Combined; choice of big or small-step semantics
 data Combined : Set where
   ↦: : Combined
   ↣:_ : (t : TState) → Combined

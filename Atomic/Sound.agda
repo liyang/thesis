@@ -102,7 +102,7 @@ private
 ...     | ● m | _ rewrite equiv-v = _ , cons , equiv , ↦′-read′
 ...     | ○ | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
           , Read-Consistent l v cons
-          , Read-Equivalent cons equiv , ↦′-read′
+          , Read-Equivalent ρ[v]≡○ equiv , ↦′-read′
 
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →
   Consistent h₀ l →

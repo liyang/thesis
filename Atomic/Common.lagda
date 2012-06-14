@@ -125,7 +125,7 @@ open Fin public using (Fin; zero; suc) renaming (_≟_ to _≟Fin_)
 %format Vec.lookup∘replicate = "\func{Vec.lookup{\circ}replicate}"
 %format Vec.lookup∘tabulate = "\func{Vec.lookup{\circ}tabulate}"
 %format Vec.lookup∘update = "\func{Vec.lookup{\circ}update}"
-%format Vec.lookup∘update′ = "\func{Vec.lookup{\circ}update′}"
+%format Vec.lookup∘update′ = "\func{Vec.lookup{\circ}update\Prime}"
 %if False
 \begin{code}
 module Vec where

@@ -21,7 +21,7 @@ infix 5 _&_
 \end{code}
 %endif
 
-\subsection{Transaction Logs and Consistency}
+\subsection{Transaction Logs and Consistency}\label{sec:atomic-logs}
 
 %format Logs = "\type{Logs}"
 %format Logs.Logs = "\type{Logs}"

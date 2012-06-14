@@ -54,8 +54,8 @@ entry is |● h«v»|, in which case the goal of |● h « v′ » ≡ ● m →
 to different variables, |Vec.lookup∘update′| gives us a proof that the read
 log entry for |v′| remains unchanged, and the |cons| argument suffices.
 
-Using the above result, we can show that any transaction transition under
-the log-based semantics preserves consistency:
+Using the above result, we can demonstrate that any transaction transition
+under the log-based semantics preserves consistency:
 %format ↣′-Consistent = "\func{{\rightarrowtail}\Prime\text-Consistent}"
 \begin{code}
 ↣′-Consistent : ∀ {h l e l′ e′} →
@@ -162,102 +162,122 @@ In a similar manner to |Read-Consistent|, the operation of updating the read
 log for a variable |v| when it is first read preserves heap-log equivalence.
 \savecolumns
 \begin{code}
-Read-Equivalent : ∀ {h l h′ v} → Consistent h l → Equivalent h l h′ →
-  Equivalent h (Logs.ρ l « v »≔ ● (h « v ») & Logs.ω l) h′
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ with equiv v′
+Read-Equivalent : ∀ {h l h′ v} → Logs.ρ l « v » ≡ ○ →
+  Equivalent h l h′ → Equivalent h (Logs.ρ l « v »≔ ● (h « v ») & Logs.ω l) h′
+Read-Equivalent {h} {ρ & ω} {h′} {v} ρ«v»≡○ equiv v′ with equiv v′
 ...  |  equiv-v′ with ω « v′ »
 ...     |  ● m = equiv-v′
 ...     |  ○ with v′ ≟Fin v
 \end{code}
 We start by binding the application |equiv v′| to |equiv-v′|, which starts
 off with a type of |snd (Read h l v′) ≡ h′ « v′ »|. This is so that the
-|Read| function in its type can reduce as we perform case analyses on the
+|Read| function in its type can be refined as we perform case analyses on the
 write and read log entries for |v′|. Since the write log does not change,
 the types of both the goal and |equiv-v′| reduces to |m ≡ h′ « v′ »| when |ω
-« v′ »| is |● m|, and we can discharge the goal with |equiv-v′|. Otherwise
-we must consider whether |v′| refers to the same variable as |v| whose read
-log entry is being updated:
+« v′ »| is |● m|. Otherwise we must consider whether |v′| refers to the same
+variable as |v| whose read log entry is being updated:
 \restorecolumns
 \begin{code}
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | equiv-v′ | ○
-           |  yes v′≡v rewrite v′≡v | Vec.lookup∘update v ρ (● (h « v »))
-              with ρ « v » | ≡.inspect (_«_» ρ) v
-...           | ● m  | ‹ ρ«v»≡m › = ≡.trans (cons v m ρ«v»≡m) equiv-v′
-...           | ○    | _ = equiv-v′
+...        |  yes v′≡v rewrite v′≡v | ρ«v»≡○
+              | Vec.lookup∘update v ρ (● (h « v »)) = equiv-v′
 \end{code}
-
-
+If |v′| is indeed the variable being updated, we can use the |ρ«v»≡○|
+argument to refine the type of |equiv-v′| to |h « v » ≡ h′ « v »|, and
+a final |Vec.lookup∘update| rewrites the goal to the same type. Otherwise,
+we use the |Vec.lookup∘update′| lemma to show that |ρ « v′ »| is unaffected
+by the update:
 \restorecolumns
 \begin{code}
-Read-Equivalent {h} {ρ & ω} {h′} {v} cons equiv v′ | equiv-v′ | ○
-           |  no v′≢v rewrite Vec.lookup∘update′ v′≢v ρ (● (h « v »))
-              with ρ « v′ »
+...        |  no v′≢v rewrite Vec.lookup∘update′ v′≢v ρ (● (h « v »)) with ρ « v′ »
 ...           | ● m = equiv-v′
 ...           | ○ = equiv-v′
 \end{code}
-
-%if False
-% not used
-\begin{code}
-Read-Equivalent′ : ∀ h l {h′} v →
-  Consistent h l → Equivalent h l h′ →
-  Equivalent h (fst (Read h l v)) h′
-Read-Equivalent′ h (ρ & ω) v cons equiv v′ with ω « v »
-... | ● m = equiv v′
-... | ○ with ρ « v »
-...   | ● m = equiv v′
-...   | ○ = Read-Equivalent cons equiv v′
-\end{code}
-%endif
+In the two alternatives above, the types of the goals and |equiv-v′| reduce
+to |m ≡ h′ « v′ »| and |h « v′ » ≡ h′ « v′ »|, corresponding to the cases
+where |v′| was already cached in the read log, and when it is read for the
+first time respectively.
 
 %format Write-Equivalent = "\func{Write\text-Equivalent}"
+Unlike the |Consistent| property which only involves the read log,
+|Equivalent| also depends on the write log (indirectly via |Read|).
+Therefore we must demonstrate that write log updates preserve some notion of
+heap-log equivalence. We proceed by applying |equiv| to |v′|, and checking
+whether |v′| and |v| are the same variable:
+\savecolumns
 \begin{code}
-Write-Equivalent : ∀ {h l h′ m v} →
+Write-Equivalent : ∀ {h l h′ v m} →
   Equivalent h l h′ → Equivalent h (Write l v m) (h′ « v »≔ m)
-Write-Equivalent {v = v} equiv v′ with equiv v′
-... |  equiv-v′ with v′ ≟Fin v
+Write-Equivalent {h} {ρ & ω} {h′} {v} {m} equiv v′ with equiv v′ | v′ ≟Fin v
+... |  equiv-v′ | yes v′≡v rewrite v′≡v | Vec.lookup∘update v ω (● m)
+       |  Vec.lookup∘update v h′ m = ≡.refl
+\end{code}
+In the |yes| case, we use |Vec.lookup∘update| to first show that the value
+returned by |Read h (Write l v m) v| is in fact |m|, which corresponds to
+the left-hand side of the |_≡_| goal. The next clause rewrites the
+right-hand side from |(h′ « v »≔ m) « v »| to the same |m|, and |≡.refl|
+completes this half of the proof.
 
-Write-Equivalent {l = ρ & ω} {h′} {m} equiv v′ | equiv-v′
-       |  yes ≡.refl rewrite Vec.lookup∘update v′ ω (● m)
-          | Vec.lookup∘update v′ h′ m = ≡.refl
-
-Write-Equivalent {l = ρ & ω} {h′} {m} equiv v′ | equiv-v′
-       |  no v′≢v rewrite Vec.lookup∘update′ v′≢v ω (● m)
-          |  Vec.lookup∘update′ v′≢v h′ m with ω « v′ »
-
-...          |  ● n = equiv-v′
-...          |  ○ with ρ « v′ »
-...             | ● n = equiv-v′
-...             | ○ = equiv-v′
+For the |no| half where |v′| is not the variable being written to, the write
+log entry |ω « v′ »| and the value of |h′ « v′ »| are not updated, which is
+taken care of by the two |Vec.lookup∘update′| rewrites. Thus the existing
+|equiv-v′| suffices to complete the proof, although we do have to inspect
+the appropriate log entries to verify that |equiv-v′| and the goal have the
+same types in all cases:
+\restorecolumns
+\begin{code}
+... |  equiv-v′ | no v′≢v rewrite Vec.lookup∘update′ v′≢v ω (● m)
+       |  Vec.lookup∘update′ v′≢v h′ m with ω « v′ »
+...       |  ● n = equiv-v′
+...       |  ○ with ρ « v′ »
+...          | ● n = equiv-v′
+...          | ○ = equiv-v′
 \end{code}
 
-lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-lorem ipsum 
 
-\subsection{Commit Update}
+\subsection{Commit Heap Equality}
 
 %format Commit-Update = "\func{Commit\text-Update}"
-%format h′≗hω = "\func{h\Prime{\circeq}h\omega}"
+%format hω≗h′ = "\func{h\omega{\circeq}h\Prime}"
 %format cons-v = "\Varid{cons\text-v}"
 %format equiv-v = "\Varid{equiv\text-v}"
+When a transaction completes successfully, we proceed to update the
+unmodified heap with the contents of the write log, using the |Update|
+function defined at the end of \S\ref{sec:atomic-logs}. Given an |h′| that
+is equivalent to some heap |h| overlaid with logs |l| and that |h| and |l|
+are mutually consistent, we can proceed to show that updating |h| with the
+contents of the write log results in an identical heap as one that is
+modified in-place by the stop-the-world semantics:
+\savecolumns
 \begin{code}
 Commit-Update : ∀ {h l h′} →
   Consistent h l → Equivalent h l h′ → Update h l ≡ h′
 Commit-Update {h} {l} {h′} cons equiv =
     Equivalence.to Vec.Pointwise-≡ ⟨$⟩ Vec.Pointwise.ext hω≗h′ where
-  open Logs.Logs l
-  hω≗h′ : _«_» (Update h l) ≗ _«_» h′
+  hω≗h′ : ∀ v → Update h l « v » ≡ h′ « v »
   hω≗h′ v rewrite Vec.lookup∘tabulate (Update-lookup h l) v
-       with ω « v » | equiv v
+       with Logs.ω l « v » | equiv v
   ...  |  ● m  | equiv-v = equiv-v
-  ...  |  ○    | equiv-v with ρ « v » | ≡.inspect (_«_» ρ) v
+\end{code}
+The main |hω≗h′| part of the proof shows pointwise equality of |Update h l|
+and |h′|, by considering the entry for |v| in the write and read logs. When
+the write log contains |● m|, the corresponding entry of |h| would be
+updated with |m|; not coincidentally |equiv-v| has been refined to a proof
+of |m ≡ h′ « v »|. Otherwise the write log contains a |○|, and the goal type
+reduces to |h « v » ≡ h′ « v »|:
+\restorecolumns
+\begin{code}
+  ...  |  ○    | equiv-v with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
   ...     | ● m  | ‹ ρ«v»≡m › = ≡.trans (cons v m ρ«v»≡m) equiv-v
   ...     | ○    | _ = equiv-v
 \end{code}
+We then proceed to inspect the read log: if it contains |● m| then |equiv-v|
+refines to a proof of |m ≡ h′ « v »|, so we use |cons| to show that |h
+« v »| is also equal to |m|, and transitivity completes the proof. In the
+last case where both log entries are empty, the |Read| on the left-hand side
+of the type of |equiv-v| becomes simply |h « v »|, and so completes the
+proof. Finally we use the proof of pointwise/definitional equivalence for
+|Vec| from the Agda standard library to convert |hω≗h′| to a proof of
+definitional equality.
 
 % vim: ft=tex fo-=m fo-=M:
 

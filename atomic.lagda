@@ -32,5 +32,19 @@ language.
 
 \input{Atomic/Transaction.lagda.tex}
 
+\input{Atomic/Lemmas.lagda.tex}
+
+\input{Atomic/Combined.lagda.tex}
+
+%\input{Atomic/Bisimilar.lagda.tex}
+
+%\input{Atomic/Lemmas.lagda.tex}
+
+%\input{Atomic/Complete.lagda.tex}
+
+%\input{Atomic/Sound.lagda.tex}
+
+%\input{Atomic/Correct.lagda.tex}
+
 % vim: ft=tex fo-=m fo-=M:
 

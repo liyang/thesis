@@ -42,7 +42,7 @@ open import Combined
 ...     | ● m | _ rewrite equiv-v = , cons , equiv , ↣-read′
 ...     | ○   | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
           , Read-Consistent (ρ & ω) v cons
-          , Read-Equivalent cons equiv , ↣-read′
+          , Read-Equivalent ρ[v]≡○ equiv , ↣-read′
 
 ↦′⋆→↣′⋆ : ∀ {h₀ l h e h′ e′} →
   Consistent h₀ l →
