@@ -355,3 +355,4 @@ the |↣-abort| rule applies, and we silently restart the transaction by
 resetting the transaction state and the expression.
 
 % vim: ft=tex fo-=m fo-=M:
+

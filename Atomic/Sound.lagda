@@ -1,3 +1,5 @@
+%if False
+\begin{code}
 module Sound where
 
 open import Common
@@ -6,15 +8,29 @@ open import Logs
 open import Language
 open import Transaction
 open import Combined
+\end{code}
+%endif
 
+\subsection{Soundness}
+
+%if False
+\begin{code}
 -- sequence of ↣′ transitions with different heaps
 infix 3 H⊢_↣′_ H⊢_↣′⋆_
 H⊢_↣′_ : Rel (Logs × Expression′)
 H⊢ c ↣′ c′ = Σ Heap (λ h → h ⊢ c ↣′ c′)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 H⊢_↣′⋆_ : Rel (Logs × Expression′)
 H⊢_↣′⋆_ = Star H⊢_↣′_
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↣′-swap : ∀ {h h′ l e l′ e′} →
   Consistent h′ l′ →
   h  ⊢ l , e ↣′ l′ , e′ →
@@ -30,7 +46,11 @@ H⊢_↣′⋆_ = Star H⊢_↣′_
 ...   | ○ with Logs.ρ l « v »
 ...     | ● m = ↣′-read′
 ...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »)) | cons′-v-h ≡.refl = ↣′-read′
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↣′⋆-swap : ∀ {h′ l e l′ e′} →
   Consistent h′ l′ →
   H⊢ l , e ↣′⋆ l′ , e′ →
@@ -48,7 +68,11 @@ H⊢_↣′⋆_ = Star H⊢_↣′_
 ↣′⋆-swap {h′} cons″ ((h , e↣e′) ∷ H⊢e′↣e″) = ↣′-swap cons′ e↣e′ ∷ ↣′⋆-swap cons″ H⊢e′↣e″ where
   cons′ = H↣′⋆-Consistent H⊢e′↣e″ cons″
 -}
+\end{code}
+%endif
 
+%if False
+\begin{code}
 private
   extract : ∀ {α h R l e h′ c′ e′ h″ c″ e″} →
     H⊢ ∅ , R ↣′⋆ l , e →
@@ -68,7 +92,11 @@ private
   extract R↣′⋆e α≢τ (↠-↣ (↣-step e↣e′)   ◅ c′↠⋆c″) c″↠c‴ = extract (R↣′⋆e ◅◅ (_ , e↣e′) ◅ ε) α≢τ c′↠⋆c″ c″↠c‴
   extract R↣′⋆e α≢τ (↠-↣ (↣-mutate h′)   ◅ c′↠⋆c″) c″↠c‴ = extract R↣′⋆e α≢τ c′↠⋆c″ c″↠c‴
   extract R↣′⋆e α≢τ (↠-↣ (↣-abort ¬cons) ◅ c′↠⋆c″) c″↠c‴ = extract ε α≢τ c′↠⋆c″ c″↠c‴
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↣-extract : ∀ {α h R h′ c′ e′ h″ c″ e″} →
   α ≢ τ →
   h , ↣: ○ , atomic R ↠⋆ h′ , c′ , e′ →
@@ -81,7 +109,11 @@ private
   H⊢ ∅ , R ↣′⋆ l′ , # m
 ↣-extract α≢τ ε (↠-↣ ↣-begin) = ⊥-elim (α≢τ ≡.refl)
 ↣-extract α≢τ (↠-↣ ↣-begin ◅ c↠⋆c′) c′↠c″ = extract ε α≢τ c↠⋆c′ c′↠c″
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↣′→↦′ : ∀ {h l e l′ e′ h₀} →
   Consistent h₀ l →
   Equivalent h₀ l h →
@@ -103,7 +135,11 @@ private
 ...     | ○ | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
           , Read-Consistent l v cons
           , Read-Equivalent ρ[v]≡○ equiv , ↦′-read′
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →
   Consistent h₀ l →
   Equivalent h₀ l h →
@@ -116,3 +152,8 @@ private
 ↣′⋆→↦′⋆ cons equiv (e↣′e′ ◅ e′↣′⋆e″) with ↣′→↦′ cons equiv e↣′e′
 ... | h′ , cons′ , equiv′ , e↦′e′ with ↣′⋆→↦′⋆ cons′ equiv′ e′↣′⋆e″
 ...   | h″ , cons″ , equiv″ , e′↦′⋆e″ = h″ , cons″ , equiv″ , e↦′e′ ◅ e′↦′⋆e″
+\end{code}
+%endif
+
+% vim: ft=tex fo-=m fo-=M:
+

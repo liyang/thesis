@@ -19,12 +19,6 @@ open import Language
 \end{code}
 %endif
 
-\section{Reasoning Transactionally}
-
-In this section, we will cover some useful lemmas concerning heaps and
-transaction logs that are used to show that the stop-the-world and log-based
-transaction semantics coincide.
-
 \subsection{Consistency-Preserving Transitions}
 
 %format Read-Consistent = "\func{Read\text-Consistent}"
@@ -222,7 +216,7 @@ log entry |ω « v′ »| and the value of |h′ « v′ »| are not updated, wh
 taken care of by the two |Vec.lookup∘update′| rewrites. Thus the existing
 |equiv-v′| suffices to complete the proof, although we do have to inspect
 the appropriate log entries to verify that |equiv-v′| and the goal have the
-same types in all cases:
+correct types in all cases:
 \restorecolumns
 \begin{code}
 ... |  equiv-v′ | no v′≢v rewrite Vec.lookup∘update′ v′≢v ω (● m)

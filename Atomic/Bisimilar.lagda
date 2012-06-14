@@ -9,6 +9,8 @@ open import Combined
 \end{code}
 %endif
 
+\subsection{Bisimilarity of Semantics}
+
 %if False
 \begin{code}
 mutual
@@ -84,4 +86,6 @@ mutual
   ≈-trans (x≼y & x≽y) (y≼z & y≽z) = ♯ ≼-trans (♭ x≼y) (♭ y≼z) & ♯ ≼-trans (♭ y≽z) (♭ x≽y)
 \end{code}
 %endif
+
+% vim: ft=tex fo-=m fo-=M:
 

@@ -40,7 +40,11 @@ verified.lagda.tex: Verified/Heap.lagda.tex Verified/Action.lagda.tex \
 	Verified/Completeness.lagda.tex Verified/Soundness.lagda.tex
 
 atomic.lagda.tex: Atomic/Common.lagda.tex Atomic/Language.lagda.tex \
-	Atomic/Heap.lagda.tex Atomic/Logs.lagda.tex Atomic/Transaction.lagda.tex
+	Atomic/Heap.lagda.tex Atomic/Logs.lagda.tex \
+	Atomic/Combined.lagda.tex Atomic/Bisimilar.lagda.tex \
+	Atomic/Transaction.lagda.tex Atomic/Lemmas.lagda.tex \
+	Atomic/Complete.lagda.tex Atomic/Sound.lagda.tex \
+	Atomic/Correct.lagda.tex
 
 polycode.lhs.tex: LHS2TEX_LHS=
 

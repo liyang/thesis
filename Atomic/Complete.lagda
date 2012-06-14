@@ -1,3 +1,5 @@
+%if False
+\begin{code}
 module Complete where
 
 open import Common
@@ -6,9 +8,13 @@ open import Logs
 open import Language
 open import Transaction
 open import Combined
+\end{code}
+%endif
 
--- Equivalence of _↦′_ and _↣′_
+\subsection{Completeness}
 
+%if False
+\begin{code}
 -- Zero or more ↦-mutate rules followed by ↦-atomic.
 ↦-extract : ∀ {α h₀ e h″ c″ e″} →
   α ▹ h₀ , ↦: , atomic e ⤇ h″ , c″ , e″ →
@@ -21,7 +27,11 @@ open import Combined
 ↦-extract (⤇: α≢τ ε (↠-↦ (↦-atomic e↦⋆m))) = _ , _ , ≡.refl , ≡.refl , yes ≡.refl , e↦⋆m
 ↦-extract (⤇: α≢τ (↠-↦ (↦-mutate h₁) ◅ c↠⋆c′) c′↠c″) with ↦-extract (⤇: α≢τ c↠⋆c′ c′↠c″)
 ... | h , m , ≡.refl , ≡.refl , eq? , e↦⋆m = _ , _ , ≡.refl , ≡.refl , (_ ≟Heap h) , e↦⋆m
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↦′→↣′ : ∀ {h₀ l h e h′ e′} →
   Consistent h₀ l →
   Equivalent h₀ l h →
@@ -43,7 +53,11 @@ open import Combined
 ...     | ○   | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
           , Read-Consistent (ρ & ω) v cons
           , Read-Equivalent ρ[v]≡○ equiv , ↣-read′
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↦′⋆→↣′⋆ : ∀ {h₀ l h e h′ e′} →
   Consistent h₀ l →
   Equivalent h₀ l h →
@@ -56,3 +70,8 @@ open import Combined
 ↦′⋆→↣′⋆ cons equiv (e↦e′ ◅ e′↦⋆e″) with ↦′→↣′ cons equiv e↦e′
 ... | l′ , cons′ , equiv′ , e↣e′ with ↦′⋆→↣′⋆ cons′ equiv′ e′↦⋆e″
 ...   | l″ , cons″ , equiv″ , e′↣⋆e″ = l″ , cons″ , equiv″ , e↣e′ ◅ e′↣⋆e″
+\end{code}
+%endif
+
+% vim: ft=tex fo-=m fo-=M:
+

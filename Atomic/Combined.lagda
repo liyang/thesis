@@ -8,7 +8,7 @@ open import Language
 \end{code}
 %endif
 
-\subsection{Combined}
+\subsection{Combined Semantics}
 
 %if False
 \begin{code}
@@ -70,4 +70,6 @@ record _▹_⤇_ (α : Action) (x x″ : Heap × Combined × Expression) : Set w
     e′↠e″ : α ▹ h′ , c′ , e′ ↠ x″
 \end{code}
 %endif
+
+% vim: ft=tex fo-=m fo-=M:
 

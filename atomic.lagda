@@ -28,23 +28,34 @@ language.
 % * Conclusion
 % Fix up ch.1 & 10. Check for forward refs to ch.9
 
+
 \input{Atomic/Language.lagda.tex}
 
-\input{Atomic/Transaction.lagda.tex}
+
+\section{Combined Semantics and Bisimilarity}
+
+\input{Atomic/Combined.lagda.tex}
+\input{Atomic/Bisimilar.lagda.tex}
+
+\subsection{Definition of Correctness}
+
 
 \input{Atomic/Lemmas.lagda.tex}
 
-\input{Atomic/Combined.lagda.tex}
 
-%\input{Atomic/Bisimilar.lagda.tex}
+\section{Transaction Correctness}
 
-%\input{Atomic/Lemmas.lagda.tex}
+In this section, we will cover some useful lemmas concerning heaps and
+transaction logs that are used to show that the stop-the-world and log-based
+transaction semantics coincide.
 
-%\input{Atomic/Complete.lagda.tex}
+\input{Atomic/Transaction.lagda.tex}
+\input{Atomic/Complete.lagda.tex}
+\input{Atomic/Sound.lagda.tex}
 
-%\input{Atomic/Sound.lagda.tex}
 
-%\input{Atomic/Correct.lagda.tex}
+\input{Atomic/Correct.lagda.tex}
+
 
 % vim: ft=tex fo-=m fo-=M:
 

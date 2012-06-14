@@ -1,32 +1,52 @@
+%if False
+\begin{code}
 module Lemmas where
 
 open import Common
 open import Language
 open import Combined
+\end{code}
+%endif
 
+\section{Various Lemmas}
+
+%if False
+\begin{code}
 -- No progress.
-
 #↦̸ : ∀ {α h m x′} →
   α ▹ h , # m ↦ x′ → ⊥
 #↦̸ ()
+\end{code}
+%endif
 
+%if False
+\begin{code}
 #↣̸ : ∀ {α h t m x′} →
   α ▹ h , t , # m ↣ x′ → ⊥
 #↣̸ ()
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 #↠̸ : ∀ {α h c m x′} →
   α ▹ h , c , # m ↠ x′ → ⊥
 #↠̸ (↠-↦ e↦e′) = #↦̸ e↦e′
 #↠̸ (↠-↣ e↣e′) = #↣̸ e↣e′
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 #⤇̸ : ∀ {α h c m x′} →
   α ▹ h , c , # m ⤇ x′ → ⊥
 #⤇̸ (⤇: α≢τ ε e↠e′) = #↠̸ e↠e′
 #⤇̸ (⤇: α≢τ (e↠e′ ◅ e′↠⋆e″) e″↠e‴) = #↠̸ e↠e′
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 -- transactions always finish after visible transition
 ↣→t′≡○ : ∀ {α h t e h′ t′ e′} →
  α ≢ τ →
@@ -40,14 +60,21 @@ open import Combined
 ↣→t′≡○ α≢τ (↣-mutate h′) = ⊥-elim (α≢τ ≡.refl)
 ↣→t′≡○ α≢τ (↣-abort ¬cons) = ⊥-elim (α≢τ ≡.refl)
 ↣→t′≡○ α≢τ (↣-commit cons) = ≡.refl
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠→t′≡○ : ∀ {α h t e h′ t′ e′} →
   α ≢ τ →
   α ▹ h , ↣: t , e ↠ h′ , ↣: t′ , e′ →
   t′ ≡ ○
 ↠→t′≡○ α≢τ (↠-↣ e↣e′) = ↣→t′≡○ α≢τ e↣e′
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 -- extract
 ↠⋆/↦-L : ∀ {α h a b x′ x″} →
   α ≢ τ →
@@ -67,7 +94,11 @@ open import Combined
 ↠⋆/↦-L α≢τ (↠-↦ (↦-L b ()) ◅ e′↠⋆e″) e″↠e‴ | inl (m , ≡.refl)
 ... | inr (h″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , a′↠⋆a″ , a″↠a‴) = 
       inr (h″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , ↠-↦ a↦a′ ◅ a′↠⋆a″ , a″↠a‴)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆/↣-L : ∀ {α h t a b x′ x″} →
   α ≢ τ →
   h , ↣: t , a ⊕ b ↠⋆ x′ →
@@ -87,7 +118,11 @@ open import Combined
 ↠⋆/↣-L α≢τ (↠-↣ (↣-L b ()) ◅ e′↠⋆e″) e″↠e‴ | inl (m , ≡.refl)
 ... | inr (h″ , t″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , a′↠⋆a″ , a″↠a‴) =
       inr (h″ , t″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , ↠-↣ a↣a′ ◅ a′↠⋆a″ , a″↠a‴)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆/↦-R : ∀ {α h m b x′ x″} →
   α ≢ τ →
   h , ↦: , # m ⊕ b ↠⋆ x′ →
@@ -111,7 +146,11 @@ open import Combined
     | inl (n , ≡.refl , ≡.refl , ≡.refl , ≡.refl)
 ... | inr (h″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , b′↠⋆b″ , b″↠b‴) =
       inr (h″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , ↠-↦ b↦b′ ◅ b′↠⋆b″ , b″↠b‴)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆/↣-R : ∀ {α h t m b x′ x″} →
   α ≢ τ →
   h , ↣: t , # m ⊕ b ↠⋆ x′ →
@@ -136,15 +175,22 @@ open import Combined
     | inl (n , ≡.refl , ≡.refl , ≡.refl , ≡.refl)
 ... | inr (h″ , t″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , b′↠⋆b″ , b″↠b‴) =
       inr (h″ , t″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , ↠-↣ b↣b′ ◅ b′↠⋆b″ , b″↠b‴)
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 -- the other way
 ↠∘↦-L : ∀ b {α h a h′ c′ a′} →
   α ▹ h , ↦: , a ↠ h′ , c′ , a′ →
   c′ ≡ ↦: ×
   α ▹ h , ↦: , a ⊕ b ↠ h′ , ↦: , a′ ⊕ b
 ↠∘↦-L b (↠-↦ a↦a′) = ≡.refl , ↠-↦ (↦-L b a↦a′)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆∘↦-L : ∀ b {h a h′ c′ a′} →
   h , ↦: , a ↠⋆ h′ , c′ , a′ →
   c′ ≡ ↦: ×
@@ -152,7 +198,11 @@ open import Combined
 ↠⋆∘↦-L b ε = ≡.refl , ε
 ↠⋆∘↦-L b (↠-↦ a↦a′ ◅ a′↠⋆a″) with ↠⋆∘↦-L b a′↠⋆a″
 ... | ≡.refl , a′⊕b↠⋆a″⊕b = ≡.refl , ↠-↦ (↦-L b a↦a′) ◅ a′⊕b↠⋆a″⊕b
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ⤇∘↦-L : ∀ b {α h a h′ c′ a′} →
   α ▹ h , ↦: , a ⤇ h′ , c′ , a′ →
   c′ ≡ ↦: ×
@@ -160,15 +210,22 @@ open import Combined
 ⤇∘↦-L b (⤇: α≢τ a↠⋆a′ a′↠a″) with ↠⋆∘↦-L b a↠⋆a′
 ... | ≡.refl , a⊕b↠⋆a′⊕b with ↠∘↦-L b a′↠a″
 ...   | ≡.refl , a′⊕b↠a″⊕b = ≡.refl , ⤇: α≢τ a⊕b↠⋆a′⊕b a′⊕b↠a″⊕b
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 ↠∘↣-L : ∀ b {α h t a h′ c′ a′} →
   α ▹ h , ↣: t , a ↠ h′ , c′ , a′ →
   ∃ λ t′ →
   c′ ≡ ↣: t′ ×
   α ▹ h , ↣: t , a ⊕ b ↠ h′ , ↣: t′ , a′ ⊕ b
 ↠∘↣-L b (↠-↣ a↣a′) = _ , ≡.refl , ↠-↣ (↣-L b a↣a′)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆∘↣-L : ∀ b {h t a h′ c′ a′} →
   h , ↣: t , a ↠⋆ h′ , c′ , a′ →
   ∃ λ t′ →
@@ -177,7 +234,11 @@ open import Combined
 ↠⋆∘↣-L b ε = _ , ≡.refl , ε
 ↠⋆∘↣-L b (↠-↣ a↣a′ ◅ a′↠⋆a″) with ↠⋆∘↣-L b a′↠⋆a″
 ... | t″ , ≡.refl , a′⊕b↠⋆a″⊕b = t″ , ≡.refl , ↠-↣ (↣-L b a↣a′) ◅ a′⊕b↠⋆a″⊕b
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ⤇∘↣-L : ∀ b {α h t a h′ c′ a′} →
   α ▹ h , ↣: t , a ⤇ h′ , c′ , a′ →
   c′ ≡ ↣: ○ ×
@@ -185,14 +246,21 @@ open import Combined
 ⤇∘↣-L b (⤇: α≢τ a↠⋆a′ a′↠a″) with ↠⋆∘↣-L b a↠⋆a′
 ... | t′ , ≡.refl , a⊕b↠⋆a′⊕b with ↠∘↣-L b a′↠a″
 ...   | t″ , ≡.refl , a′⊕b↠a″⊕b rewrite ↠→t′≡○ α≢τ a′↠a″ = ≡.refl , ⤇: α≢τ a⊕b↠⋆a′⊕b a′⊕b↠a″⊕b
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 ↠∘↦-R : ∀ m {α h b h′ c′ b′} →
   α ▹ h , ↦: , b ↠ h′ , c′ , b′ →
   c′ ≡ ↦: ×
   α ▹ h , ↦: , # m ⊕ b ↠ h′ , ↦: , # m ⊕ b′
 ↠∘↦-R m (↠-↦ b↦b′) = ≡.refl , ↠-↦ (↦-R m b↦b′)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆∘↦-R : ∀ m {h b h′ c′ b′} →
   h , ↦: , b ↠⋆ h′ , c′ , b′ →
   c′ ≡ ↦: ×
@@ -200,7 +268,11 @@ open import Combined
 ↠⋆∘↦-R m ε = ≡.refl , ε
 ↠⋆∘↦-R m (↠-↦ b↦b′ ◅ b′↠⋆b″) with ↠⋆∘↦-R m b′↠⋆b″
 ... | ≡.refl , m⊕b′↠⋆m⊕b″ = ≡.refl , ↠-↦ (↦-R m b↦b′) ◅ m⊕b′↠⋆m⊕b″
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ⤇∘↦-R : ∀ m {α h b h′ c′ b′} →
   α ▹ h , ↦: , b ⤇ h′ , c′ , b′ →
   c′ ≡ ↦: ×
@@ -208,15 +280,22 @@ open import Combined
 ⤇∘↦-R m (⤇: α≢τ b↠⋆b′ b′↠b″) with ↠⋆∘↦-R m b↠⋆b′
 ... | ≡.refl , m⊕b↠⋆m⊕b′ with ↠∘↦-R m b′↠b″
 ...   | ≡.refl , m⊕b′↠m⊕b″ = ≡.refl , ⤇: α≢τ m⊕b↠⋆m⊕b′ m⊕b′↠m⊕b″
+\end{code}
+%endif
 
-
+%if False
+\begin{code}
 ↠∘↣-R : ∀ m {α h t b h′ c′ b′} →
   α ▹ h , ↣: t , b ↠ h′ , c′ , b′ →
   ∃ λ t′ →
   c′ ≡ ↣: t′ ×
   α ▹ h , ↣: t , # m ⊕ b ↠ h′ , ↣: t′ , # m ⊕ b′
 ↠∘↣-R m (↠-↣ b↣b′) = _ , ≡.refl , ↠-↣ (↣-R m b↣b′)
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ↠⋆∘↣-R : ∀ m {h t b h′ c′ b′} →
   h , ↣: t , b ↠⋆ h′ , c′ , b′ →
   ∃ λ t′ →
@@ -225,7 +304,11 @@ open import Combined
 ↠⋆∘↣-R m ε = _ , ≡.refl , ε
 ↠⋆∘↣-R m (↠-↣ b↣b′ ◅ b′↠⋆b″) with ↠⋆∘↣-R m b′↠⋆b″
 ... | t″ , ≡.refl , m⊕b′↠⋆m⊕b″ = t″ , ≡.refl , ↠-↣ (↣-R m b↣b′) ◅ m⊕b′↠⋆m⊕b″
+\end{code}
+%endif
 
+%if False
+\begin{code}
 ⤇∘↣-R : ∀ m {α h t b h′ c′ b′} →
   α ▹ h , ↣: t , b ⤇ h′ , c′ , b′ →
   c′ ≡ ↣: ○ ×
@@ -233,3 +316,8 @@ open import Combined
 ⤇∘↣-R m (⤇: α≢τ b↠⋆b′ b′↠b″) with ↠⋆∘↣-R m b↠⋆b′
 ... | t′ , ≡.refl , m⊕b↠⋆m⊕b′ with ↠∘↣-R m b′↠b″
 ...   | t″ , ≡.refl , m⊕b′↠m⊕b″ rewrite ↠→t′≡○ α≢τ b′↠b″ = ≡.refl , ⤇: α≢τ m⊕b↠⋆m⊕b′ m⊕b′↠m⊕b″
+\end{code}
+%endif
+
+% vim: ft=tex fo-=m fo-=M:
+
