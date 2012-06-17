@@ -118,7 +118,7 @@ data _↦′_ : Rel (Heap × Expression′) where
     (b↦b′ :  h ,        b  ↦′  h′ ,        b′)  →
              h , # m ⊕  b  ↦′  h′ , # m ⊕  b′
 
-  ↦′-read : ∀ {h} v →
+  ↦′-read : ∀ h v →
     h , read v  ↦′  h , # h « v »
   ↦′-writeℕ : ∀ {h v m} →
     h , write v (# m) ↦′ h « v »≔ m , # m

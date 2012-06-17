@@ -1,3 +1,15 @@
+%if include /= True
+\begin{comment}
+%let include = True
+%include Atomic/Common.lagda
+%include Atomic/Heap.lagda
+%include Atomic/Logs.lagda
+%include Atomic/Language.lagda
+%include Atomic/Combined.lagda
+%include Atomic/Transaction.lagda
+\end{comment}
+%endif
+
 %if False
 \begin{code}
 module Sound where
@@ -6,8 +18,8 @@ open import Common
 open import Heap
 open import Logs
 open import Language
-open import Transaction
 open import Combined
+open import Transaction
 \end{code}
 %endif
 
@@ -15,145 +27,138 @@ open import Combined
 
 %if False
 \begin{code}
--- sequence of ↣′ transitions with different heaps
 infix 3 H⊢_↣′_ H⊢_↣′⋆_
-H⊢_↣′_ : Rel (Logs × Expression′)
-H⊢ c ↣′ c′ = Σ Heap (λ h → h ⊢ c ↣′ c′)
 \end{code}
 %endif
 
-%if False
+%format ↣′-swap = "\func{{\rightarrowtail\Prime}\text-swap}"
+%format cons′-v-h«v» = "\Varid{cons\Prime\text-v\text-h_v}"
+%format ↣′-read-l-v = "\Varid{{\rightarrowtail\Prime}\text-read\text-l\text-v}"
 \begin{code}
-H⊢_↣′⋆_ : Rel (Logs × Expression′)
-H⊢_↣′⋆_ = Star H⊢_↣′_
-\end{code}
-%endif
-
-%if False
-\begin{code}
-↣′-swap : ∀ {h h′ l e l′ e′} →
-  Consistent h′ l′ →
-  h  ⊢ l , e ↣′ l′ , e′ →
-  h′ ⊢ l , e ↣′ l′ , e′
+↣′-swap : ∀ {h h′ l e l′ e′} → Consistent h′ l′ →
+  h ⊢ l , e ↣′ l′ , e′ → h′ ⊢ l , e ↣′ l′ , e′
 ↣′-swap cons′ ↣′-ℕ = ↣′-ℕ
 ↣′-swap cons′ (↣′-R m b↣b′) = ↣′-R m (↣′-swap cons′ b↣b′)
 ↣′-swap cons′ (↣′-L b a↣a′) = ↣′-L b (↣′-swap cons′ a↣a′)
 ↣′-swap cons′ (↣′-writeE e↣e′) = ↣′-writeE (↣′-swap cons′ e↣e′)
 ↣′-swap cons′ ↣′-writeℕ = ↣′-writeℕ
-↣′-swap {h} {h′} cons′ (↣′-read l v) with cons′ v (h « v ») | ↣′-read {h = h′} l v
-... | cons′-v-h | ↣′-read′ with Logs.ω l « v »
-...   | ● m = ↣′-read′
-...   | ○ with Logs.ρ l « v »
-...     | ● m = ↣′-read′
-...     | ○ rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »)) | cons′-v-h ≡.refl = ↣′-read′
+↣′-swap {h} {h′} cons′ (↣′-read l v)
+     with cons′ v (h « v ») | ↣′-read {h = h′} l v
+...  |  cons′-v-h«v» | ↣′-read-l-v with Logs.ω l « v »
+...     |  ● m = ↣′-read-l-v
+...     |  ○ with Logs.ρ l « v »
+...        | ● m = ↣′-read-l-v
+...        | ○  rewrite Vec.lookup∘update v (Logs.ρ l) (● (h « v »))
+                | cons′-v-h«v» ≡.refl = ↣′-read-l-v
 \end{code}
-%endif
 
-%if False
+%-- sequence of ↣′ transitions with different heaps
+%format H⊢_↣′_ = "\type{H{\vdash}\anonymous{\rightarrowtail\Prime}\anonymous}"
+%format H⊢_↣′⋆_ = "\type{H{\vdash}\anonymous{\rightarrowtail\Prime^\star}\anonymous}"
+%format H⊢ = "\prefix{\type{H{\vdash}}}"
 \begin{code}
-↣′⋆-swap : ∀ {h′ l e l′ e′} →
-  Consistent h′ l′ →
-  H⊢ l , e ↣′⋆ l′ , e′ →
-  h′ ⊢ l , e ↣′⋆ l′ , e′
+H⊢_↣′_ : Rel (Logs × Expression′)
+H⊢ x ↣′ x′ = Σ Heap (λ h → h ⊢ x ↣′ x′)
+
+H⊢_↣′⋆_ : Rel (Logs × Expression′)
+H⊢_↣′⋆_ = Star H⊢_↣′_
+\end{code}
+
+%format ↣′⋆-swap = "\func{{\rightarrowtail\Prime^\star}\text-swap}"
+%format e′↣⋆e″ = "\Varid{e\Prime{\rightarrowtail^\star}\!e\PPrime}"
+%{
+%format P = "\type{P}"
+%format f = "\func{f}"
+\begin{code}
+↣′⋆-swap : ∀ {h′ l e l′ e′} → Consistent h′ l′ →
+  H⊢ l , e ↣′⋆ l′ , e′ → h′ ⊢ l , e ↣′⋆ l′ , e′
 ↣′⋆-swap {h′} cons = fst ∘ Star.gfold id P f (ε , cons) where
   P : Logs × Expression′ → Logs × Expression′ → Set
   P (l , e) (l′ , e′) = h′ ⊢ l , e ↣′⋆ l′ , e′ × Consistent h′ l
-  f : ∀ {c c′ c″} → H⊢ c ↣′ c′ → P c′ c″ → P c c″
-  f (h , e↣e′) (e′↣′⋆e″ , cons′)
-    = ↣′-swap cons′ e↣e′ ◅ e′↣′⋆e″
-    , ↣′-Consistent′ e↣e′ cons′
-{-
--- alternative definition with explicit recursion (and recomputing cons′ from scratch)
-↣′⋆-swap {h′} cons″ [] = []
-↣′⋆-swap {h′} cons″ ((h , e↣e′) ∷ H⊢e′↣e″) = ↣′-swap cons′ e↣e′ ∷ ↣′⋆-swap cons″ H⊢e′↣e″ where
-  cons′ = H↣′⋆-Consistent H⊢e′↣e″ cons″
--}
+  f : ∀ {x x′ x″} → H⊢ x ↣′ x′ → P x′ x″ → P x x″
+  f (h , e↣e′) (e′↣⋆e″ , cons′)
+    = ↣′-swap cons′ e↣e′ ◅ e′↣⋆e″ , ↣′-Consistent′ e↣e′ cons′
 \end{code}
-%endif
+%}
 
 %if False
 \begin{code}
 private
-  extract : ∀ {α h R l e h′ c′ e′ h″ c″ e″} →
-    H⊢ ∅ , R ↣′⋆ l , e →
-    α ≢ τ →
-    h , ↣: ● (R , l) , atomic e  ↠⋆  h′ , c′ , e′ →
-    α ▹  h′ , c′ , e′  ↠  h″ , c″ , e″ →
-    ∃₂ λ l′ m →
-    α ≡ ☢ ×
-    c′ , e′ ≡ ↣: ● (R , l′) , atomic (# m) ×
-    h″ , c″ , e″ ≡ Update h′ l′ , ↣: ○ , # m ×
-    Consistent h′ l′ ×
-    H⊢ ∅ , R ↣′⋆ l′ , # m
-  extract R↣′⋆e α≢τ ε (↠-↣ (↣-step e↣e′)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ ε (↠-↣ (↣-mutate h′)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ ε (↠-↣ (↣-abort ¬cons)) = ⊥-elim (α≢τ ≡.refl)
-  extract R↣′⋆e α≢τ ε (↠-↣ (↣-commit cons)) = _ , _ , ≡.refl , ≡.refl , ≡.refl , cons , R↣′⋆e
-  extract R↣′⋆e α≢τ (↠-↣ (↣-step e↣e′)   ◅ c′↠⋆c″) c″↠c‴ = extract (R↣′⋆e ◅◅ (_ , e↣e′) ◅ ε) α≢τ c′↠⋆c″ c″↠c‴
-  extract R↣′⋆e α≢τ (↠-↣ (↣-mutate h′)   ◅ c′↠⋆c″) c″↠c‴ = extract R↣′⋆e α≢τ c′↠⋆c″ c″↠c‴
-  extract R↣′⋆e α≢τ (↠-↣ (↣-abort ¬cons) ◅ c′↠⋆c″) c″↠c‴ = extract ε α≢τ c′↠⋆c″ c″↠c‴
 \end{code}
 %endif
 
-%if False
+%format ↣-extract′ = "\func{{\rightarrowtail}\text-extract\Prime}"
+%format r↣′⋆e = "\Varid{r{\rightarrowtail\Prime^\star}\!e}"
+%format e′↠⋆e″ = "\Varid{e\Prime{\twoheadrightarrow^\star_\tau}e\PPrime}"
+%format e″↠e‴ = "\Varid{e\PPrime{\twoheadrightarrow}e\PPPrime}"
 \begin{code}
-↣-extract : ∀ {α h R h′ c′ e′ h″ c″ e″} →
-  α ≢ τ →
-  h , ↣: ○ , atomic R ↠⋆ h′ , c′ , e′ →
-  α ▹ h′ , c′ , e′ ↠ h″ , c″ , e″ →
-  ∃₂ λ l′ m →
-  α ≡ ☢ ×
-  c′ , e′ ≡ ↣: ● (R , l′) , atomic (# m) ×
-  h″ , c″ , e″ ≡ Update h′ l′ , ↣: ○ , # m ×
-  Consistent h′ l′ ×
-  H⊢ ∅ , R ↣′⋆ l′ , # m
-↣-extract α≢τ ε (↠-↣ ↣-begin) = ⊥-elim (α≢τ ≡.refl)
-↣-extract α≢τ (↠-↣ ↣-begin ◅ c↠⋆c′) c′↠c″ = extract ε α≢τ c↠⋆c′ c′↠c″
+  ↣-extract′ : ∀ {α h r l e h′ c′ e′ h″ c″ e″} →
+    H⊢ ∅ , r ↣′⋆ l , e →
+    α ≢ τ → h , ↣: ● (r , l) , atomic e  ↠⋆  h′ , c′ , e′ →
+    α ▹  h′ , c′ , e′  ↠  h″ , c″ , e″ →
+    ∃₂ λ l′ m → α , h″ , c″ , e″ ≡ ☢ , Update h′ l′ , ↣: ○ , # m ×
+    Consistent h′ l′ × H⊢ ∅ , r ↣′⋆ l′ , # m
+  ↣-extract′ r↣′⋆e α≢τ ε (↠-↣ (↣-step e↣e′)) = ⊥-elim (α≢τ ≡.refl)
+  ↣-extract′ r↣′⋆e α≢τ ε (↠-↣ (↣-mutate h′)) = ⊥-elim (α≢τ ≡.refl)
+  ↣-extract′ r↣′⋆e α≢τ ε (↠-↣ (↣-abort ¬cons)) = ⊥-elim (α≢τ ≡.refl)
+  ↣-extract′ r↣′⋆e α≢τ ε (↠-↣ (↣-commit cons)) =
+    _ , _ , ≡.refl , cons , r↣′⋆e
+  ↣-extract′ r↣′⋆e α≢τ (↠-↣ (↣-step e↣e′)   ◅ e′↠⋆e″) e″↠e‴ =
+    ↣-extract′ (r↣′⋆e ◅◅ (_ , e↣e′) ◅ ε) α≢τ e′↠⋆e″ e″↠e‴
+  ↣-extract′ r↣′⋆e α≢τ (↠-↣ (↣-mutate h′)   ◅ e′↠⋆e″) e″↠e‴ =
+    ↣-extract′ r↣′⋆e α≢τ e′↠⋆e″ e″↠e‴
+  ↣-extract′ r↣′⋆e α≢τ (↠-↣ (↣-abort ¬cons) ◅ e′↠⋆e″) e″↠e‴ =
+    ↣-extract′ ε α≢τ e′↠⋆e″ e″↠e‴
 \end{code}
-%endif
 
-%if False
+%format ↣-extract = "\func{{\rightarrowtail}\text-extract}"
+\begin{code}
+↣-extract : ∀ {α h r h″ c″ e″} →
+  α ▹ h , ↣: ○ , atomic r ⤇ h″ , c″ , e″ →
+  ∃₃ λ h′ l′ m → α , h″ , c″ , e″ ≡ ☢ , Update h′ l′ , ↣: ○ , # m ×
+  Consistent h′ l′ × H⊢ ∅ , r ↣′⋆ l′ , # m
+↣-extract (⤇: α≢τ ε (↠-↣ ↣-begin)) = ⊥-elim (α≢τ ≡.refl)
+↣-extract (⤇: α≢τ (↠-↣ ↣-begin ◅ e↠⋆e′) e′↠e″) =
+  _ , ↣-extract′ ε α≢τ e↠⋆e′ e′↠e″
+\end{code}
+
+%format ↣′→↦′ = "\func{{\rightarrowtail\Prime}{\rightarrow}{\mapsto\Prime}}"
+%format ↦′-read-h-v = "\Varid{{\rightarrowtail\Prime}\text-read\text-v}"
 \begin{code}
 ↣′→↦′ : ∀ {h l e l′ e′ h₀} →
-  Consistent h₀ l →
-  Equivalent h₀ l h →
-  h₀ ⊢ l , e ↣′ l′ , e′ →
-  ∃ λ h′ →
-  Consistent h₀ l′ ×
-  Equivalent h₀ l′ h′ ×
-  h , e ↦′ h′ , e′
+            Consistent h₀ l   →  Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′ l′ , e′ →
+  ∃ λ h′ →  Consistent h₀ l′  ×  Equivalent h₀ l′ h′  ×  h , e ↦′ h′ , e′
 ↣′→↦′ cons equiv ↣′-ℕ = _ , cons , equiv , ↦′-ℕ
-↣′→↦′ cons equiv (↣′-R m b↣b′) = Σ.map id (Σ.map id (Σ.map id (↦′-R m))) (↣′→↦′ cons equiv b↣b′)
-↣′→↦′ cons equiv (↣′-L b a↣a′) = Σ.map id (Σ.map id (Σ.map id (↦′-L b))) (↣′→↦′ cons equiv a↣a′)
-↣′→↦′ cons equiv (↣′-writeE e↣e′) = Σ.map id (Σ.map id (Σ.map id ↦′-writeE)) (↣′→↦′ cons equiv e↣e′)
+↣′→↦′ cons equiv (↣′-R m b↣b′) =
+  Σ.map id (Σ.map id (Σ.map id (↦′-R m))) (↣′→↦′ cons equiv b↣b′)
+↣′→↦′ cons equiv (↣′-L b a↣a′) =
+  Σ.map id (Σ.map id (Σ.map id (↦′-L b))) (↣′→↦′ cons equiv a↣a′)
+↣′→↦′ cons equiv (↣′-writeE e↣e′) =
+  Σ.map id (Σ.map id (Σ.map id ↦′-writeE)) (↣′→↦′ cons equiv e↣e′)
 ↣′→↦′ cons equiv ↣′-writeℕ = _ , cons , Write-Equivalent equiv , ↦′-writeℕ
-↣′→↦′ {h} cons equiv (↣′-read l v) with equiv v | ↦′-read {h} v
-... | equiv-v | ↦′-read′ with Logs.ω l « v »
-...   | ● m rewrite equiv-v = _ , cons , equiv , ↦′-read′
-...   | ○ with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
-...     | ● m | _ rewrite equiv-v = _ , cons , equiv , ↦′-read′
-...     | ○ | ‹ ρ[v]≡○ › rewrite ≡.sym equiv-v = _
-          , Read-Consistent l v cons
-          , Read-Equivalent ρ[v]≡○ equiv , ↦′-read′
+↣′→↦′ {h} cons equiv (↣′-read l v) with equiv v | ↦′-read h v
+... |  equiv-v | ↦′-read-h-v with Logs.ω l « v »
+...    |  ● m rewrite equiv-v = _ , cons , equiv , ↦′-read-h-v
+...    |  ○ with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
+...       |  ● m | _ rewrite equiv-v = _ , cons , equiv , ↦′-read-h-v
+...       |  ○ | ‹ ρ«v»≡○ › rewrite ≡.sym equiv-v = _
+             , Read-Consistent l v cons , Read-Equivalent ρ«v»≡○ equiv , ↦′-read-h-v
 \end{code}
-%endif
 
-%if False
+%format ↣′⋆→↦′⋆ = "\func{{\rightarrowtail\Prime^\star}{\rightarrow}{\mapsto\Prime^\star}}"
+%format e′↦⋆e″ = "\Varid{e\Prime{\mapsto^\star}\!e\PPrime}"
+%format cons″ = "\Varid{cons\PPrime}"
+%format equiv′ = "\Varid{equiv\Prime}"
+%format equiv″ = "\Varid{equiv\PPrime}"
 \begin{code}
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →
-  Consistent h₀ l →
-  Equivalent h₀ l h →
-  h₀ ⊢ l , e ↣′⋆ l′ , e′ →
-  ∃ λ h′ →
-  Consistent h₀ l′ ×
-  Equivalent h₀ l′ h′ ×
-  h , e ↦′⋆ h′ , e′
+            Consistent h₀ l   →  Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′⋆ l′ , e′ →
+  ∃ λ h′ →  Consistent h₀ l′  ×  Equivalent h₀ l′ h′  ×  h , e ↦′⋆ h′ , e′
 ↣′⋆→↦′⋆ cons equiv ε = _ , cons , equiv , ε
-↣′⋆→↦′⋆ cons equiv (e↣′e′ ◅ e′↣′⋆e″) with ↣′→↦′ cons equiv e↣′e′
-... | h′ , cons′ , equiv′ , e↦′e′ with ↣′⋆→↦′⋆ cons′ equiv′ e′↣′⋆e″
-...   | h″ , cons″ , equiv″ , e′↦′⋆e″ = h″ , cons″ , equiv″ , e↦′e′ ◅ e′↦′⋆e″
+↣′⋆→↦′⋆ cons equiv (e↣e′ ◅ e′↣⋆e″) with ↣′→↦′ cons equiv e↣e′
+... |  h′ , cons′ , equiv′ , e↦e′ with ↣′⋆→↦′⋆ cons′ equiv′ e′↣⋆e″
+...    | h″ , cons″ , equiv″ , e′↦⋆e″ = h″ , cons″ , equiv″ , e↦e′ ◅ e′↦⋆e″
 \end{code}
-%endif
 
 % vim: ft=tex fo-=m fo-=M:
 

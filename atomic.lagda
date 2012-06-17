@@ -2,8 +2,11 @@
 \begin{comment}
 %let include = True
 %include Atomic/Common.lagda
-%include Atomic/Language.lagda
 %include Atomic/Heap.lagda
+%include Atomic/Logs.lagda
+%include Atomic/Language.lagda
+%include Atomic/Combined.lagda
+%include Atomic/Bisimilar.lagda
 \end{comment}
 %endif
 
@@ -39,20 +42,38 @@ language.
 
 \subsection{Definition of Correctness}
 
+%format correct = "\func{correct}"
+Having accumulated enough machinery, we can now give a definition of
+correctness of the log-based semantics, which is simply the following:
+\begin{spec}
+correct : ∀ h e → h , e ⊢ ↦: ≈ ↣: ○
+\end{spec}
+That is for any heap |h| and expression |e|, the stop-the-world semantics
+(as represented by |↦:|) and the log-based semantics with an empty
+transaction state (proxied by |↣: ○|) are bisimilar up to visible
+transitions.
 
-\input{Atomic/Lemmas.lagda.tex}
+
+%\input{Atomic/Lemmas.lagda.tex}
 
 
-\section{Transaction Correctness}
+\section{Reasoning Transactionally}
 
 In this section, we will cover some useful lemmas concerning heaps and
 transaction logs that are used to show that the stop-the-world and log-based
 transaction semantics coincide.
 
 \input{Atomic/Transaction.lagda.tex}
+
+
+\section{Transaction Correctness}
+
 \input{Atomic/Complete.lagda.tex}
+
 \input{Atomic/Sound.lagda.tex}
 
+
+%\input{Atomic/Lemmas.lagda.tex} % trivial lemmas
 
 \input{Atomic/Correct.lagda.tex}
 

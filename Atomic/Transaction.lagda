@@ -230,7 +230,7 @@ correct types in all cases:
 
 \subsection{Commit Heap Equality}
 
-%format Commit-Update = "\func{Commit\text-Update}"
+%format Commit = "\func{Commit}"
 %format hω≗h′ = "\func{h\omega{\circeq}h\Prime}"
 %format cons-v = "\Varid{cons\text-v}"
 %format equiv-v = "\Varid{equiv\text-v}"
@@ -243,9 +243,9 @@ contents of the write log results in an identical heap as one that is
 modified in-place by the stop-the-world semantics:
 \savecolumns
 \begin{code}
-Commit-Update : ∀ {h l h′} →
+Commit : ∀ {h l h′} →
   Consistent h l → Equivalent h l h′ → Update h l ≡ h′
-Commit-Update {h} {l} {h′} cons equiv =
+Commit {h} {l} {h′} cons equiv =
     Equivalence.to Vec.Pointwise-≡ ⟨$⟩ Vec.Pointwise.ext hω≗h′ where
   hω≗h′ : ∀ v → Update h l « v » ≡ h′ « v »
   hω≗h′ v rewrite Vec.lookup∘tabulate (Update-lookup h l) v

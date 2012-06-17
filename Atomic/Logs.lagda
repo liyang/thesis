@@ -35,8 +35,8 @@ a variable exists only when it has been read from or written to. We take
 a similar approach to |Heap|s, using vectors of |Maybe ℕ|\footnote{For
 aesthetic reasons I have renamed |nothing| and |just| of |Maybe| to |○| and
 |●| respectively.} initialised to |○|:
-%format & = "\infix{\cons{{\&}}}"
-%format _&_ = "\cons{\anonymous{\&}\anonymous}"
+%format & = "\infix{\cons{{\texttt\&}}}"
+%format _&_ = "\cons{\anonymous{\texttt\&}\anonymous}"
 %{
 %format ρ = "\name{\rho}"
 %format ω = "\name{\omega}"
@@ -149,8 +149,8 @@ and read log are indeed consistent. This is implemented below as
 particular variable:
 \begin{code}
 Consistent? : (h : Heap) (l : Logs) → Dec (Consistent h l)
-Consistent? h (ρ & ω) = Dec.map′ Vec.Pointwise.app Vec.Pointwise.ext
-    (Vec.Pointwise.decidable dec h ρ) where
+Consistent? h (ρ & ω) =  Dec.map′ Vec.Pointwise.app Vec.Pointwise.ext
+                         (Vec.Pointwise.decidable dec h ρ) where
   dec : (h«v» : ℕ) (ρ«v» : Maybe ℕ) → Dec (∀ m → ρ«v» ≡ ● m → h«v» ≡ m)
   dec h«v» ○ = yes (λ m ())
   dec h«v» (● n) with h«v» ≟ℕ n

@@ -34,10 +34,12 @@ Heap = Vec ℕ ∣Heap∣
 
 %if False
 \begin{code}
-infix 4 _≟Heap_
+infix 5 _≟Heap_
 \end{code}
 %endif
 
+%format _≟Heap_ = "\func{\anonymous{\stackrel?=_{Heap}}\anonymous}"
+%format ≟Heap = "\infix{\func{\stackrel?=_{Heap}}}"
 %if False
 \begin{code}
 _≟Heap_ : ∀ (h h′ : Heap) → Dec (h ≡ h′)

@@ -167,6 +167,7 @@ open Maybe public using (Maybe; ○; ●; ●-inj) renaming (maybe′ to maybe)
 %format , = "\infix{\cons{,}\,}"
 %format fst = "\func{fst}"
 %format snd = "\func{snd}"
+%format Σ.map = "\func{\Sigma.map}"
 %if False
 \begin{code}
 module Σ where
@@ -188,6 +189,8 @@ infix 3 ,_
 \end{code}
 %endif
 
+%format inl = "\cons{inl}"
+%format inr = "\cons{inr}"
 %if False
 \begin{code}
 module ⊎ where

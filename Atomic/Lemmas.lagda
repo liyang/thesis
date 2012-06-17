@@ -1,3 +1,14 @@
+%if include /= True
+\begin{comment}
+%let include = True
+%include Atomic/Common.lagda
+%include Atomic/Heap.lagda
+%include Atomic/Logs.lagda
+%include Atomic/Language.lagda
+%include Atomic/Combined.lagda
+\end{comment}
+%endif
+
 %if False
 \begin{code}
 module Lemmas where
@@ -8,50 +19,46 @@ open import Combined
 \end{code}
 %endif
 
-\section{Various Lemmas}
-
-%if False
+%-- No progress.
+%format #↦̸ = "\func{\texttt\#{\not\mapsto}}"
 \begin{code}
--- No progress.
 #↦̸ : ∀ {α h m x′} →
   α ▹ h , # m ↦ x′ → ⊥
 #↦̸ ()
 \end{code}
-%endif
 
-%if False
+%format #↣̸ = "\func{\texttt\#{\not\rightarrowtail}}"
 \begin{code}
 #↣̸ : ∀ {α h t m x′} →
   α ▹ h , t , # m ↣ x′ → ⊥
 #↣̸ ()
 \end{code}
-%endif
 
-%if False
+%format #↠̸ = "\func{\texttt\#{\not\twoheadrightarrow}}"
 \begin{code}
 #↠̸ : ∀ {α h c m x′} →
   α ▹ h , c , # m ↠ x′ → ⊥
 #↠̸ (↠-↦ e↦e′) = #↦̸ e↦e′
 #↠̸ (↠-↣ e↣e′) = #↣̸ e↣e′
 \end{code}
-%endif
 
-%if False
+%format #⤇̸ = "\func{\texttt\#{\not\Mapsto}}"
+%format e↠e′ = "\Varid{e{\twoheadrightarrow}e\Prime}"
+%format e′↠⋆e″ = "\Varid{e\Prime{\twoheadrightarrow^\star}e\PPrime}"
 \begin{code}
 #⤇̸ : ∀ {α h c m x′} →
   α ▹ h , c , # m ⤇ x′ → ⊥
 #⤇̸ (⤇: α≢τ ε e↠e′) = #↠̸ e↠e′
 #⤇̸ (⤇: α≢τ (e↠e′ ◅ e′↠⋆e″) e″↠e‴) = #↠̸ e↠e′
 \end{code}
-%endif
 
-%if False
+%-- transactions always finish after visible transition
+%format ↣→t′≡○ = "\func{{\rightarrowtail}{\rightarrow}t\Prime{\equiv}\circ}"
 \begin{code}
--- transactions always finish after visible transition
 ↣→t′≡○ : ∀ {α h t e h′ t′ e′} →
- α ≢ τ →
- α ▹ h , t , e ↣ h′ , t′ , e′ →
- t′ ≡ ○
+  α ≢ τ →
+  α ▹ h , t , e ↣ h′ , t′ , e′ →
+  t′ ≡ ○
 ↣→t′≡○ α≢τ ↣-ℕ = ≡.refl
 ↣→t′≡○ α≢τ (↣-R m b↣b′) = ↣→t′≡○ α≢τ b↣b′
 ↣→t′≡○ α≢τ (↣-L b a↣a′) = ↣→t′≡○ α≢τ a↣a′
@@ -61,9 +68,8 @@ open import Combined
 ↣→t′≡○ α≢τ (↣-abort ¬cons) = ⊥-elim (α≢τ ≡.refl)
 ↣→t′≡○ α≢τ (↣-commit cons) = ≡.refl
 \end{code}
-%endif
 
-%if False
+%format ↠→t′≡○ = "\func{{\twoheadrightarrow}{\rightarrow}t\Prime{\equiv}\circ}"
 \begin{code}
 ↠→t′≡○ : ∀ {α h t e h′ t′ e′} →
   α ≢ τ →
@@ -71,11 +77,9 @@ open import Combined
   t′ ≡ ○
 ↠→t′≡○ α≢τ (↠-↣ e↣e′) = ↣→t′≡○ α≢τ e↣e′
 \end{code}
-%endif
 
-%if False
+%format ↠⋆/↦-L = "\func{{\twoheadrightarrow^\star}/{\mapsto}\text-{\oplus}L}"
 \begin{code}
--- extract
 ↠⋆/↦-L : ∀ {α h a b x′ x″} →
   α ≢ τ →
   h , ↦: , a ⊕ b ↠⋆ x′ →
@@ -95,9 +99,8 @@ open import Combined
 ... | inr (h″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , a′↠⋆a″ , a″↠a‴) = 
       inr (h″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , ↠-↦ a↦a′ ◅ a′↠⋆a″ , a″↠a‴)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆/↣-L = "\func{{\twoheadrightarrow^\star}/{\rightarrowtail}\text-{\oplus}L}"
 \begin{code}
 ↠⋆/↣-L : ∀ {α h t a b x′ x″} →
   α ≢ τ →
@@ -119,9 +122,8 @@ open import Combined
 ... | inr (h″ , t″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , a′↠⋆a″ , a″↠a‴) =
       inr (h″ , t″ , a″ , h‴ , a‴ , ≡.refl , ≡.refl , ↠-↣ a↣a′ ◅ a′↠⋆a″ , a″↠a‴)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆/↦-R = "\func{{\twoheadrightarrow^\star}/{\mapsto}\text-{\oplus}R}"
 \begin{code}
 ↠⋆/↦-R : ∀ {α h m b x′ x″} →
   α ≢ τ →
@@ -147,9 +149,8 @@ open import Combined
 ... | inr (h″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , b′↠⋆b″ , b″↠b‴) =
       inr (h″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , ↠-↦ b↦b′ ◅ b′↠⋆b″ , b″↠b‴)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆/↣-R = "\func{{\twoheadrightarrow^\star}/{\rightarrowtail}\text-{\oplus}R}"
 \begin{code}
 ↠⋆/↣-R : ∀ {α h t m b x′ x″} →
   α ≢ τ →
@@ -176,20 +177,17 @@ open import Combined
 ... | inr (h″ , t″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , b′↠⋆b″ , b″↠b‴) =
       inr (h″ , t″ , b″ , h‴ , b‴ , ≡.refl , ≡.refl , ↠-↣ b↣b′ ◅ b′↠⋆b″ , b″↠b‴)
 \end{code}
-%endif
 
-%if False
+%format ↠∘↦-L = "\func{{\twoheadrightarrow}{\circ}{\mapsto}\text-{\oplus}L}"
 \begin{code}
--- the other way
 ↠∘↦-L : ∀ b {α h a h′ c′ a′} →
   α ▹ h , ↦: , a ↠ h′ , c′ , a′ →
   c′ ≡ ↦: ×
   α ▹ h , ↦: , a ⊕ b ↠ h′ , ↦: , a′ ⊕ b
 ↠∘↦-L b (↠-↦ a↦a′) = ≡.refl , ↠-↦ (↦-L b a↦a′)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆∘↦-L = "\func{{\twoheadrightarrow^\star}{\circ}{\mapsto}\text-{\oplus}L}"
 \begin{code}
 ↠⋆∘↦-L : ∀ b {h a h′ c′ a′} →
   h , ↦: , a ↠⋆ h′ , c′ , a′ →
@@ -199,9 +197,8 @@ open import Combined
 ↠⋆∘↦-L b (↠-↦ a↦a′ ◅ a′↠⋆a″) with ↠⋆∘↦-L b a′↠⋆a″
 ... | ≡.refl , a′⊕b↠⋆a″⊕b = ≡.refl , ↠-↦ (↦-L b a↦a′) ◅ a′⊕b↠⋆a″⊕b
 \end{code}
-%endif
 
-%if False
+%format ⤇∘↦-L = "\func{{\Mapsto}{\circ}{\mapsto}\text-{\oplus}L}"
 \begin{code}
 ⤇∘↦-L : ∀ b {α h a h′ c′ a′} →
   α ▹ h , ↦: , a ⤇ h′ , c′ , a′ →
@@ -211,9 +208,8 @@ open import Combined
 ... | ≡.refl , a⊕b↠⋆a′⊕b with ↠∘↦-L b a′↠a″
 ...   | ≡.refl , a′⊕b↠a″⊕b = ≡.refl , ⤇: α≢τ a⊕b↠⋆a′⊕b a′⊕b↠a″⊕b
 \end{code}
-%endif
 
-%if False
+%format ↠∘↣-L = "\func{{\twoheadrightarrow}{\circ}{\rightarrowtail}\text-{\oplus}L}"
 \begin{code}
 ↠∘↣-L : ∀ b {α h t a h′ c′ a′} →
   α ▹ h , ↣: t , a ↠ h′ , c′ , a′ →
@@ -222,9 +218,8 @@ open import Combined
   α ▹ h , ↣: t , a ⊕ b ↠ h′ , ↣: t′ , a′ ⊕ b
 ↠∘↣-L b (↠-↣ a↣a′) = _ , ≡.refl , ↠-↣ (↣-L b a↣a′)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆∘↣-L = "\func{{\twoheadrightarrow^\star}{\circ}{\rightarrowtail}\text-{\oplus}L}"
 \begin{code}
 ↠⋆∘↣-L : ∀ b {h t a h′ c′ a′} →
   h , ↣: t , a ↠⋆ h′ , c′ , a′ →
@@ -235,9 +230,8 @@ open import Combined
 ↠⋆∘↣-L b (↠-↣ a↣a′ ◅ a′↠⋆a″) with ↠⋆∘↣-L b a′↠⋆a″
 ... | t″ , ≡.refl , a′⊕b↠⋆a″⊕b = t″ , ≡.refl , ↠-↣ (↣-L b a↣a′) ◅ a′⊕b↠⋆a″⊕b
 \end{code}
-%endif
 
-%if False
+%format ⤇∘↣-L = "\func{{\Mapsto}{\circ}{\rightarrowtail}\text-{\oplus}L}"
 \begin{code}
 ⤇∘↣-L : ∀ b {α h t a h′ c′ a′} →
   α ▹ h , ↣: t , a ⤇ h′ , c′ , a′ →
@@ -247,9 +241,8 @@ open import Combined
 ... | t′ , ≡.refl , a⊕b↠⋆a′⊕b with ↠∘↣-L b a′↠a″
 ...   | t″ , ≡.refl , a′⊕b↠a″⊕b rewrite ↠→t′≡○ α≢τ a′↠a″ = ≡.refl , ⤇: α≢τ a⊕b↠⋆a′⊕b a′⊕b↠a″⊕b
 \end{code}
-%endif
 
-%if False
+%format ↠∘↦-R = "\func{{\twoheadrightarrow}{\circ}{\mapsto}\text-{\oplus}R}"
 \begin{code}
 ↠∘↦-R : ∀ m {α h b h′ c′ b′} →
   α ▹ h , ↦: , b ↠ h′ , c′ , b′ →
@@ -257,9 +250,8 @@ open import Combined
   α ▹ h , ↦: , # m ⊕ b ↠ h′ , ↦: , # m ⊕ b′
 ↠∘↦-R m (↠-↦ b↦b′) = ≡.refl , ↠-↦ (↦-R m b↦b′)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆∘↦-R = "\func{{\twoheadrightarrow^\star}{\circ}{\mapsto}\text-{\oplus}R}"
 \begin{code}
 ↠⋆∘↦-R : ∀ m {h b h′ c′ b′} →
   h , ↦: , b ↠⋆ h′ , c′ , b′ →
@@ -269,9 +261,8 @@ open import Combined
 ↠⋆∘↦-R m (↠-↦ b↦b′ ◅ b′↠⋆b″) with ↠⋆∘↦-R m b′↠⋆b″
 ... | ≡.refl , m⊕b′↠⋆m⊕b″ = ≡.refl , ↠-↦ (↦-R m b↦b′) ◅ m⊕b′↠⋆m⊕b″
 \end{code}
-%endif
 
-%if False
+%format ⤇∘↦-R = "\func{{\Mapsto}{\circ}{\mapsto}\text-{\oplus}R}"
 \begin{code}
 ⤇∘↦-R : ∀ m {α h b h′ c′ b′} →
   α ▹ h , ↦: , b ⤇ h′ , c′ , b′ →
@@ -281,9 +272,8 @@ open import Combined
 ... | ≡.refl , m⊕b↠⋆m⊕b′ with ↠∘↦-R m b′↠b″
 ...   | ≡.refl , m⊕b′↠m⊕b″ = ≡.refl , ⤇: α≢τ m⊕b↠⋆m⊕b′ m⊕b′↠m⊕b″
 \end{code}
-%endif
 
-%if False
+%format ↠∘↣-R = "\func{{\twoheadrightarrow}{\circ}{\rightarrowtail}\text-{\oplus}R}"
 \begin{code}
 ↠∘↣-R : ∀ m {α h t b h′ c′ b′} →
   α ▹ h , ↣: t , b ↠ h′ , c′ , b′ →
@@ -292,9 +282,8 @@ open import Combined
   α ▹ h , ↣: t , # m ⊕ b ↠ h′ , ↣: t′ , # m ⊕ b′
 ↠∘↣-R m (↠-↣ b↣b′) = _ , ≡.refl , ↠-↣ (↣-R m b↣b′)
 \end{code}
-%endif
 
-%if False
+%format ↠⋆∘↣-R = "\func{{\twoheadrightarrow^\star}{\circ}{\rightarrowtail}\text-{\oplus}R}"
 \begin{code}
 ↠⋆∘↣-R : ∀ m {h t b h′ c′ b′} →
   h , ↣: t , b ↠⋆ h′ , c′ , b′ →
@@ -305,9 +294,8 @@ open import Combined
 ↠⋆∘↣-R m (↠-↣ b↣b′ ◅ b′↠⋆b″) with ↠⋆∘↣-R m b′↠⋆b″
 ... | t″ , ≡.refl , m⊕b′↠⋆m⊕b″ = t″ , ≡.refl , ↠-↣ (↣-R m b↣b′) ◅ m⊕b′↠⋆m⊕b″
 \end{code}
-%endif
 
-%if False
+%format ⤇∘↣-R = "\func{{\Mapsto}{\circ}{\rightarrowtail}\text-{\oplus}R}"
 \begin{code}
 ⤇∘↣-R : ∀ m {α h t b h′ c′ b′} →
   α ▹ h , ↣: t , b ⤇ h′ , c′ , b′ →
@@ -317,7 +305,6 @@ open import Combined
 ... | t′ , ≡.refl , m⊕b↠⋆m⊕b′ with ↠∘↣-R m b′↠b″
 ...   | t″ , ≡.refl , m⊕b′↠m⊕b″ rewrite ↠→t′≡○ α≢τ b′↠b″ = ≡.refl , ⤇: α≢τ m⊕b↠⋆m⊕b′ m⊕b′↠m⊕b″
 \end{code}
-%endif
 
 % vim: ft=tex fo-=m fo-=M:
 

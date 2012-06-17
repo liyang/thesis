@@ -32,7 +32,7 @@
 %format ∀ = "\keyw{\forall}"
 %format | = "\,\keyw{\vert}\,"
 %format λ = "\prefix{\keyw{\lambda}}"
-%format → = "\keyw{\rightarrow}"
+%format → = "\,\keyw{\rightarrow}\,"
 %format : = "\mathrel{\keyw{:}}"
 %format ... = "\mathord{\keyw{\ldots}}"
 %format { = "\keyw{\{}"
@@ -125,6 +125,7 @@
 %format ∶ = "\infix{\func{:}}"
 
 % Data.Empty
+%format ⊥ = "\type{\bot}"
 %format ⊥-elim = "\func{\bot\text-elim}"
 
 % Data.Unit
@@ -144,7 +145,7 @@
 
 % Data.Product renaming (_,_ to _∧_) -- or _‚_? lhs2TeX doesn't like commas
 %format Σ = "\type{\Sigma}"
-%format × = "\infix{\type{\times}}"
+%format × = "\infix{\!\type{\times}\!}"
 %format _×_ = "\type{\anonymous{\times}\anonymous}"
 % format ‚ = "\infix{\cons{,}}"
 % format _‚_ = "\cons{\anonymous,\anonymous}"
@@ -231,7 +232,7 @@
 %format ≡.refl = "\cons{{\equiv}.refl}"
 %format ≡.trans = "\func{{\equiv}.trans}"
 %format ≡.sym = "\func{{\equiv}.sym}"
-%format ≢ = "\func{{\not\equiv}}"
+%format ≢ = "\type{{\not\equiv}}"
 %format ≡.cong = "\func{{\equiv}.cong}"
 %format ≡.inspect = "\func{{\equiv}.inspect}"
 %format with-≡ = "\infix{\cons{with\text-{\equiv}}}"
