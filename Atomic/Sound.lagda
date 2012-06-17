@@ -126,23 +126,23 @@ private
 %format ↦′-read-h-v = "\Varid{{\rightarrowtail\Prime}\text-read\text-v}"
 \begin{code}
 ↣′→↦′ : ∀ {h l e l′ e′ h₀} →
-            Consistent h₀ l   →  Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′ l′ , e′ →
-  ∃ λ h′ →  Consistent h₀ l′  ×  Equivalent h₀ l′ h′  ×  h , e ↦′ h′ , e′
-↣′→↦′ cons equiv ↣′-ℕ = _ , cons , equiv , ↦′-ℕ
-↣′→↦′ cons equiv (↣′-R m b↣b′) =
-  Σ.map id (Σ.map id (Σ.map id (↦′-R m))) (↣′→↦′ cons equiv b↣b′)
-↣′→↦′ cons equiv (↣′-L b a↣a′) =
-  Σ.map id (Σ.map id (Σ.map id (↦′-L b))) (↣′→↦′ cons equiv a↣a′)
-↣′→↦′ cons equiv (↣′-writeE e↣e′) =
-  Σ.map id (Σ.map id (Σ.map id ↦′-writeE)) (↣′→↦′ cons equiv e↣e′)
-↣′→↦′ cons equiv ↣′-writeℕ = _ , cons , Write-Equivalent equiv , ↦′-writeℕ
-↣′→↦′ {h} cons equiv (↣′-read l v) with equiv v | ↦′-read h v
+            Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′ l′ , e′ →
+  ∃ λ h′ →  Equivalent h₀ l′ h′  ×  h , e ↦′ h′ , e′
+↣′→↦′ equiv ↣′-ℕ = _ , equiv , ↦′-ℕ
+↣′→↦′ equiv (↣′-R m b↣b′) =
+  Σ.map id (Σ.map id (↦′-R m)) (↣′→↦′ equiv b↣b′)
+↣′→↦′ equiv (↣′-L b a↣a′) =
+  Σ.map id (Σ.map id (↦′-L b)) (↣′→↦′ equiv a↣a′)
+↣′→↦′ equiv (↣′-writeE e↣e′) =
+  Σ.map id (Σ.map id ↦′-writeE) (↣′→↦′ equiv e↣e′)
+↣′→↦′ equiv ↣′-writeℕ = _ , Write-Equivalent equiv , ↦′-writeℕ
+↣′→↦′ {h} equiv (↣′-read l v) with equiv v | ↦′-read h v
 ... |  equiv-v | ↦′-read-h-v with Logs.ω l « v »
-...    |  ● m rewrite equiv-v = _ , cons , equiv , ↦′-read-h-v
+...    |  ● m rewrite equiv-v = _ , equiv , ↦′-read-h-v
 ...    |  ○ with Logs.ρ l « v » | ≡.inspect (_«_» (Logs.ρ l)) v
-...       |  ● m | _ rewrite equiv-v = _ , cons , equiv , ↦′-read-h-v
+...       |  ● m | _ rewrite equiv-v = _ , equiv , ↦′-read-h-v
 ...       |  ○ | ‹ ρ«v»≡○ › rewrite ≡.sym equiv-v = _
-             , Read-Consistent l v cons , Read-Equivalent ρ«v»≡○ equiv , ↦′-read-h-v
+             , Read-Equivalent ρ«v»≡○ equiv , ↦′-read-h-v
 \end{code}
 
 %format ↣′⋆→↦′⋆ = "\func{{\rightarrowtail\Prime^\star}{\rightarrow}{\mapsto\Prime^\star}}"
@@ -152,12 +152,12 @@ private
 %format equiv″ = "\Varid{equiv\PPrime}"
 \begin{code}
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →
-            Consistent h₀ l   →  Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′⋆ l′ , e′ →
-  ∃ λ h′ →  Consistent h₀ l′  ×  Equivalent h₀ l′ h′  ×  h , e ↦′⋆ h′ , e′
-↣′⋆→↦′⋆ cons equiv ε = _ , cons , equiv , ε
-↣′⋆→↦′⋆ cons equiv (e↣e′ ◅ e′↣⋆e″) with ↣′→↦′ cons equiv e↣e′
-... |  h′ , cons′ , equiv′ , e↦e′ with ↣′⋆→↦′⋆ cons′ equiv′ e′↣⋆e″
-...    | h″ , cons″ , equiv″ , e′↦⋆e″ = h″ , cons″ , equiv″ , e↦e′ ◅ e′↦⋆e″
+            Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′⋆ l′ , e′ →
+  ∃ λ h′ →  Equivalent h₀ l′ h′  ×  h , e ↦′⋆ h′ , e′
+↣′⋆→↦′⋆ equiv ε = _ , equiv , ε
+↣′⋆→↦′⋆ equiv (e↣e′ ◅ e′↣⋆e″) with ↣′→↦′ equiv e↣e′
+... |  h′ , equiv′ , e↦e′ with ↣′⋆→↦′⋆ equiv′ e′↣⋆e″
+...    | h″ , equiv″ , e′↦⋆e″ = h″ , equiv″ , e↦e′ ◅ e′↦⋆e″
 \end{code}
 
 % vim: ft=tex fo-=m fo-=M:

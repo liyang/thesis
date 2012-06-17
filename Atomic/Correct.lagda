@@ -201,10 +201,10 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 %format h≢h₀ = "\Varid{h{\not\equiv}h_0}"
 \restorecolumns
 \begin{code}
-    mutate? : ∀ {h₀} → Dec (h ≡ h₀) →
+    mutate? : Dec (h ≡ h₀) →
       h  , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , ∅) , atomic e
     mutate? (yes h≡h₀) rewrite h≡h₀ = ε
-    mutate? (no h≢h₀) = ↠-↣ (↣-mutate _) ◅ ε
+    mutate? (no h≢h₀) = ↠-↣ (↣-mutate h₀) ◅ ε
 \end{code}
 
 lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
@@ -228,24 +228,23 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 \begin{code}
   ↣≼↦ : h , atomic e ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ e⤇e″ with ↣-extract e⤇e″
-  ... |  h′ , l′ , m , ≡.refl , cons , e↣⋆m
-         with ↣′⋆→↦′⋆ ∅-Consistent ∅-Equivalent (↣′⋆-swap cons e↣⋆m)
-  ...    |  h″ , _ , equiv , e↦′⋆m rewrite ≡.sym (Commit cons equiv) =
+  ... |  h₀ , l′ , m , ≡.refl , cons , e↣⋆m
+         with ↣′⋆→↦′⋆ ∅-Equivalent (↣′⋆-swap cons e↣⋆m)
+  ...    |  h″ , equiv , e↦′⋆m rewrite ≡.sym (Commit cons equiv) =
             _ , e⤇m , ≈-sym #⊢↦≈↣ where
 \end{code}
 
 \restorecolumns
 \begin{code}
-    mutate? : ∀ {h₀} → Dec (h ≡ h₀) →
-      h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
-    mutate? (yes ≡.refl) = ε
-    mutate? (no h≢h₀) = ↠-↦ (↦-mutate {!!}) ◅ ε
+    mutate? : Dec (h ≡ h₀) → h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
+    mutate? (yes h≡h₀) rewrite h≡h₀ = ε
+    mutate? (no h≢h₀) = ↠-↦ (↦-mutate h₀) ◅ ε
 \end{code}
 
 \restorecolumns
 \begin{code}
-    e⤇m : ☢ ▹ h , ↦: , atomic e ⤇ Update h′ l′ , ↦: , # m
-    e⤇m = ⤇: (λ ()) (mutate? (h ≟Heap _)) (↠-↦ (↦-atomic e↦′⋆m))
+    e⤇m : ☢ ▹ h , ↦: , atomic e ⤇ Update h₀ l′ , ↦: , # m
+    e⤇m = ⤇: (λ ()) (mutate? (h ≟Heap h₀)) (↠-↦ (↦-atomic e↦′⋆m))
 \end{code}
 
 %format correct = "\func{correct}"
