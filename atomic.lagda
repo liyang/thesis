@@ -68,12 +68,22 @@ transaction semantics coincide.
 
 \section{Transaction Correctness}
 
+During a transaction, the high-level stop-the-world semantics manipulates
+the heap directly, while the log-based semantics accumulates its reads and
+writes in a transaction log, eventually committing it to the heap. In this
+section we show that for any transaction sequence under one semantics, there
+exists a matching sequence under the other semantics.
+
 \input{Atomic/Complete.lagda.tex}
 
 \input{Atomic/Sound.lagda.tex}
 
 
 %\input{Atomic/Lemmas.lagda.tex} % trivial lemmas
+
+The approach is to simply run the
+entire log-based transaction uninterrupted at the same point as the
+|↦-atomic| rule fires under stop-the-world semantics.
 
 \input{Atomic/Correct.lagda.tex}
 

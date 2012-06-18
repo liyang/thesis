@@ -44,8 +44,8 @@ amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
 sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
 %format m⊕n⊢↦≈↣ = "\func{m{\oplus}n{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
-%format ↦≼↣ = "\func{{\mapsto}{\succcurlyeq}{\rightarrowtail}}"
-%format ↣≼↦ = "\func{{\rightarrowtail}{\succcurlyeq}{\mapsto}}"
+%format ↦≼↣ = "\func{{\mapsto}{\preccurlyeq}{\rightarrowtail}}"
+%format ↣≼↦ = "\func{{\rightarrowtail}{\preccurlyeq}{\mapsto}}"
 \savecolumns
 \begin{code}
 m⊕n⊢↦≈↣ : ∀ {h m n} → h , # m ⊕ # n ⊢ ↦: ≈ ↣: ○
@@ -133,6 +133,7 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 %format eval-left = "\func{eval\text-left}"
 %format a⊢↦≈↣ = "\Varid{a{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 %format a″⊢↦≈↣ = "\Varid{a\PPrime{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
+%format a″⊢↣≈↦ = "\Varid{a\PPrime{\vdash}{\rightarrowtail}{\approx}{\mapsto}}"
 %format ∀b⊢↦≈↣ = "\Varid{{\forall}b{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 \savecolumns
 \begin{code}
@@ -188,9 +189,10 @@ transaction {h} {e} = ♯ ↦≼↣ & ♯ ↣≼↦ where
   ↦≼↣ : h , atomic e ⊢ ↦: ≼ ↣: ○
   ↦≼↣ e⤇e″ with ↦-extract e⤇e″
   ... |  h₀ , m , ≡.refl , h≟h₀ , e↦′⋆m
-         with ↦′⋆→↣′⋆ ∅-Consistent ∅-Equivalent e↦′⋆m
-  ...    |  l′ , cons′ , equiv′ , e↣′⋆m rewrite ≡.sym (Commit cons′ equiv′) =
-            _ , e⤇m , #⊢↦≈↣ where
+         with ↦′⋆→↣′⋆ ∅-Equivalent e↦′⋆m
+  ...    |  l′ , equiv′ , e↣′⋆m with ↣′⋆-Consistent ∅-Consistent e↣′⋆m
+  ...       |  cons′ rewrite ≡.sym (Commit cons′ equiv′) =
+               _ , e⤇m , #⊢↦≈↣ where
 \end{code}
 
 lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
@@ -212,14 +214,14 @@ amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
 sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
 %{
-%format e↣⋆m = "\func{e{\rightarrowtail^\star}m}"
+%format e↠⋆m = "\func{e{\twoheadrightarrow^\star_\tau}m}"
 \restorecolumns
 \begin{code}
-    e↣⋆m : h₀ , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , l′) , atomic (# m)
-    e↣⋆m = Star.gmap _ (↠-↣ ∘ ↣-step) e↣′⋆m
+    e↠⋆m : h₀ , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , l′) , atomic (# m)
+    e↠⋆m = Star.gmap _ (↠-↣ ∘ ↣-step) e↣′⋆m
 
     e⤇m : ☢ ▹ h , ↣: ○ , atomic e ⤇ Update h₀ l′ , ↣: ○ , # m
-    e⤇m = ⤇: (λ ()) (↠-↣ ↣-begin ◅ mutate? h≟h₀ ◅◅ e↣⋆m)
+    e⤇m = ⤇: (λ ()) (↠-↣ ↣-begin ◅ mutate? h≟h₀ ◅◅ e↠⋆m)
       (↠-↣ (↣-commit cons′))
 \end{code}
 %}
@@ -228,8 +230,8 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 \begin{code}
   ↣≼↦ : h , atomic e ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ e⤇e″ with ↣-extract e⤇e″
-  ... |  h₀ , l′ , m , ≡.refl , cons , e↣⋆m
-         with ↣′⋆→↦′⋆ ∅-Equivalent (↣′⋆-swap cons e↣⋆m)
+  ... |  h₀ , l′ , m , ≡.refl , cons , e↣′⋆m
+         with ↣′⋆→↦′⋆ ∅-Equivalent (↣′⋆-swap cons e↣′⋆m)
   ...    |  h″ , equiv , e↦′⋆m rewrite ≡.sym (Commit cons equiv) =
             _ , e⤇m , ≈-sym #⊢↦≈↣ where
 \end{code}

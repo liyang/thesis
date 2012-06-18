@@ -123,6 +123,7 @@
 %format ∘ = "\infix{\func{\circ}}"
 %format flip = "\func{flip}"
 %format ∶ = "\infix{\func{:}}"
+%format const = "\func{const}"
 
 % Data.Empty
 %format ⊥ = "\type{\bot}"
@@ -167,6 +168,7 @@
 %format _◅◅_ = "\func{\anonymous{\lhd}\!{\lhd}\anonymous}"
 %format Star.gmap = "\func{Star.gmap}"
 %format Star.gfold = "\func{Star.gfold}"
+%format Star.gfoldl = "\func{Star.gfoldl}"
 %format Star.map = "\func{Star.map}"
 %format Star.fold = "\func{Star.fold}"
 
@@ -228,15 +230,16 @@
 %format Preserves₂ = "\infix{\type{Preserves_2}}"
 
 % Relation.Binary.PropositionalEquality
-%format ≡ = "\type{{\equiv}}"
+%format _≡_ = "\type{\anonymous{\equiv}\anonymous}"
+%format ≡ = "\infix{\type{\equiv}}"
 %format ≡.refl = "\cons{{\equiv}.refl}"
 %format ≡.trans = "\func{{\equiv}.trans}"
 %format ≡.sym = "\func{{\equiv}.sym}"
-%format ≢ = "\type{{\not\equiv}}"
+%format ≢ = "\infix{\type{\not\equiv}}"
 %format ≡.cong = "\func{{\equiv}.cong}"
 %format ≡.inspect = "\func{{\equiv}.inspect}"
 %format with-≡ = "\infix{\cons{with\text-{\equiv}}}"
-%format ≗ = "\infix{\type{{\circeq}}}"
+%format ≗ = "\infix{\type{\circeq}}"
 
 % Relation.Binary.PreorderReasoning
 %format begin = "\func{begin}"

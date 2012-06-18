@@ -168,6 +168,7 @@ open Maybe public using (Maybe; ○; ●; ●-inj) renaming (maybe′ to maybe)
 %format fst = "\func{fst}"
 %format snd = "\func{snd}"
 %format Σ.map = "\func{\Sigma.map}"
+%format Σ.map₃ = "\func{\Sigma.map_3}"
 %if False
 \begin{code}
 module Σ where
@@ -177,6 +178,8 @@ module Σ where
   ∃₃ D = ∃ λ a → ∃ λ b → ∃ λ c → D a b c
   ∃₄ : ∀ {a b c d e} {A : Set a} {B : A → Set b} {C : (x : A) → B x → Set c} {D : (x : A) (y : B x) → C x y → Set d} → (E : (x : A) (y : B x) → (z : C x y) → D x y z → Set e) → Set (a ∨ b ∨ c ∨ d ∨ e)
   ∃₄ E = ∃ λ a → ∃ λ b → ∃ λ c → ∃ λ d → E a b c d
+  map₃ : ∀ {A : Set} {B C C′ : A → Set} → ({a : A} → C a → C′ a) → Σ A (λ a → B a × C a) → Σ A (λ a → B a × C′ a)
+  map₃ f = map id (map id f)
 open Σ public using (Σ; ∃; ∃₂; ∃₃; ∃₄; _×_; _,_; uncurry; <_,_>) renaming (proj₁ to fst ; proj₂ to snd)
 \end{code}
 %endif

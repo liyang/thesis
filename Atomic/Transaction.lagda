@@ -52,30 +52,41 @@ Using the above result, we can demonstrate that any transaction transition
 under the log-based semantics preserves consistency:
 %format ↣′-Consistent = "\func{{\rightarrowtail}\Prime\text-Consistent}"
 \begin{code}
-↣′-Consistent : ∀ {h l e l′ e′} →
-  h ⊢ l , e ↣′ l′ , e′ → Consistent h l → Consistent h l′
-↣′-Consistent ↣′-ℕ = id
-↣′-Consistent (↣′-R  m    b↣b′)  = ↣′-Consistent b↣b′
-↣′-Consistent (↣′-L  b    a↣a′)  = ↣′-Consistent a↣a′
-↣′-Consistent (↣′-writeE  e↣e′)  = ↣′-Consistent e↣e′
-↣′-Consistent ↣′-writeℕ = id
-↣′-Consistent (↣′-read (ρ & ω) v) with ω « v »
-... |  ● m = id
-... |  ○ with ρ « v »
-...    | ● m = id
-...    | ○ = Read-Consistent (ρ & ω) v
+↣′-Consistent : ∀ {h l e l′ e′} → Consistent h l →
+  h ⊢ l , e ↣′ l′ , e′ → Consistent h l′
+↣′-Consistent cons ↣′-ℕ = cons
+↣′-Consistent cons (↣′-R  m    b↣b′)  = ↣′-Consistent cons b↣b′
+↣′-Consistent cons (↣′-L  b    a↣a′)  = ↣′-Consistent cons a↣a′
+↣′-Consistent cons (↣′-writeE  e↣e′)  = ↣′-Consistent cons e↣e′
+↣′-Consistent cons ↣′-writeℕ = cons
+↣′-Consistent cons (↣′-read l v) with Logs.ω l « v »
+... |  ● m = cons
+... |  ○ with Logs.ρ l « v »
+...    | ● m = cons
+...    | ○ = Read-Consistent l v cons
 \end{code}
 The proof proceeds by induction on the structure of the reduction rules,
 making use of the |Read-Consistent| lemma when the read log changes.
+Naturally, we can extend the above to an arbitrary |_⊢_↣′⋆_| sequence by
+folding over it:
+%format ↣′⋆-Consistent = "\func{{\rightarrowtail\Prime^\star}\text-Consistent}"
+\begin{code}
+↣′⋆-Consistent : ∀ {h l e l′ e′} → Consistent h l →
+  h ⊢ l , e ↣′⋆ l′ , e′ → Consistent h l′
+↣′⋆-Consistent {h} {l} {e} =
+  Star.gfoldl fst (const (Consistent h)) ↣′-Consistent {i = l , e}
+\end{code}
+
 
 %format Read-Consistent′ = "\func{Read\text-Consistent\Prime}"
 %format ρ«v»≡○ = "\Varid{\rho_v{\equiv}{\circ}}"
 %format cons′ = "\Varid{cons\Prime}"
-In the opposite direction, we can show a pair of similar but slightly more
-general consistency-preservation lemmas. This extra generality in fact turns
-out to be crucial to our later proofs. The |Read-Consistent′| lemma shares
-an analogous structure to that of |Read-Consistent|, but requires an extra
-argument showing that the pre-transition read log entry for |v| is empty:
+\noindent In the opposite direction, we can show a pair of similar but
+slightly more general consistency-preservation lemmas. This extra generality
+in fact turns out to be crucial to our later proofs. The |Read-Consistent′|
+lemma shares an analogous structure to that of |Read-Consistent|, but
+requires an extra argument showing that the pre-transition read log entry
+for |v| is empty:
 \begin{code}
 Read-Consistent′ : ∀ {h n} l v → Logs.ρ l « v » ≡ ○ →
   Consistent h (Logs.ρ l « v »≔ ● n & Logs.ω l) → Consistent h l
@@ -98,14 +109,14 @@ any |● n|. This means that the heap |h| under which the logs and expression
 make their transition need not be the same as the heap |h′| with which |l|
 and |l′| are consistent in the following lemma:
 \begin{code}
-↣′-Consistent′ : ∀ {h h′ l e l′ e′} →
-  h ⊢ l , e ↣′ l′ , e′ → Consistent h′ l′ → Consistent h′ l
-↣′-Consistent′ ↣′-ℕ cons′ = cons′
-↣′-Consistent′ (↣′-R  m    b↣b′)  cons′ = ↣′-Consistent′ b↣b′ cons′
-↣′-Consistent′ (↣′-L  b    a↣a′)  cons′ = ↣′-Consistent′ a↣a′ cons′
-↣′-Consistent′ (↣′-writeE  e↣e′)  cons′ = ↣′-Consistent′ e↣e′ cons′
-↣′-Consistent′ ↣′-writeℕ cons′ = cons′
-↣′-Consistent′ (↣′-read (ρ & ω) v) cons′ with ω « v »
+↣′-Consistent′ : ∀ {h h′ l e l′ e′} → Consistent h′ l′ →
+  h ⊢ l , e ↣′ l′ , e′ → Consistent h′ l
+↣′-Consistent′ cons′ ↣′-ℕ = cons′
+↣′-Consistent′ cons′ (↣′-R  m    b↣b′)  = ↣′-Consistent′ cons′ b↣b′
+↣′-Consistent′ cons′ (↣′-L  b    a↣a′)  = ↣′-Consistent′ cons′ a↣a′
+↣′-Consistent′ cons′ (↣′-writeE  e↣e′)  = ↣′-Consistent′ cons′ e↣e′
+↣′-Consistent′ cons′ ↣′-writeℕ = cons′
+↣′-Consistent′ cons′ (↣′-read (ρ & ω) v) with ω « v »
 ... |  ● m = cons′
 ... |  ○ with ρ « v » | ≡.inspect (_«_» ρ) v
 ...    | ● m  | _ = cons′
