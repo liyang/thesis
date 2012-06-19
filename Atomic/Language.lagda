@@ -66,18 +66,20 @@ data Expression : Set where
   atomic : (e : Expression′) → Expression
 \end{code}
 
-\noindent Conspicuously missing is the presence of the |fork| construct
-dealt with in the last chapter, and as originally modelled in chapter
-\ref{ch:model}:
+\noindent Note that we have not included the |fork| construct that spawns
+additional threads as we did in chapters \ref{ch:model} and \ref{ch:fork}:
 \restorecolumns
 \begin{spec}
   fork : (e : Expression) → Expression
 \end{spec}
-As it turned out, the presence of threads made the proof unmanageable, so
-I've instead taken a more simplified approach. Rather than go via a compiler
-and virtual machine, we instead compare two semantics for the same language:
-one with a stop-the-world rule for |atomic| versus another with log-based
-transactions.
+The reason for this is that the presence of fork turned out to significantly
+complicate the formal reasoning process, so we investigated a simpler
+approach. First we replace concurrency with a `mutate' rule that can change
+the heap at any time during a transaction, which simulates the worst
+possible concurrent environment, in a similar manner to the worst-case
+interrupt rule of FIXME\cite{joel}. Secondly we replace the compiler and
+virtual machine with a direct log-based transactional semantics for the
+source language, which makes the proof more manageable.
 
 \input{Atomic/Heap.lagda.tex}
 

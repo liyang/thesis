@@ -33,58 +33,79 @@ open import Lemmas
 
 \section{Bisimilarity of Semantics}
 
-%format #⊢↦≈↣ = "\func{\texttt\#{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
+The proof that the stop-the-world semantics for our Atomic language is
+bisimilar to the log-based semantics proceeds for the most part by
+corecursion on the applicable transition rules, as well as structural
+recursion in the case of |a ⊕ b : Expression|s when either |a| or |b| can
+make further transitions. We will show each of the cases individually, then
+assemble the pieces to give the full correctness property.
+
+%format correct-# = "\func{correct\text-\texttt\#}"
+We begin by showing that bisimilarity holds for numbers, where no further
+transitions are possible:
 \begin{code}
-#⊢↦≈↣ : ∀ {h m} → h , # m ⊢ ↦: ≈ ↣: ○
-#⊢↦≈↣ = ♯ (⊥-elim ∘ #⤇̸) & ♯ (⊥-elim ∘ #⤇̸)
+correct-# : ∀ {h m} → h , # m ⊢ ↦: ≈ ↣: ○
+correct-# = ♯ (⊥-elim ∘ #⤇̸) & ♯ (⊥-elim ∘ #⤇̸)
 \end{code}
+The proof makes use of a trivial |#⤇̸| lemma which we have omitted, showing
+that no visible transitions are possible from expressions of the form |# m|,
+under either semantics.
 
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
-%format m⊕n⊢↦≈↣ = "\func{m{\oplus}n{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
+%format correct-⊕ℕ = "\func{correct\text-{\oplus}\mathbb{N}}"
+\subsection{|correct-⊕ℕ|}
+
 %format ↦≼↣ = "\func{{\mapsto}{\preccurlyeq}{\rightarrowtail}}"
 %format ↣≼↦ = "\func{{\rightarrowtail}{\preccurlyeq}{\mapsto}}"
+For the first non-trivial case, we define |correct-⊕ℕ| which handles
+expressions of the form |# m ⊕ # n|. In this case, the only applicable rules
+are |↦-ℕ| and |↣-ℕ|. We show each direction of bisimilarity separately:
 \savecolumns
 \begin{code}
-m⊕n⊢↦≈↣ : ∀ {h m n} → h , # m ⊕ # n ⊢ ↦: ≈ ↣: ○
-m⊕n⊢↦≈↣ {h} {m} {n} = ♯ ↦≼↣ & ♯ ↣≼↦ where
+correct-⊕ℕ : ∀ {h m n} → h , # m ⊕ # n ⊢ ↦: ≈ ↣: ○
+correct-⊕ℕ {h} {m} {n} = ♯ ↦≼↣ & ♯ ↣≼↦ where
   ↦≼↣ : h , # m ⊕ # n ⊢ ↦: ≼ ↣: ○
   ↦≼↣ (⤇: α≢τ ε (↠-↦ ↦-ℕ)) =
-    _ , ⤇: α≢τ ε (↠-↣ ↣-ℕ) , #⊢↦≈↣
+    _ , ⤇: α≢τ ε (↠-↣ ↣-ℕ) , correct-#
   ↦≼↣ (⤇: α≢τ ε (↠-↦ (↦-R ._ b↦b′))) = ⊥-elim (#↦̸ b↦b′)
   ↦≼↣ (⤇: α≢τ ε (↠-↦ (↦-L ._ a↦a′))) = ⊥-elim (#↦̸ a↦a′)
   ↦≼↣ (⤇: α≢τ (↠-↦ (↦-R ._ b↦b′) ◅ _) _) = ⊥-elim (#↦̸ b↦b′)
   ↦≼↣ (⤇: α≢τ (↠-↦ (↦-L ._ a↦a′) ◅ _) _) = ⊥-elim (#↦̸ a↦a′)
 \end{code}
+To show that the log-based semantics can simulate the stop-the-world
+semantics we inspect the visible transition that |# m ⊕ # n| makes under the
+latter. As hinted above, the only applicable transition is |↦-ℕ|, for which
+we use |↣-ℕ| to show that the log-based semantics can follow. The resulting
+expression of |# (m + n)| is then bisimilar by the |correct-#| lemma. The
+remaining clauses amount to showing that further transitions by |# m| or |#
+n| alone are impossible.
 
+The proof for the opposite direction proceeds in exactly the same way:
 \restorecolumns
 \begin{code}
   ↣≼↦ : h , # m ⊕ # n ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ (⤇: α≢τ ε (↠-↣ ↣-ℕ)) =
-    _ , ⤇: α≢τ ε (↠-↦ ↦-ℕ) , ≈-sym #⊢↦≈↣
+    _ , ⤇: α≢τ ε (↠-↦ ↦-ℕ) , ≈-sym correct-#
   ↣≼↦ (⤇: α≢τ ε (↠-↣ (↣-R ._ b↣b′))) = ⊥-elim (#↣̸ b↣b′)
   ↣≼↦ (⤇: α≢τ ε (↠-↣ (↣-L ._ a↣a′))) = ⊥-elim (#↣̸ a↣a′)
   ↣≼↦ (⤇: α≢τ (↠-↣ (↣-R ._ b↣b′) ◅ _) _) = ⊥-elim (#↣̸ b↣b′)
   ↣≼↦ (⤇: α≢τ (↠-↣ (↣-L ._ a↣a′) ◅ _) _) = ⊥-elim (#↣̸ a↣a′)
 \end{code}
 
-%format eval-right = "\func{eval\text-right}"
+
+%format correct-⊕R = "\func{correct\text-{\oplus}R}"
+\subsection{|correct-⊕R|}
+
 %format b⊢↦≈↣ = "\Varid{b{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 %format b″⊢↦≈↣ = "\Varid{b\PPrime{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 %format b″⊢↣≈↦ = "\Varid{b\PPrime{\vdash}{\rightarrowtail}{\approx}{\mapsto}}"
+\noindent Given an induction hypothesis of |h , b ⊢ ↦: ≈ ↣: ○|, we can show
+that the two semantics are bisimilar for expressions of the form |# m ⊕ b|:
 \savecolumns
 \begin{code}
-eval-right : ∀ {h m b} →
-  h , b ⊢ ↦: ≈ ↣: ○ → h , # m ⊕ b ⊢ ↦: ≈ ↣: ○
-eval-right {h} {m} {b} b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣≼↦ where
+correct-⊕R : ∀ {h m b} → h , b ⊢ ↦: ≈ ↣: ○ →h , # m ⊕ b ⊢ ↦: ≈ ↣: ○
+correct-⊕R {h} {m} {b} b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣≼↦ where
 \end{code}
-
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
-
 %format b≡n = "\Varid{b{\equiv}n}"
 %format b↠⋆b′ = "\Varid{b{\twoheadrightarrow^\star_\tau}b\Prime}"
 %format b′↠b″ = "\Varid{b\Prime{\twoheadrightarrow}b\PPrime}"
@@ -92,55 +113,86 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 %format c″≡↣ = "\Varid{c\PPrime{\equiv}{\rightarrowtail}}"
 %format c″≡↦ = "\Varid{c\PPrime{\equiv}{\mapsto}}"
 %format m⊕b⤇m⊕b″ = "\Varid{m{\oplus}b{\Mapsto}m{\oplus}b\PPrime}"
+For the completeness direction, we first use a |↠⋆/↦-R| helper that peels
+off any |↦-R| rules in the visible transition starting from |# m ⊕ b|. This
+is not always possible: when |b| is already a number |# n|, the full
+expression cannot make any transitions under |↦-R|, so it returns the proof
+|b≡n| that allows us to defer the rest of the proof to one half of the
+|correct-⊕ℕ| lemma:
 \restorecolumns
 \begin{code}
   ↦≼↣ : h , # m ⊕ b ⊢ ↦: ≼ ↣: ○
   ↦≼↣ (⤇: α≢τ e↠⋆e′ e′↠e″) with ↠⋆/↦-R α≢τ e↠⋆e′ e′↠e″
   ... |  inl (n , b≡n , ≡.refl , ≡.refl , ≡.refl) rewrite b≡n =
-         ♭ (≈→≼ m⊕n⊢↦≈↣) (⤇: α≢τ ε (↠-↦ ↦-ℕ))
+         ♭ (≈→≼ correct-⊕ℕ) (⤇: α≢τ ε (↠-↦ ↦-ℕ))
+\end{code}
+Otherwise |b| must make some visible transition under |↦-R|, and |↠⋆/↦-R|
+returns |b↠⋆b′ : h , ↦: , b ↠⋆ h′ , ↦: , b′| along with |b′↠b″ : α ▹ h′ , ↦:
+, b′ ↠ h″ , ↦: , b″|, essentially constituting a visible transition made by
+just |b| itself. The latter transition is labelled with the same |α| as the
+original |e′↠e″|, which in turn has been refined to |h′ , ↦: , # m ⊕ b′ ↠⋆
+h″ , ↦: , # m ⊕ b″| by the two equality proofs returned from |↠⋆/↦-R|:
+\restorecolumns
+\begin{code}
   ... |  inr (h′ , b′ , h″ , b″ , ≡.refl , ≡.refl , b↠⋆b′ , b′↠b″)
          with ♭ (≈→≼ b⊢↦≈↣) (⤇: α≢τ b↠⋆b′ b′↠b″)
   ...    |  c″ , b⤇b″ , b″⊢↦≈↣ with ⤇∘↣-R m b⤇b″
   ...       |  c″≡↣ , m⊕b⤇m⊕b″ rewrite c″≡↣ =
-               _ , m⊕b⤇m⊕b″ , eval-right b″⊢↦≈↣
+               _ , m⊕b⤇m⊕b″ , correct-⊕R b″⊢↦≈↣
 \end{code}
-
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
+Next we invoke one half of the induction hypothesis |b⊢↦≈↣| with the
+aforementioned stop-the-world visible transition of |⤇: α≢τ b↠⋆b′ b′↠b″|,
+which returns an equivalent log-based visible transition |b⤇b″ : α ▹ h , ↣:
+○ , b ⤇  h″ , ↣: ○ , b″|. Another lemma |⤇∘↣-R| then replaces the |↦-R|
+rules peeled off earlier with their corresponding |↣-R| rules, and
+a corecursive call to |correct-⊕R| completes this part of the proof.
 
 %format ↦≈↣ = "\func{{\mapsto}{\approx}{\rightarrowtail}}"
 %format ↣≈↦ = "\func{{\rightarrowtail}{\approx}{\mapsto}}"
+The soundness direction operates in exactly the same fashion, so we shall be
+brief with the similar details, and focus on the differences:
 \restorecolumns
 \begin{code}
   ↣≼↦ : h , # m ⊕ b ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ (⤇: α≢τ e↠⋆e′ e′↠e″) with ↠⋆/↣-R α≢τ e↠⋆e′ e′↠e″
   ... |  inl (n , b≡n , ≡.refl , ≡.refl , ≡.refl) rewrite b≡n =
-         ♭ (≈→≽ m⊕n⊢↦≈↣) (⤇: α≢τ ε (↠-↣ ↣-ℕ))
+         ♭ (≈→≽ correct-⊕ℕ) (⤇: α≢τ ε (↠-↣ ↣-ℕ))
   ... |  inr (h′ , t′ , b′ , h″ , b″ , ≡.refl , ≡.refl , b↠⋆b′ , b′↠b″)
          with ♭ (≈→≽ b⊢↦≈↣) (⤇: α≢τ b↠⋆b′ b′↠b″)
   ...    |  c″ , b⤇b″ , b″⊢↣≈↦ with ⤇∘↦-R m b⤇b″
   ...       |  c″≡↦ , m⊕b⤇m⊕b″ rewrite c″≡↦ =
-               _ , m⊕b⤇m⊕b″ , ↣≈↦ where
-    ↦≈↣ = eval-right (≈-sym b″⊢↣≈↦)
-    ↣≈↦ = ≈→≽ ↦≈↣ & ≈→≼ ↦≈↣
+               _ , m⊕b⤇m⊕b″ , ≈→≽ ↦≈↣ & ≈→≼ ↦≈↣ where
+    ↦≈↣ = correct-⊕R (≈-sym b″⊢↣≈↦)
 \end{code}
+A |↠⋆/↣-R| helper first attempts to peel off any |↣-R| from |e↠⋆e′| and
+|e′↠e″|; we invoke |correct-⊕ℕ| should this not be possible. Otherwise the
+induction hypothesis gives us a stop-the-world visible transition |b⤇b″|,
+and we can use |⤇∘↦-R| to turn this back into |m⊕b⤇m⊕b″|. In order to show
+that the semantics are bisimilar for |h″ , # m ⊕ b″|, one might be tempted
+to write |≈-sym (correct-⊕R (≈-sym b″⊢↣≈↦))|. However Agda's termination
+checker ensures productivity by requiring that all corecursive calls be
+guarded by constructors, and cannot see that the function |≈-sym| preserves
+productivity. We get around this issue by inlining the outer |≈-sym| call;
+record projections---namely |≈→≼| and |≈→≽|---are seen to be
+productivity-preserving.
 
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
-%format eval-left = "\func{eval\text-left}"
+%format correct-⊕L = "\func{correct\text-{\oplus}L}"
+\subsection{|correct-⊕L|}
+
 %format a⊢↦≈↣ = "\Varid{a{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 %format a″⊢↦≈↣ = "\Varid{a\PPrime{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
 %format a″⊢↣≈↦ = "\Varid{a\PPrime{\vdash}{\rightarrowtail}{\approx}{\mapsto}}"
 %format ∀b⊢↦≈↣ = "\Varid{{\forall}b{\vdash}{\mapsto}{\approx}{\rightarrowtail}}"
+The |correct-⊕L| lemma handles cases where the expression on the left of
+a |_⊕_| can make further visible transitions. It requires suitable induction
+hypotheses on |a| and |b|; in particular that for |b| must be generalised
+over any heap:
 \savecolumns
 \begin{code}
-eval-left : ∀ {h a b} →
-  h , a ⊢ ↦: ≈ ↣: ○ → (∀ h′ → h′ , b ⊢ ↦: ≈ ↣: ○) →
-  h , a ⊕ b ⊢ ↦: ≈ ↣: ○
-eval-left {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣≼↦ where
+correct-⊕L : ∀ {h a b} → h , a ⊢ ↦: ≈ ↣: ○ →
+  (∀ h′ → h′ , b ⊢ ↦: ≈ ↣: ○) → h , a ⊕ b ⊢ ↦: ≈ ↣: ○
+correct-⊕L {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣≼↦ where
 \end{code}
 
 %format a≡m = "\Varid{a{\equiv}m}"
@@ -153,12 +205,12 @@ eval-left {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣�
   ↦≼↣ : h , a ⊕ b ⊢ ↦: ≼ ↣: ○
   ↦≼↣ (⤇: α≢τ e↠⋆e′ e′↠e″) with ↠⋆/↦-L α≢τ e↠⋆e′ e′↠e″
   ... |  inl (m , a≡m) rewrite a≡m =
-         ♭ (≈→≼ (eval-right (∀b⊢↦≈↣ h))) (⤇: α≢τ e↠⋆e′ e′↠e″)
+         ♭ (≈→≼ (correct-⊕R (∀b⊢↦≈↣ h))) (⤇: α≢τ e↠⋆e′ e′↠e″)
   ... |  inr (h′ , a′ , h″ , a″ , ≡.refl , ≡.refl , a↠⋆a′ , a′↠a″)
          with ♭ (≈→≼ a⊢↦≈↣) (⤇: α≢τ a↠⋆a′ a′↠a″)
   ...    |  c″ , a⤇a″ , a″⊢↦≈↣ with ⤇∘↣-L b a⤇a″
   ...       |  c″≡↣ , a⊕b⤇a″⊕b rewrite c″≡↣ =
-               _ , a⊕b⤇a″⊕b , eval-left a″⊢↦≈↣ ∀b⊢↦≈↣
+               _ , a⊕b⤇a″⊕b , correct-⊕L a″⊢↦≈↣ ∀b⊢↦≈↣
 \end{code}
 
 \restorecolumns
@@ -166,17 +218,19 @@ eval-left {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣�
   ↣≼↦ : h , a ⊕ b ⊢ ↣: ○ ≼ ↦:
   ↣≼↦ (⤇: α≢τ e↠⋆e′ e′↠e″) with ↠⋆/↣-L α≢τ e↠⋆e′ e′↠e″
   ... |  inl (m , a≡m) rewrite a≡m =
-         ♭ (≈→≽ (eval-right (∀b⊢↦≈↣ h))) (⤇: α≢τ e↠⋆e′ e′↠e″)
+         ♭ (≈→≽ (correct-⊕R (∀b⊢↦≈↣ h))) (⤇: α≢τ e↠⋆e′ e′↠e″)
   ... |  inr (h′ , t′ , a′ , h″ , a″ , ≡.refl , ≡.refl , a↠⋆a′ , a′↠a″)
          with ♭ (≈→≽ a⊢↦≈↣) (⤇: α≢τ a↠⋆a′ a′↠a″)
   ...    |  c″ , a⤇a″ , a″⊢↣≈↦ with ⤇∘↦-L b a⤇a″
   ...       |  c″≡↦ , a⊕b⤇a″⊕b rewrite c″≡↦ =
-               _ , a⊕b⤇a″⊕b , ↣≈↦ where
-    ↦≈↣ = eval-left (≈-sym a″⊢↣≈↦) ∀b⊢↦≈↣
-    ↣≈↦ = ≈→≽ ↦≈↣ & ≈→≼ ↦≈↣
+               _ , a⊕b⤇a″⊕b , ≈→≽ ↦≈↣ & ≈→≼ ↦≈↣ where
+    ↦≈↣ = correct-⊕L (≈-sym a″⊢↣≈↦) ∀b⊢↦≈↣
 \end{code}
 
-%format transaction = "\func{transaction}"
+
+%format correct-atomic = "\func{correct\text-atomic}"
+\subsection{|correct-atomic|}
+
 %format mutate? = "\func{mutate?}"
 %format e⤇m = "\func{e{\Mapsto}m}"
 %format e⤇e″ = "\Varid{e{\Mapsto}e\PPrime}"
@@ -184,20 +238,24 @@ eval-left {h} {a} {b} a⊢↦≈↣ ∀b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣�
 %format e↣′⋆m = "\Varid{e{\rightarrowtail\Prime^\star}m}"
 \restorecolumns
 \begin{code}
-transaction : ∀ {h e} → h , atomic e ⊢ ↦: ≈ ↣: ○
-transaction {h} {e} = ♯ ↦≼↣ & ♯ ↣≼↦ where
+correct-atomic : ∀ {h e} → h , atomic e ⊢ ↦: ≈ ↣: ○
+correct-atomic {h} {e} = ♯ ↦≼↣ & ♯ ↣≼↦ where
+\end{code}
+
+The approach is to simply run the entire log-based transaction uninterrupted
+at the same point as the |↦-atomic| rule fires under stop-the-world
+semantics.
+
+\restorecolumns
+\begin{code}
   ↦≼↣ : h , atomic e ⊢ ↦: ≼ ↣: ○
   ↦≼↣ e⤇e″ with ↦-extract e⤇e″
   ... |  h₀ , m , ≡.refl , h≟h₀ , e↦′⋆m
          with ↦′⋆→↣′⋆ ∅-Equivalent e↦′⋆m
   ...    |  l′ , equiv′ , e↣′⋆m with ↣′⋆-Consistent ∅-Consistent e↣′⋆m
   ...       |  cons′ rewrite ≡.sym (Commit cons′ equiv′) =
-               _ , e⤇m , #⊢↦≈↣ where
+               _ , e⤇m , correct-# where
 \end{code}
-
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
 %format h≡h₀ = "\Varid{h{\equiv}h_0}"
 %format h≢h₀ = "\Varid{h{\not\equiv}h_0}"
@@ -208,10 +266,6 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
     mutate? (yes h≡h₀) rewrite h≡h₀ = ε
     mutate? (no h≢h₀) = ↠-↣ (↣-mutate h₀) ◅ ε
 \end{code}
-
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 
 %{
 %format e↠⋆m = "\func{e{\twoheadrightarrow^\star_\tau}m}"
@@ -233,7 +287,7 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
   ... |  h₀ , l′ , m , ≡.refl , cons , e↣′⋆m
          with ↣′⋆→↦′⋆ ∅-Equivalent (↣′⋆-swap cons e↣′⋆m)
   ...    |  h″ , equiv , e↦′⋆m rewrite ≡.sym (Commit cons equiv) =
-            _ , e⤇m , ≈-sym #⊢↦≈↣ where
+            _ , e⤇m , ≈-sym correct-# where
 \end{code}
 
 \restorecolumns
@@ -249,12 +303,14 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
     e⤇m = ⤇: (λ ()) (mutate? (h ≟Heap h₀)) (↠-↦ (↦-atomic e↦′⋆m))
 \end{code}
 
+\subsection{Putting It All Together}
+
 %format correct = "\func{correct}"
 \begin{code}
 correct : ∀ h e → h , e ⊢ ↦: ≈ ↣: ○
-correct h (# m) = #⊢↦≈↣
-correct h (a ⊕ b) = eval-left (correct h a) (λ h′ → correct h′ b)
-correct h (atomic e) = transaction
+correct h (# m) = correct-#
+correct h (a ⊕ b) = correct-⊕L (correct h a) (λ h′ → correct h′ b)
+correct h (atomic e) = correct-atomic
 \end{code}
 
 % vim: ft=tex fo-=m fo-=M:

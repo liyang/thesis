@@ -7,6 +7,7 @@
 %include Atomic/Language.lagda
 %include Atomic/Combined.lagda
 %include Atomic/Transaction.lagda
+%include Atomic/Complete.lagda
 \end{comment}
 %endif
 
@@ -133,9 +134,9 @@ transition, and strips off the initial |↣-begin| rule before invoking
 %format ↣′-swap = "\func{{\rightarrowtail\Prime}\text-swap}"
 %format cons′-v-h«v» = "\Varid{cons\Prime\text-v\text-h_v}"
 %format ↣′-read-l-v = "\Varid{{\rightarrowtail\Prime}\text-read\text-l\text-v}"
-The next lemma says that we can swap the heap used for any |_⊢_↣′_|
-transition, as long as the target heap is consistent with the
-post-transition log |l′|:
+\noindent The next lemma says that we can swap the heap used for any
+|_⊢_↣′_| transition, as long as the target heap is consistent with the
+original post-transition log |l′|:
 \begin{code}
 ↣′-swap : ∀ {h h′ l e l′ e′} → Consistent h′ l′ →
   h ⊢ l , e ↣′ l′ , e′ → h′ ⊢ l , e ↣′ l′ , e′
@@ -171,24 +172,42 @@ indeed result in the same |l′| and |e′| as it did under |h|, completing the
 proof of |↣′-swap|.
 
 %format ↣′⋆-swap = "\func{{\rightarrowtail\Prime^\star}\text-swap}"
+%format cons″ = "\Varid{cons\PPrime}"
 %format e′↣⋆e″ = "\Varid{e\Prime{\rightarrowtail^\star}\!e\PPrime}"
-%{
-%format P = "\type{P}"
-%format f = "\func{f}"
+%format C⊢_↣′⋆_ = "\type{C{\vdash}\anonymous{\rightarrowtail\Prime^\star}\anonymous}"
+%format C⊢ = "\prefix{\type{C{\vdash}}}"
+%format trans = "\func{trans}"
+Of course, we can generalise |↣′-swap| to |H⊢_↣′⋆_| sequences of any length:
 \begin{code}
-↣′⋆-swap : ∀ {h′ l e l′ e′} → Consistent h′ l′ →
-  H⊢ l , e ↣′⋆ l′ , e′ → h′ ⊢ l , e ↣′⋆ l′ , e′
-↣′⋆-swap {h′} cons = fst ∘ Star.gfold id P f (ε , cons) where
-  P : Logs × Expression′ → Logs × Expression′ → Set
-  P (l , e) (l′ , e′) = h′ ⊢ l , e ↣′⋆ l′ , e′ × Consistent h′ l
-  f : ∀ {x x′ x″} → H⊢ x ↣′ x′ → P x′ x″ → P x x″
-  f (h , e↣e′) (e′↣⋆e″ , cons′) =
-    ↣′-swap cons′ e↣e′ ◅ e′↣⋆e″ , ↣′-Consistent′ cons′ e↣e′
+↣′⋆-swap : ∀ {h′ l e l″ e″} → Consistent h′ l″ →
+  H⊢ l , e ↣′⋆ l″ , e″ → h′ ⊢ l , e ↣′⋆ l″ , e″
+↣′⋆-swap {h′} cons″ = snd ∘ Star.gfold id C⊢_↣′⋆_ trans (cons″ , ε) where
+  C⊢_↣′⋆_ : Logs × Expression′ → Logs × Expression′ → Set
+  C⊢ (l , e) ↣′⋆ (l′ , e′) = Consistent h′ l × h′ ⊢ l , e ↣′⋆ l′ , e′
+  trans : ∀ {x x′ x″} → H⊢ x ↣′ x′ → C⊢ x′ ↣′⋆ x″ → C⊢ x ↣′⋆ x″
+  trans (h , e↣e′) (cons′ , e′↣⋆e″) =
+    ↣′-Consistent′ cons′ e↣e′ , ↣′-swap cons′ e↣e′ ◅ e′↣⋆e″
 \end{code}
-%}
+The auxiliary |C⊢_↣′⋆_| relation pairs |_⊢_↣′⋆_| with a proof of the
+consistency of |h′| with the read logs at the start of the sequence, while
+|trans| corresponds to the transitivity of a one-step |H⊢_↣′_| and
+|C⊢_↣′⋆_|. The proof of |↣′⋆-swap| results from folding |trans| over the
+|H⊢_↣′⋆_| argument, using a final |snd| to discard the consistency part of
+the |C⊢_↣′⋆_| pair.
+
+What we have shown with |↣′⋆-swap| is that provided the read log is
+consistent with the heap just before the commit, then regardless of what
+different heaps the transaction had originally used, re-running the
+transaction with just the pre-commit heap---without any intervening heap
+mutations---delivers the same result.
 
 %format ↣′→↦′ = "\func{{\rightarrowtail\Prime}{\rightarrow}{\mapsto\Prime}}"
 %format ↦′-read-h-v = "\Varid{{\rightarrowtail\Prime}\text-read\text-h\text-v}"
+It remains for us to show that we can construct an equivalent transition
+under the stop-the-world semantics, given one that uses the same pre-commit
+heap. We start by taking a single log-based transition step and returning
+its corresponding stop-the-world rule, while showing that heap-log
+equivalence is preserved:
 \begin{code}
 ↣′→↦′ : ∀ {h l e l′ e′ h₀} →
             Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′ l′ , e′ →
@@ -206,16 +225,18 @@ proof of |↣′-swap|.
 ...       |  ○ | ‹ ρ«v»≡○ › rewrite ≡.sym equiv-v = _
              , Read-Equivalent ρ«v»≡○ equiv , ↦′-read-h-v
 \end{code}
-
-lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit
-amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor
-sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
+The above definition has an identical structure to that of |↦′→↣′| from the
+previous section, using the same |Write-Equivalent| and |Read-Equivalent|
+lemmas for the |↣′-writeℕ| and |↣′-read| cases respectively, so we will let
+the code speak for itself.
 
 %format ↣′⋆→↦′⋆ = "\func{{\rightarrowtail\Prime^\star}{\rightarrow}{\mapsto\Prime^\star}}"
 %format e′↦⋆e″ = "\Varid{e\Prime{\mapsto^\star}\!e\PPrime}"
 %format cons″ = "\Varid{cons\PPrime}"
 %format equiv′ = "\Varid{equiv\Prime}"
 %format equiv″ = "\Varid{equiv\PPrime}"
+Finally we extend |↣′→↦′| to handle any |_⊢_↣′⋆_| sequence, in the same
+manner as |↦′⋆→↣′⋆|:
 \begin{code}
 ↣′⋆→↦′⋆ : ∀ {h l e l′ e′ h₀} →
             Equivalent h₀ l h    →  h₀ ⊢ l , e ↣′⋆ l′ , e′ →
@@ -225,6 +246,14 @@ sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum
 ... |  h′ , equiv′ , e↦e′ with ↣′⋆→↦′⋆ equiv′ e′↣⋆e″
 ...    | h″ , equiv″ , e′↦⋆e″ = h″ , equiv″ , e↦e′ ◅ e′↦⋆e″
 \end{code}
+
+\noindent To summarise, given a visible transition in which the log-based
+semantics commits a transaction, we can use |↣-extract| to obtain the final
+successful sequence of |_⊢_↣′_| transitions leading up to the commit, along
+with the heaps used at each step. The |↣′⋆-swap| lemma then lets us swap the
+different heaps for the pre-commit heap, while |↣′⋆→↦′⋆| maps each log-based
+transition to their corresponding stop-the-world ones, allowing us to
+construct an equivalent transaction under the stop-the-world semantics.
 
 % vim: ft=tex fo-=m fo-=M:
 
