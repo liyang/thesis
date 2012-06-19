@@ -73,13 +73,15 @@ concurrency, at least for that of the Fork language. As well as updating the
 $\func{elide\text-\tau}$ lemma for explicit concurrency, we also showed that
 combining bisimilar pairs of thread soups preserves bisimilarity.
 
-Finally, Chapter \ref{ch:verified} brings our object language up to par with
-our earlier STM model by introducing an $\cons{atomic}$ construct that
-follows a stop-the-world semantics, in contrast with its virtual machine's
-log-based implementation that allows concurrent transactions to interleave
-each other. The final compiler correctness proof makes essential use of
-a notion of equivalence between the heap of the high-level semantics and
-that of the virtual machine, overlaid with read and write logs.
+Finally, Chapter \ref{ch:verified} considers a log-based implementation of
+transactions. In order to simplify the proof of its equivalence with
+a stop-the-world semantics, we replace concurrency with a `mutate' rule that
+simulates the worst possible concurrent environment, and directly define
+a log-based transaction semantics on the source language. The final
+correctness proof makes essential use of a notion of equivalence between
+heaps and logs, and confirms our earlier hypothesis that consistency of the
+read log with the heap is a sufficient condition for a transaction to
+commit.
 
 %}}}%
 
@@ -107,14 +109,21 @@ a language with a simple notion of non-determinism. We then extended the
 above proof and our approach in the direction of the initially identified
 subset of STM Haskell, in an incremental manner: first introducing explicit
 concurrency in the form of a $\cons{fork}$ primitive, before finally
-extending this language with an $\cons{atomic}$ construct. We believe this
-to be the first machine-checked compiler correctness proof showing the
-equivalence of the log-based approach and the stop-the-world semantics for
-implementing transactions.
+tackling a language with an $\cons{atomic}$ construct in a simplified
+setting, resulting in a formal proof of the equivalence of the high-level
+stop-the-world semantics with a low-level log-based approach.
 
 %}}}%
 
 \section{Directions for Further Research}%{{{%
+
+Our original aim was to formally verify the compiler correctness result from
+Chapter \ref{ch:model}, whereas in Chapter \ref{nine} we verified this
+result with some simplifications, in particular the removal of the |fork|
+construct. While this establishes what we feel to be the essence of the
+result, we believe our original aim is still achieveable with further work,
+since our worst-case `mutate' rule subsumes any interference by other
+threads in a concurrent setting.
 
 Our simplified model of STM Haskell focuses on the essence of implementing
 transactions, and consequently omits many of the facilities expected of

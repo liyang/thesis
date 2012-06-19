@@ -781,10 +781,10 @@ by introducing a `fork' primitive and threads. We replay the compiler
 correctness proof of the previous chapter in this new setting with the help
 of a few extra concurrency lemmas.
 
-\item[Chapter 9] builds upon the previous two chapters with results relating
-to transactions, culminating in a formally verified compiler correctness
-proof for the simplified subset of STM Haskell identified in chapter 5, and
-its associated virtual machine.
+\item[Chapter 9] develops the concept of consistency between transaction
+logs and the heap, which we use to establish the correctness of a log-based
+implementation of software transactional memory in the presence of arbitrary
+interference by an external agent.
 
 \item[Chapter 10] concludes with a summary of this thesis, and a list of
 various future research directions.
@@ -824,9 +824,9 @@ a simple notion of non-determinism.
 \item Showing that our technique scales to a language with explicit
 concurrency, complete with a formal proof.
 
-\item Extension of this language to match the simplified subset of STM
-Haskell, with a formal compiler correctness proof that shows the equivalence
-of the log-based approach and the stop-the-world semantics for transactions.
+\item A formal correctness proof for a transactional language that shows the
+equivalence of the log-based approach and the stop-the-world semantics for
+transactions.
 
 \end{itemize}
 Earlier accounts of some of these have been published in the following

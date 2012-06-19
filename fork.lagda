@@ -40,8 +40,9 @@ open ≈-Reasoning
 In the previous chapter, we introduced our methodology of using the notion
 of bisimilarity on combined machines for tacking compiler correctness for
 a simple non-deterministic language. In this chapter, we shall demonstrate
-that this technique is scalable, by extending the language with a simple
-|fork| primitive in order to introduce explicit concurrency into our system.
+that this technique is scalable to a concurrent setting, by extending the
+language with a simple |fork| primitive that introduces explicit concurrency
+into our system.
 
 \input{Fork/Language.lagda}
 

@@ -1114,7 +1114,7 @@ the randomised testing approach---using QuickCheck and HPC, as described in
 Chapter \ref{ch:qc+hpc}---can provide a high level of assurance with
 relatively minimal effort. In the case of theorem~\ref{thm:model-correct},
 we can transcribe it as the following property:
-%format prop_Correctness = "\func{prop_Correctness}"
+%format prop_Correctness = "\func{prop\_Correctness}"
 \begin{code}
 prop_Correctness :: Heap -> [Proc] -> Bool
 prop_Correctness h ps = eval (h, ps) == exec (h, load ps)
