@@ -24,7 +24,7 @@ open import Transaction
 \end{code}
 %endif
 
-\subsection{Soundness of Log-Based Transactions}
+\subsection{Soundness of Log-Based Transactions}\label{sec:atomic-sound}
 
 %if False
 \begin{code}

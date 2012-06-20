@@ -74,5 +74,12 @@ exists a matching sequence under the other semantics.
 \input{Atomic/Correct.lagda.tex}
 
 
+\section{Conclusion}
+
+
+* completely formal proof, no postulated lemmas
+* replay introduction again
+
+
 % vim: ft=tex fo-=m fo-=M:
 

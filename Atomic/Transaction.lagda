@@ -24,10 +24,10 @@ open import Language
 %format Read-Consistent = "\func{Read\text-Consistent}"
 %format v′≡v = "\Varid{v\Prime{\equiv}v}"
 %format v′≢v = "\Varid{v\Prime{\not\equiv}v}"
-First up, recall that when the log-based semantics needs to read a variable
-|v| and it is not present in either of the read and write logs, we update
-the read log with the value of |v| from the heap. The following lemma shows
-that this operation preserves log consistency:
+First of all, recall that when the log-based semantics needs to read
+a variable |v| and it is not present in either of the read and write logs,
+we update the read log with the value of |v| from the heap. The following
+lemma shows that this operation preserves log consistency:
 \savecolumns
 \begin{code}
 Read-Consistent : ∀ {h} l v → Consistent h l →
@@ -239,7 +239,7 @@ correct types in all cases:
 \end{code}
 
 
-\subsection{Commit Heap Equality}
+\subsection{Post-Commit Heap Equality}
 
 %format Commit = "\func{Commit}"
 %format hω≗h′ = "\func{h\omega{\circeq}h\Prime}"
@@ -250,7 +250,7 @@ unmodified heap with the contents of the write log, using the |Update|
 function defined at the end of \S\ref{sec:atomic-logs}. Given an |h′| that
 is equivalent to some heap |h| overlaid with logs |l| and that |h| and |l|
 are mutually consistent, we can proceed to show that updating |h| with the
-contents of the write log results in an identical heap as one that is
+contents of the write log results in a heap identical to one that is
 modified in-place by the stop-the-world semantics:
 \savecolumns
 \begin{code}

@@ -155,7 +155,10 @@ data Action : Set where
   τ {-"\;"-} ⊞ {-"\;"-} ☢ : Action
 \end{code}
 where |τ| is the silent action, |⊞| corresponds to the addition operation,
-and |☢| indicates the successful completion of a transaction.
+and |☢| indicates the successful completion of a transaction. These simple
+observable actions make it possible to define a notion of bisimilarity for
+the stop-the-world and log-based semantics, where there need not be
+a one-to-one correspondence of transition rules on each side.
 
 %if False
 \begin{code}
@@ -198,11 +201,14 @@ encapsulating it in a single step:
     τ ▹ h , atomic e  ↦  h′ , atomic e
 \end{code}
 Since there are no explicit threads in the Atomic language, we introduce
-a silent |↦-mutate| rule to allow the heap to change at any time. It is
-limited to contexts where the expression is of the form |atomic e|, but this
-is purely to avoid complicating unrelated parts of the proof. We shall later
-examine how a corresponding rule in the log-based semantics allows the heap
-to mutate during a transaction.
+a silent |↦-mutate| rule to allow the heap to change at any time, which
+reflects the idea that a concurrent thread may modify the heap while the
+current thread is running. The above rule implements the worst possible case
+in which the heap |h| can be replaced by a completely different heap |h′|.
+For simplicity, note that |↦-mutate| is limited to contexts where the
+expression is of the form |atomic e|, as this is the only construct that
+interacts with the heap. We shall later examine how a corresponding rule in
+the log-based semantics allows the heap to mutate during a transaction.
 
 
 \input{Atomic/Logs.lagda.tex}

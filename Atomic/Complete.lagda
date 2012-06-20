@@ -23,7 +23,7 @@ open import Transaction
 \end{code}
 %endif
 
-\subsection{Completeness of Log-Based Transactions}
+\subsection{Completeness of Log-Based Transactions}\label{sec:atomic-complete}
 
 %-- Zero or more ↦-mutate rules followed by ↦-atomic.
 %format ↦-extract = "\func{{\mapsto}\text-extract}"
