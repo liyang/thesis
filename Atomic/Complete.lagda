@@ -37,20 +37,18 @@ that extracts the |_↦′⋆_| sequence from a visible transition starting from
 ↦-extract : ∀ {α h e h″ c″ e″} →
   α ▹ h , ↦: , atomic e ⤇ h″ , c″ , e″ →
   ∃₂ λ h₀ m → α , c″ , e″ ≡ ☢ , ↦: , # m ×
-  Dec (h ≡ h₀) × h₀ , e ↦′⋆ h″ , # m
+  h₀ , e ↦′⋆ h″ , # m
 ↦-extract (⤇: α≢τ ε (↠-↦ (↦-mutate h₁))) = ⊥-elim (α≢τ ≡.refl)
 ↦-extract (⤇: α≢τ ε (↠-↦ (↦-atomic e↦′⋆m))) =
-  _ , _ , ≡.refl , yes ≡.refl , e↦′⋆m
+  _ , _ , ≡.refl , e↦′⋆m
 ↦-extract (⤇: α≢τ (↠-↦ (↦-mutate h₁) ◅ e↠⋆e′) e′↠e″)
      with ↦-extract (⤇: α≢τ e↠⋆e′ e′↠e″)
-...  |  h₀ , m , ≡.refl , h₁≟h₀ , e↦′⋆m =
-        h₀ , m , ≡.refl , _ ≟Heap h₀ , e↦′⋆m
+...  |  h₀ , m , ≡.refl , e↦′⋆m =
+        h₀ , m , ≡.refl , e↦′⋆m
 \end{code}
 Under the stop-the-world semantics, the only non-silent transition |atomic
-e| can make is |↦-atomic|, which carries the |e↦′⋆m| we desire. The silent
-sequence preceding it may contain some number of |↦-mutate| rules, for which
-we return an element of |Dec (h ≡ h₀)| to indicate whether the heap was
-changed before the transaction itself. We also give a proof that will allows
+e| can make is |↦-atomic|, which carries the |e↦′⋆m| we desire. Note that the silent
+sequence preceding it may contain some number of |↦-mutate| rules which we simply discard here, hence the heap at the start of the transaction may not necessarily be the same as that of the visible transition. We also give a proof that will allows
 us to refine |α|, |c″| and |e″|.
 
 %format ↦′→↣′ = "\func{{\mapsto\Prime}{\rightarrow}{\rightarrowtail\Prime}}"

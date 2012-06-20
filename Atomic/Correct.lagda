@@ -103,7 +103,7 @@ The proof for the opposite direction proceeds in exactly the same way:
 that the two semantics are bisimilar for expressions of the form |# m ⊕ b|:
 \savecolumns
 \begin{code}
-correct-⊕R : ∀ {h m b} → h , b ⊢ ↦: ≈ ↣: ○ →h , # m ⊕ b ⊢ ↦: ≈ ↣: ○
+correct-⊕R : ∀ {h m b} → h , b ⊢ ↦: ≈ ↣: ○ → h , # m ⊕ b ⊢ ↦: ≈ ↣: ○
 correct-⊕R {h} {m} {b} b⊢↦≈↣ = ♯ ↦≼↣ & ♯ ↣≼↦ where
 \end{code}
 %format b≡n = "\Varid{b{\equiv}n}"
@@ -251,7 +251,7 @@ Observe how |correct-⊕L| shares the same overall structure as |correct-⊕R|.
 %format e⤇e″ = "\Varid{e{\Mapsto}e\PPrime}"
 %format h≟h₀ = "\Varid{h{\stackrel?=}h_0}"
 %format e↣′⋆m = "\Varid{e{\rightarrowtail\Prime^\star}m}"
-Finally, we arrive at the correctness proof for |atomic| expressions, where
+Finally we arrive at the correctness proof for |atomic| expressions, where
 we need to show that transactions run under the stop-the-world semantics
 coincide with those using our log-based semantics:
 \restorecolumns
@@ -263,13 +263,12 @@ In the completeness direction, we show that the log-based semantics can
 follow the stop-the-world one by simply running the entire transaction
 uninterrupted at the same point as the |↦-atomic| rule. First the
 |↦-extract| helper from \S\ref{sec:atomic-complete} picks out the |e↦′⋆m|
-sequence, along with a witness |h≟h₀| that accounts for any heap mutations
-before the main |↦-atomic| rule:
+sequence:
 \restorecolumns
 \begin{code}
   ↦≼↣ : h , atomic e ⊢ ↦: ≼ ↣: ○
   ↦≼↣ e⤇e″ with ↦-extract e⤇e″
-  ... |  h₀ , m , ≡.refl , h≟h₀ , e↦′⋆m
+  ... |  h₀ , m , ≡.refl , e↦′⋆m
          with ↦′⋆→↣′⋆ ∅-Equivalent e↦′⋆m
   ...    |  l′ , equiv′ , e↣′⋆m with ↣′⋆-Consistent ∅-Consistent e↣′⋆m
   ...       |  cons′ rewrite ≡.sym (Commit cons′ equiv′) =
@@ -283,8 +282,8 @@ consistency of |h₀| and the logs is preserved along the |e↣′⋆m| sequence
 culminating in a witness |cons′| of |Consistent h₀ l′ h′|. Finally,
 a rewrite clause using the |Commit| lemma convinces Agda that |Update h₀ l′|
 and |h′| are definitionally equal. Since running a transaction results in
-just a number |# m|, |correct-#| suffices to show that this is bisimilar
-under both semantics.
+just a number |# m|, |correct-#| suffices to show that both semantics are
+bisimilar in this case.
 
 %format h≡h₀ = "\Varid{h{\equiv}h_0}"
 %format h≢h₀ = "\Varid{h{\not\equiv}h_0}"
@@ -295,28 +294,28 @@ stop-the-world semantics runs the transaction, we need a corresponding
 checks whether this is necessary:
 \restorecolumns
 \begin{code}
-    mutate? : Dec (h ≡ h₀) →
-      h  , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , ∅) , atomic e
-    mutate? (yes h≡h₀) rewrite h≡h₀ = ε
-    mutate? (no h≢h₀) = ↠-↣ (↣-mutate h₀) ◅ ε
+    mutate? : h  , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , ∅) , atomic e
+    mutate? with h ≟Heap h₀
+    ... | yes h≡h₀ rewrite h≡h₀ = ε
+    ... | no h≢h₀ = ↠-↣ (↣-mutate h₀) ◅ ε
 \end{code}
 %{
 %format e↠⋆m = "\func{e{\twoheadrightarrow^\star_\tau}m}"
 Next, the auxiliary definition |e↠⋆m| lifts each transition of |e↣′⋆m| up to
-the |_⊢_↠_| level, using the |↣-step| rule:
+the |_▹_↠_| level using the |↣-step| rule, prepending a |↣-mutate| rules
+when necessary:
 \restorecolumns
 \begin{code}
-    e↠⋆m : h₀ , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , l′) , atomic (# m)
-    e↠⋆m = Star.gmap _ (↠-↣ ∘ ↣-step) e↣′⋆m
+    e↠⋆m : h , ↣: ● (e , ∅) , atomic e ↠⋆ h₀ , ↣: ● (e , l′) , atomic (# m)
+    e↠⋆m = mutate? ◅◅ Star.gmap _ (↠-↣ ∘ ↣-step) e↣′⋆m
 
     e⤇m : ☢ ▹ h , ↣: ○ , atomic e ⤇ Update h₀ l′ , ↣: ○ , # m
-    e⤇m = ⤇: (λ ()) (↠-↣ ↣-begin ◅ mutate? h≟h₀ ◅◅ e↠⋆m)
-      (↠-↣ (↣-commit cons′))
+    e⤇m = ⤇: (λ ()) (↠-↣ ↣-begin ◅ e↠⋆m) (↠-↣ (↣-commit cons′))
 \end{code}
-Lastly we prepend a |↣-begin| to beginning of the visible transition to
-initialise the transaction state, followed by any |↣-mutate| rules, with
-|e↠⋆m| as the main body of the transaction. A final non-silent |↣-commit|
-carrying the |cons′| witness produces the desired visible transition.
+Lastly we add a |↣-begin| to beginning of the visible transition to
+initialise the transaction state, followed by |e↠⋆m| as the main body of the
+transaction. A final non-silent |↣-commit| carrying the |cons′| witness
+produces the desired visible transition.
 %}
 
 The proof of soundness relies on us having shown that for every transaction
@@ -338,22 +337,30 @@ the |cons′| proof carried by the final |↣-commit|:
   ...    |  h′ , equiv′ , e↦′⋆m rewrite ≡.sym (Commit cons′ equiv′) =
             _ , e⤇m , ≈-sym correct-# where
 \end{code}
-There is an additional step involved: we must use the |↣′⋆-swap| lemma to
-swap the different heaps used throughout |e↣′⋆m| with |h₀| to give a witness
-of |h₀ ⊢ ∅ , e ↣′⋆ l′ , # m|, before we can use |↣′⋆→↦′⋆| to convert this to
-a sequence |e↦′⋆m : h₀ ,  ↦′⋆ FIXME|.
+There is one additional step involved: we must use the |↣′⋆-swap| lemma to
+swap the different heaps used throughout |e↣′⋆m| with |h₀|---to give
+a witness of |h₀ ⊢ ∅ , e ↣′⋆ l′ , # m|---before we can use |↣′⋆→↦′⋆| to
+convert this to the sequence |e↦′⋆m : h₀ , e ↦′⋆ h′ , # m|, as the |↣′⋆→↦′⋆|
+lemma requires its input log-based transitions to be under the same heap in
+order to show equivalence preservation.
+
+Note that |≈-sym| did not need inlining as |correct-#| is not
+a (co)recursive call.
+
+
 
 \restorecolumns
 \begin{code}
-    mutate? : Dec (h ≡ h₀) → h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
-    mutate? (yes h≡h₀) rewrite h≡h₀ = ε
-    mutate? (no h≢h₀) = ↠-↦ (↦-mutate h₀) ◅ ε
+    mutate? : h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
+    mutate? with h ≟Heap h₀
+    ... | yes h≡h₀ rewrite h≡h₀ = ε
+    ... | no h≢h₀ = ↠-↦ (↦-mutate h₀) ◅ ε
 \end{code}
 
 \restorecolumns
 \begin{code}
     e⤇m : ☢ ▹ h , ↦: , atomic e ⤇ Update h₀ l′ , ↦: , # m
-    e⤇m = ⤇: (λ ()) (mutate? (h ≟Heap h₀)) (↠-↦ (↦-atomic e↦′⋆m))
+    e⤇m = ⤇: (λ ()) mutate? (↠-↦ (↦-atomic e↦′⋆m))
 \end{code}
 
 % deconstructs
