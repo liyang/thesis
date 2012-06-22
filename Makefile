@@ -2,6 +2,7 @@ TEXT := thesis.tex introduction.lhs stm.lhs semantics.tex \
 	testing.lhs model.lhs agda.lagda nondet.lagda fork.lagda \
 	atomic.lagda conclusion.tex
 
+BIBSHELF := Bookshelf.bib
 LTXALL := thesis # ...
 LTXDEP := # article.sty # ... thesis.bbl
 LTXDEP_thesis := now.tex polycode.lhs.tex \
