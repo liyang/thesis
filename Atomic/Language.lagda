@@ -77,9 +77,9 @@ complicate the formal reasoning process, so we investigated a simpler
 approach. First we replace concurrency with a `mutate' rule that can change
 the heap at any time during a transaction, which simulates the worst
 possible concurrent environment, in a similar manner to the worst-case
-interrupt rule of FIXME\cite{joel}. Secondly we replace the compiler and
-virtual machine with a direct log-based transactional semantics for the
-source language, which makes the proof more manageable.
+interrupt rule of \cite{hutton07-interruptions}. Secondly we replace the
+compiler and virtual machine with a direct log-based transactional semantics
+for the source language, which makes the proof more manageable.
 
 \input{Atomic/Heap.lagda.tex}
 

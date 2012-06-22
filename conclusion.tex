@@ -73,7 +73,7 @@ concurrency, at least for that of the Fork language. As well as updating the
 $\func{elide\text-\tau}$ lemma for explicit concurrency, we also showed that
 combining bisimilar pairs of thread soups preserves bisimilarity.
 
-Finally, Chapter \ref{ch:verified} considers a log-based implementation of
+Finally, Chapter \ref{ch:atomic} considers a log-based implementation of
 transactions. In order to simplify the proof of its equivalence with
 a stop-the-world semantics, we replace concurrency with a `mutate' rule that
 simulates the worst possible concurrent environment, and directly define
@@ -118,12 +118,12 @@ stop-the-world semantics with a low-level log-based approach.
 \section{Directions for Further Research}%{{{%
 
 Our original aim was to formally verify the compiler correctness result from
-Chapter \ref{ch:model}, whereas in Chapter \ref{nine} we verified this
-result with some simplifications, in particular the removal of the |fork|
-construct. While this establishes what we feel to be the essence of the
-result, we believe our original aim is still achieveable with further work,
-since our worst-case `mutate' rule subsumes any interference by other
-threads in a concurrent setting.
+Chapter \ref{ch:model}, whereas in Chapter \ref{ch:atomic} we verified this
+result with some simplifications, in particular the removal of the
+$\cons{fork}$ construct. While this establishes what we feel to be the
+essence of the result, we believe our original aim is still achieveable with
+further work, since our worst-case `mutate' rule subsumes any interference
+by other threads in a concurrent setting.
 
 Our simplified model of STM Haskell focuses on the essence of implementing
 transactions, and consequently omits many of the facilities expected of

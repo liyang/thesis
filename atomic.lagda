@@ -14,8 +14,7 @@
 \end{comment}
 %endif
 
-%Implementing STM Correctly
-\chapter{Transaction Correctness}
+\chapter{Transaction Correctness}\label{ch:atomic}
 
 The previous chapter scaled our proof technique to a language with explicit
 concurrency. In this chapter, we now consider a language with transactions.
