@@ -7,6 +7,10 @@
 %include Atomic/Language.lagda
 %include Atomic/Combined.lagda
 %include Atomic/Bisimilar.lagda
+%include Atomic/Transaction.lagda
+%include Atomic/Complete.lagda
+%include Atomic/Sound.lagda
+%include Atomic/Lemmas.lagda
 \end{comment}
 %endif
 
@@ -76,10 +80,18 @@ exists a matching sequence under the other semantics.
 
 \section{Conclusion}
 
-
-* completely formal proof, no postulated lemmas
-* replay introduction again
-
+In this chapter we considered a language with transactions, and a worst-case
+`mutate' rule in place of explicitly modelling interference by concurrent
+threads. We gave a fully formalised proof that our stop-the-world and
+log-based semantics for transactions do indeed coincide, without resorting
+to any postulated lemmas: the completeness part simply ran the log-based
+transaction uninterrupted at the same time as the stop-the-world |↦-atomic|
+rule. For soundness we used a key |↣′⋆-swap| lemma showing that regardless
+of any heap interference during the log-based transaction, as long as the
+pre-commit heap |h′| and logs |l′| were consistent, replaying the
+transaction under |h′| gives the same results. This underlines the
+importance of |Consistent h′ l′| as the correct criteria for a log-based
+transaction to commit.
 
 % vim: ft=tex fo-=m fo-=M:
 

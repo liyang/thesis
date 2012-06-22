@@ -338,36 +338,41 @@ the |cons′| proof carried by the final |↣-commit|:
             _ , e⤇m , ≈-sym correct-# where
 \end{code}
 There is one additional step involved: we must use the |↣′⋆-swap| lemma to
-swap the different heaps used throughout |e↣′⋆m| with |h₀|---to give
+replace the different heaps used throughout |e↣′⋆m| with |h₀|---to give
 a witness of |h₀ ⊢ ∅ , e ↣′⋆ l′ , # m|---before we can use |↣′⋆→↦′⋆| to
-convert this to the sequence |e↦′⋆m : h₀ , e ↦′⋆ h′ , # m|, as the |↣′⋆→↦′⋆|
-lemma requires its input log-based transitions to be under the same heap in
-order to show equivalence preservation.
+convert this to the sequence |e↦′⋆m : h₀ , e ↦′⋆ h′ , # m|. This is
+necessary because the |↣′⋆→↦′⋆| lemma requires its input log-based
+transitions to be under the same heap in order to show equivalence
+preservation.
 
-Note that |≈-sym| did not need inlining as |correct-#| is not
-a (co)recursive call.
-
-
-
+The result of both transaction is the same expression |# m|, and we use the
+symmetry of the earlier |correct-#| lemma to provide evidence of
+bisimilarity. All that is left is to wrap up the stop-the-world
+transactional transition sequence |e↦′⋆m| as the visible transition |e⤇m|.
+We define a |mutate?| sequence to correspond to any necessary
+pre-transaction |↦-mutate| rules,
 \restorecolumns
 \begin{code}
     mutate? : h , ↦: , atomic e ↠⋆ h₀ , ↦: , atomic e
     mutate? with h ≟Heap h₀
     ... | yes h≡h₀ rewrite h≡h₀ = ε
     ... | no h≢h₀ = ↠-↦ (↦-mutate h₀) ◅ ε
-\end{code}
 
-\restorecolumns
-\begin{code}
     e⤇m : ☢ ▹ h , ↦: , atomic e ⤇ Update h₀ l′ , ↦: , # m
     e⤇m = ⤇: (λ ()) mutate? (↠-↦ (↦-atomic e↦′⋆m))
 \end{code}
+which simply slots in as the silent transitions before the final |↦-atomic|,
+to give the desired visible transition |e⤇m|. This completes the
+bisimilarity proof for transactions.
 
 % deconstructs
 
 
-\subsection{Putting It All Together}
+\subsection{Putting It Together}
 
+Having shown for each individual case that our stop-the-world and log-based
+semantics are indeed bisimilar, all that remains for us is to combine them
+to give the proof of bisimilarity for any |Expression|:
 %format correct = "\func{correct}"
 \begin{code}
 correct : ∀ h e → h , e ⊢ ↦: ≈ ↣: ○
@@ -375,6 +380,9 @@ correct h (# m) = correct-#
 correct h (a ⊕ b) = correct-⊕L (correct h a) (λ h′ → correct h′ b)
 correct h (atomic e) = correct-atomic
 \end{code}
+In the |a ⊕ b| case, observe how |correct-⊕L| is supplied with the induction
+hypothesis on |a|, but that for |b| is abstracted over an arbitrary heap
+|h′|.
 
 % vim: ft=tex fo-=m fo-=M:
 
