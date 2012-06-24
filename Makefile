@@ -23,6 +23,14 @@ RSYNC := rsync --verbose --progress --8-bit-output --human-readable \
 	--partial --compress --copy-links --perms --times --modify-window=1
 DATETIME := $(shell date '+%F %T')
 
+atomic-src.tar.gz: $(wildcard Atomic/*.lagda)
+	rm -r atomic-src; mkdir atomic-src
+	for f in $(notdir $(basename $^)) ; do \
+		sed -nf deelite.sed < Atomic/$$f.lagda > atomic-src/$$f.agda ; \
+		done
+	tar czvf $@ atomic-src
+	rm -r atomic-src
+
 agda.lagda.tex nondet.lagda.tex fork.lagda.tex verified.lagda.tex: agda.fmt
 model.lhs.tex testing.lhs.tex: haskell.fmt
 nondet.lagda.tex: NonDet/introduction.lagda.tex NonDet/Language.lagda.tex \
