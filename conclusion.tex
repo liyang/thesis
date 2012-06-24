@@ -75,9 +75,9 @@ combining bisimilar pairs of thread soups preserves bisimilarity.
 
 Finally, Chapter \ref{ch:atomic} considers a log-based implementation of
 transactions. In order to simplify the proof of its equivalence with
-a stop-the-world semantics, we replace concurrency with a `mutate' rule that
-simulates the worst possible concurrent environment, and directly define
-a log-based transaction semantics on the source language. The final
+a stop-the-world semantics, we replaced concurrency with a `mutate' rule
+that simulates the worst possible concurrent environment, and directly
+defined a log-based transaction semantics on the source language. The final
 correctness proof makes essential use of a notion of equivalence between
 heaps and logs, and confirms our earlier hypothesis that consistency of the
 read log with the heap is a sufficient condition for a transaction to

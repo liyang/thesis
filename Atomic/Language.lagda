@@ -214,7 +214,7 @@ the log-based semantics allows the heap to mutate during a transaction.
 \input{Atomic/Logs.lagda.tex}
 
 
-\subsection{Log-based Semantics}
+\subsection{Log-Based Semantics}
 
 %if False
 \begin{code}

@@ -165,11 +165,11 @@ to |Logs.ρ l « v »≔ ● (h « v »)|, so the type of |cons′| is now:
 \begin{spec}
 cons′ : ∀ v′ m → (Logs.ρ l « v »≔ ● (h « v »)) « v′ » ≡ ● m → h′ « v′ » ≡ m
 \end{spec}
-Instantiating |v′| and |m| to |v| and |h « v »| respectively, then invoking
-the |Vec.lookup∘update| lemma leads to a witness of |h′ « v » ≡ h « v »|,
-which we use in a rewrite clause to show that |↣′-read| under |h′| does
-indeed result in the same |l′| and |e′| as it did under |h|, completing the
-proof of |↣′-swap|.
+Instantiating |v′| to |v| and |m| to |h « v »| and invoking the
+|Vec.lookup∘update| lemma leads to a witness of |h′ « v » ≡ h « v »|, which
+we use in a rewrite clause to show that |↣′-read| under |h′| does indeed
+result in the same |l′| and |e′| as it did under |h|, completing the proof
+of |↣′-swap|.
 
 %format ↣′⋆-swap = "\func{{\rightarrowtail\Prime^\star}\text-swap}"
 %format cons″ = "\Varid{cons\PPrime}"

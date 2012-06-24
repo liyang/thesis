@@ -144,14 +144,15 @@ approach to concurrency. However, its implementation is much more complex
 and subtle, and ensuring its correctness places significant demands on the
 compiler writer.
 
-This thesis considers the problem of formally verifying a compiler for STM.
-Utilising a minimal language incorporating only the features that we are
-interested in studying, we first explore various STM design choices, along
-with the issue of compiler correctness via the use of automated testing
-tools. Then we outline a new approach to concurrent compiler correctness
-using the notion of bisimulation, implemented using the Agda theorem prover.
-Finally, we show how bisimulation can be used to establish the correctness
-of a low-level implementation of software transactional memory.
+This thesis considers the problem of formally verifying an implementation of
+STM. Utilising a minimal language incorporating only the features that we
+are interested in studying, we first explore various STM design choices,
+along with the issue of compiler correctness via the use of automated
+testing tools. Then we outline a new approach to concurrent compiler
+correctness using the notion of bisimulation, implemented using the Agda
+theorem prover. Finally, we show how bisimulation can be used to establish
+the correctness of a low-level implementation of software transactional
+memory.
 
 %}}}%
 
