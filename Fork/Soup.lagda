@@ -277,7 +277,9 @@ a single thread, by dissecting its transitions out of a transition sequence
 on the entire thread soup:
 %format ↠τ⋆-dissect = "\func{{\twoheadrightarrow}\tau^\star\text-dissect}"
 %format rˡ = "r^l"
+%format rˡ′ = "{r^l}\Prime{}"
 %format rʳ = "r^r"
+%format rʳ′ = "{r^r}\Prime{}"
 \begin{code}
 ↠τ⋆-dissect : ∀ rˡ rʳ {x r′} → rˡ ++ x ∷ rʳ ↠τ⋆ r′ →
   ∃₂ λ rˡ′ rʳ′ → ∃ λ x′ → r′ ≡ rˡ′ ++ x′ ∷ rʳ′ ×

@@ -243,6 +243,9 @@
 
 % Relation.Binary.PreorderReasoning
 %format begin = "\func{begin}"
+%format _≡⟪_⟫_ = "\func{\anonymous{\equiv}\langle\anonymous\rangle\anonymous}"
+%format _≈⟪_⟫_ = "\func{\anonymous{\approx}\langle\anonymous\rangle\anonymous}"
+%format _≈⟪_⁻¹⟫_ = "\func{\anonymous{\approx}\langle\anonymous{}^{\text-1}\rangle\anonymous}"
 %format ⟪ = "\func{\langle}"
 %format ≈⟪ = "\func{{\approx}\langle}"
 %format ≡⟪ = "\func{{\equiv}\langle}"

@@ -235,6 +235,7 @@ since |_↦‹_›_| transitions cannot be silent, and are eliminated using the
 \end{code}
 
 %format a₀ = "a_0"
+%format y₀ = "y_0"
 %format y₀↠τ⋆y′ = "y_0{\twoheadrightarrow}\tau^\star{}y\Prime{}"
 %format y₀↠τ⋆y₁ = "y_0{\twoheadrightarrow}\tau^\star{}y_1"
 %format y₁↠y₂ = "y_1{\twoheadrightarrow}y_2"

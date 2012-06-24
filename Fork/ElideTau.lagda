@@ -31,6 +31,7 @@ Given the arsenal assembled in the previous section, the proof of the
 |elide-τ| lemma is relatively straightforward:
 %format r↠τs = "r{\twoheadrightarrow}\tau{}s"
 %format s≼r = "\func{s{\preccurlyeq}r}"
+%format r≼s = "\func{r{\preccurlyeq}s}"
 %format s↠⋆s₀ = "s{\twoheadrightarrow}^\star{}s_0"
 %format s₀↠s₁ = "s_0{\twoheadrightarrow}s_1"
 %format s₁↠⋆s′ = "s_1{\twoheadrightarrow}^\star{}s\Prime{}"
@@ -46,7 +47,6 @@ For |s≼r| the proof is trivial: whatever |s| does, |r| can always match it
 by first making the given |r↠τs| transition, after which it can follow |s|
 exactly.
 
-%format r≼s = "\func{r{\preccurlyeq}s}"
 %format r⤇r′ = "r{\Mapsto}r\Prime{}"
 In the other direction, we begin by extracting (\S\ref{sec:fork-extract})
 the active thread |x| from |r↠τs|. This refines |r| to |rˡ ++ x ∷ rʳ|, which

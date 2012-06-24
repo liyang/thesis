@@ -129,6 +129,7 @@ the entry for |v| in the newly-initialised read log is |○|, in which case we
 can use an absurd lambda to eliminate the |○ ≡ ● m| argument.
 
 %format Consistent? = "\func{Consistent?}"
+%format ¬p = "\Varid{\lnot{}p}"
 %format dec = "\func{dec}"
 %format h«v» = "\Varid{h_v}"
 %format ρ«v» = "\Varid{\rho_v}"

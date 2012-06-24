@@ -27,6 +27,11 @@ module NonDet.Bisimilarity where
 %format _⤇‹_›_ = "\type{\anonymous{\Mapsto}\texttt{<}\anonymous\texttt{>}\anonymous}"
 %format ⤇‹ = "\infix{\type{{\Mapsto}\texttt{<}}}"
 %format ⤇-↠ = "\cons{{\Mapsto}\text-{\twoheadrightarrow}}"
+%format x₀ = "\Varid{x_0}"
+%format x₁ = "\Varid{x_1}"
+%format x↠τ⋆x₀ = "\Varid{x{\twoheadrightarrow}\tau^{\star}x_0}"
+%format x₀↠x₁ = "\Varid{x_0{\twoheadrightarrow}x_1}"
+%format x₁↠τ⋆x′ = "\Varid{x_1{\twoheadrightarrow}\tau^{\star}x\Prime}"
 Now we can give a concrete definition to our notion of bisimilarity. More
 specifically, we shall be defining `weak bisimilarity', as we are not
 concerned with silent transitions. First of all, it is convenient to define
@@ -40,8 +45,8 @@ mutual
 %endif
 \begin{code}
   data _⤇‹_›_ : LTS Action Combined where
-    ⤇-↠ : ∀ {x x₀ x₁ x′ α}
-      (x↠τ⋆x₀ : x ↠‹τ›⋆ x₀) (x₀↠x₁ : x₀ ↠‹ ! α › x₁) (x₁↠τ⋆x′ : x₁ ↠‹τ›⋆ x′) →
+    ⤇-↠ : ∀ {x x₀ x₁ x′ α} (x↠τ⋆x₀ : x ↠‹τ›⋆ x₀)
+      (x₀↠x₁ : x₀ ↠‹ ! α › x₁) (x₁↠τ⋆x′ : x₁ ↠‹τ›⋆ x′) →
       x ⤇‹ α › x′
 \end{code}
 where we write |_↠‹τ›⋆_| as a shorthand for the reflexive transitive closure
