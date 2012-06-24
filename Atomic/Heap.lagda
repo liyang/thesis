@@ -42,7 +42,7 @@ infix 5 _≟Heap_
 %format ≟Heap = "\infix{\func{\stackrel?=_{Heap}}}"
 %if False
 \begin{code}
-_≟Heap_ : ∀ (h h′ : Heap) → Dec (h ≡ h′)
+_≟Heap_ : (h h′ : Heap) → Dec (h ≡ h′)
 h ≟Heap h′ = Dec.map Vec.Pointwise-≡ (Vec.Pointwise.decidable _≟ℕ_ h h′)
 \end{code}
 %endif
